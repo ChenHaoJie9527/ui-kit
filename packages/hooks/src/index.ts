@@ -48,3 +48,6 @@ export type { MapActions, UseMapResult } from "./useMap";
 
 export { useList } from "./useList";
 export type { ListActions, UseListResult } from "./useList";
+
+export { useObservable } from "./useObservable";
+export type { ObservableLike, Observer, Subscription } from "./useObservable";
