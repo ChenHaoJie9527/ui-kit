@@ -27,7 +27,78 @@ importers:
         specifier: ^7.0.0
         version: 7.3.7(@types/node@26.2.0)
 
+  apps/docs:
+    dependencies:
+      '@ui-kit/hooks':
+        specifier: workspace:*
+        version: link:../../packages/hooks
+      '@ui-kit/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      react:
+        specifier: ^19.0.0
+        version: 19.3.1
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.3.1(react@19.3.1)
+    devDependencies:
+      '@types/node':
+        specifier: 26.2.0
+        version: 26.2.0
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.3.0(@types/react@19.3.0)
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^7.0.0
+        version: 7.3.7(@types/node@26.2.0)
+
   packages/hooks:
+    devDependencies:
+      '@testing-library/dom':
+        specifier: ^10.4.0
+        version: 10.4.2
+      '@testing-library/react':
+        specifier: ^16.0.1
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@types/node':
+        specifier: 26.2.0
+        version: 26.2.0
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.3.0(@types/react@19.3.0)
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
+      react:
+        specifier: ^19.0.0
+        version: 19.3.1
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.3.1(react@19.3.1)
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^7.0.0
+        version: 7.3.7(@types/node@26.2.0)
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@26.2.0)(jsdom@25.0.1)
+
+  packages/ui:
+    dependencies:
+      '@ui-kit/hooks':
+        specifier: workspace:*
+        version: link:../hooks
     devDependencies:
       '@testing-library/dom':
         specifier: ^10.4.0

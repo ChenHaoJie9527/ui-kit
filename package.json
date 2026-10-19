@@ -10,7 +10,8 @@
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
-    "build:docs": "vite build apps/docs --base ./ --outDir ../../docs --emptyOutDir"
+    "dev:docs": "pnpm --filter @ui-kit/docs dev",
+    "build:docs": "pnpm --filter @ui-kit/docs build"
   },
   "devDependencies": {
     "oxfmt": "^0.64.0",
