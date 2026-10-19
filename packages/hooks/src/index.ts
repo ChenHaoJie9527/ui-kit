@@ -62,3 +62,6 @@ export type { AsyncState, UseAsyncOptions } from "./useAsync";
 
 export { useAsyncFn } from "./useAsyncFn";
 export type { AsyncFn, AsyncFnState, UseAsyncFnResult } from "./useAsyncFn";
+
+export { useAsyncRetry } from "./useAsyncRetry";
+export type { UseAsyncRetryResult } from "./useAsyncRetry";
