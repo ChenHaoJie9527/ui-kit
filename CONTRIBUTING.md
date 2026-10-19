@@ -36,3 +36,18 @@ pnpm commit
 ```bash
 echo "feat(ui): 新增 Badge 组件" | pnpm exec commitlint
 ```
+
+## 版本与发布
+
+提交只做校验，不产生版本。版本由 Changesets 管理：
+
+1. 对 `packages/*` 有用户可见改动时，运行 `pnpm changeset`，选择包与升级类型（patch / minor / major），写一句说明；
+2. 提交并合并到 `main` 后，`release` 工作流会自动创建一个 “Version Packages” PR（含版本号与 CHANGELOG）；
+3. 合并该 PR 时，工作流自动构建并按 `ui-kit-hooks` → `ui-kit` 的顺序发布到 GitHub Packages。
+
+本地预演：
+
+```bash
+pnpm changeset status    # 查看待发布的版本变化
+pnpm version-packages    # 应用版本号与 CHANGELOG（通常由 CI 执行）
+```

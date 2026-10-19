@@ -14,14 +14,13 @@
     "dev:docs": "pnpm --filter @chenhaojie9527/docs dev",
     "build:docs": "pnpm --filter @chenhaojie9527/docs build",
     "commit": "cz",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish",
     "prepare": "husky"
   },
-  "config": {
-    "commitizen": {
-      "path": "node_modules/cz-git"
-    }
-  },
   "devDependencies": {
+    "@changesets/cli": "^3.0.3",
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
     "commitizen": "^4.3.2",
@@ -33,6 +32,11 @@
     "react-dom": "^19.0.0",
     "typescript": "^7.0.2",
     "vite": "^7.0.0"
+  },
+  "config": {
+    "commitizen": {
+      "path": "node_modules/cz-git"
+    }
   },
   "packageManager": "pnpm@11.22.0"
 }
