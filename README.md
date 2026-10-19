@@ -179,6 +179,7 @@ pnpm --filter @ui-kit/hooks build
 pnpm --filter @ui-kit/ui test
 pnpm --filter @ui-kit/ui typecheck
 pnpm --filter @ui-kit/ui build
+pnpm dev:docs      # 启动文档站（侧边栏布局，hash 路由）
 pnpm build:docs    # 用 Vite 构建静态文档站到 docs/
 ```
 
