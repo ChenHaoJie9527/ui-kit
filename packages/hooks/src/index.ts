@@ -51,3 +51,5 @@ export type { ListActions, UseListResult } from "./useList";
 
 export { useObservable } from "./useObservable";
 export type { ObservableLike, Observer, Subscription } from "./useObservable";
+
+export { useGetSet } from "./useGetSet";
