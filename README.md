@@ -179,7 +179,7 @@ ui-kit/
 │  └─ ui/             @chenhaojie9527/ui-kit —— 组件与样式
 ├─ apps/
 │  └─ docs/           文档与交互演示（构建为静态站点）
-└─ docs/              GitHub Pages 站点产物
+└─ .github/workflows/ CI：发布包、构建并部署文档站
 ```
 
 ## 开发
@@ -200,7 +200,7 @@ pnpm --filter @chenhaojie9527/ui-kit typecheck
 # 提交前一次性跑完 format / lint / typecheck / test
 pnpm check
 
-# 发布前构建静态文档站到 docs/
+# 本地构建文档站（CI 会在 push 时自动构建并部署）
 pnpm build
 pnpm build:docs
 ```
