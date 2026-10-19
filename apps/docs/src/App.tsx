@@ -29,6 +29,15 @@ const THEME_LABELS: Record<ThemeMode, string> = {
 
 const REPO_URL = "https://github.com/ChenHaoJie9527/ui-kit";
 
+const TOP_NAV_LINK =
+  "rounded-lg px-[11px] py-1.5 text-[13.5px] text-muted no-underline transition-colors hover:bg-surface-2 hover:text-ink data-[active=true]:bg-accent-soft data-[active=true]:font-semibold data-[active=true]:text-accent-strong";
+
+const NAV_GROUP_TITLE =
+  "mb-[5px] px-2.5 text-[10.5px] font-[650] tracking-[0.09em] text-faint uppercase";
+
+const SIDEBAR_LINK =
+  "block rounded-[7px] px-2.5 py-[5px] text-[13.5px] leading-[1.45] text-muted no-underline transition-colors hover:bg-surface-2 hover:text-ink aria-[current=page]:bg-accent-soft aria-[current=page]:font-semibold aria-[current=page]:text-accent-strong";
+
 function MenuIcon() {
   return (
     <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
@@ -167,9 +176,9 @@ export function AppLayout() {
     "system";
 
   return (
-    <div className="doc-shell">
+    <div>
       <a
-        className="doc-skip-link"
+        className="fixed top-2.5 left-2.5 z-[100] -translate-y-[150%] rounded-lg bg-accent px-3.5 py-2 text-[13px] font-semibold text-white no-underline transition-transform focus-visible:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-strong"
         href="#doc-content"
         onClick={(event) => {
           // hash 路由下不能改 hash，否则会跳到一个不存在的路由。
@@ -180,11 +189,11 @@ export function AppLayout() {
         跳到正文
       </a>
 
-      <header className="doc-topbar">
-        <div className="doc-topbar__left">
+      <header className="sticky top-0 z-[60] flex h-[var(--doc-topbar-height)] items-center gap-[18px] border-b border-line bg-[color-mix(in_srgb,var(--doc-bg)_88%,transparent)] px-[22px] backdrop-blur-[14px] max-phone:px-3.5">
+        <div className="flex items-center gap-2.5">
           <Button
             ref={menuButtonRef}
-            className="doc-menu-button"
+            className="hidden max-drawer:inline-flex"
             variant="ghost"
             size="sm"
             iconOnly
@@ -198,17 +207,29 @@ export function AppLayout() {
             <MenuIcon />
           </Button>
 
-          <Link className="doc-brand" to="/" onClick={closeSidebar}>
-            <span className="doc-brand__mark" aria-hidden="true">
+          <Link
+            className="inline-flex items-center gap-[9px] text-ink no-underline hover:no-underline"
+            to="/"
+            onClick={closeSidebar}
+          >
+            <span
+              className="grid size-7 place-items-center rounded-lg bg-[linear-gradient(135deg,var(--doc-accent),color-mix(in_srgb,var(--doc-accent)_55%,#0ea5e9))] font-mono text-[11px] font-bold tracking-[-0.02em] text-white"
+              aria-hidden="true"
+            >
               uk
             </span>
-            <span className="doc-brand__name">ui-kit</span>
-            <span className="doc-brand__badge">0.1</span>
+            <span className="text-[15px] font-[650] tracking-[-0.015em]">
+              ui-kit
+            </span>
+            <span className="rounded-full border border-line bg-surface-2 px-[7px] py-px font-mono text-[10.5px] text-muted max-phone:hidden">
+              0.1
+            </span>
           </Link>
         </div>
 
-        <nav className="doc-topnav" aria-label="主导航">
+        <nav className="ml-auto flex items-center gap-0.5 max-drawer:hidden" aria-label="主导航">
           <Link
+            className={TOP_NAV_LINK}
             to="/components/button"
             data-active={
               location.pathname.startsWith("/components") ? "true" : undefined
@@ -217,6 +238,7 @@ export function AppLayout() {
             组件
           </Link>
           <Link
+            className={TOP_NAV_LINK}
             to="/hooks/use-controllable-state"
             data-active={
               location.pathname.startsWith("/hooks") ? "true" : undefined
@@ -224,12 +246,17 @@ export function AppLayout() {
           >
             Hooks
           </Link>
-          <a href={REPO_URL} target="_blank" rel="noreferrer">
+          <a
+            className={TOP_NAV_LINK}
+            href={REPO_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
             GitHub
           </a>
         </nav>
 
-        <div className="doc-topbar__right">
+        <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
@@ -237,7 +264,9 @@ export function AppLayout() {
             onClick={() => setMode(nextMode)}
           >
             <ThemeIcon mode={mode} />
-            <span className="doc-theme-text">{THEME_LABELS[mode]}</span>
+            <span className="text-[12.5px] font-medium max-phone:hidden">
+              {THEME_LABELS[mode]}
+            </span>
           </Button>
         </div>
       </header>
@@ -245,15 +274,15 @@ export function AppLayout() {
       <aside
         ref={sidebarRef}
         id="doc-sidebar"
-        className="doc-sidebar"
+        className="fixed top-[var(--doc-topbar-height)] bottom-0 left-0 z-50 w-[var(--doc-sidebar-width)] border-r border-line bg-canvas max-drawer:w-[min(320px,86vw)] max-drawer:-translate-x-full max-drawer:transition-transform max-drawer:duration-200 max-drawer:ease-[cubic-bezier(0.2,0.8,0.2,1)] max-drawer:data-[open=true]:translate-x-0 max-drawer:data-[open=true]:shadow-[0_24px_60px_rgb(0_0_0/0.28)]"
         data-open={sidebarOpen ? "true" : "false"}
         inert={isMobile && !sidebarOpen}
         aria-hidden={isMobile && !sidebarOpen ? true : undefined}
       >
-        <div className="doc-sidebar__inner">
-          <div className="doc-search">
+        <div className="sidebar-scroll flex h-full flex-col overflow-y-auto overscroll-contain px-3.5 pt-[18px] pb-5">
+          <div className="sticky -top-[18px] z-[2] -mx-3.5 mb-1.5 flex items-center gap-2 bg-[linear-gradient(to_bottom,var(--doc-bg)_78%,transparent)] px-3.5 pt-[18px] pb-3">
             <svg
-              className="doc-search__icon"
+              className="pointer-events-none absolute left-[26px] text-faint"
               viewBox="0 0 20 20"
               width="15"
               height="15"
@@ -275,7 +304,7 @@ export function AppLayout() {
               />
             </svg>
             <input
-              className="doc-search__input"
+              className="no-search-cancel h-[34px] w-full rounded-[9px] border border-line bg-surface pr-[30px] pl-8 font-[inherit] text-[13px] text-ink outline-none transition placeholder:text-faint focus-visible:border-accent focus-visible:shadow-[0_0_0_3px_color-mix(in_srgb,var(--doc-accent)_20%,transparent)]"
               type="search"
               value={query}
               placeholder="搜索组件或 Hook"
@@ -285,7 +314,7 @@ export function AppLayout() {
             {query ? (
               <button
                 type="button"
-                className="doc-search__clear"
+                className="absolute right-5 grid size-5 cursor-pointer place-items-center rounded-md border-0 bg-transparent p-0 text-[15px] leading-none text-muted hover:bg-surface-2 hover:text-ink"
                 aria-label="清空搜索"
                 onClick={() => setQuery("")}
               >
@@ -294,15 +323,18 @@ export function AppLayout() {
             ) : null}
           </div>
 
-          <nav className="doc-nav" aria-label="文档导航">
+          <nav className="flex-1" aria-label="文档导航">
             {filteredGroups.map((group) => (
-              <div className="doc-nav__group" key={group.title}>
-                <p className="doc-nav__title">{group.title}</p>
-                <ul>
+              <div
+                className="mt-[18px] [&:first-child]:mt-1"
+                key={group.title}
+              >
+                <p className={NAV_GROUP_TITLE}>{group.title}</p>
+                <ul className="m-0 flex list-none flex-col gap-px p-0">
                   {group.items.map((item) => (
                     <li key={item.path}>
                       <NavLink
-                        className="doc-nav__link"
+                        className={SIDEBAR_LINK}
                         to={toRoute(item.path)}
                         onClick={closeSidebar}
                       >
@@ -315,11 +347,13 @@ export function AppLayout() {
             ))}
 
             {filteredGroups.length === 0 ? (
-              <p className="doc-nav__empty">没有匹配的条目。</p>
+              <p className="mx-2.5 my-5 text-[13px] text-muted">
+                没有匹配的条目。
+              </p>
             ) : null}
           </nav>
 
-          <div className="doc-sidebar__footer">
+          <div className="mt-5 flex justify-between gap-2 border-t border-line px-2.5 pt-3.5 text-[11.5px] text-faint [&_a]:text-muted [&_a]:no-underline [&_a:hover]:text-accent">
             <span>MIT License</span>
             <a href={REPO_URL} target="_blank" rel="noreferrer">
               GitHub
@@ -331,26 +365,43 @@ export function AppLayout() {
       {sidebarOpen ? (
         <button
           type="button"
-          className="doc-scrim"
+          className="fixed inset-x-0 top-[var(--doc-topbar-height)] bottom-0 z-[45] m-0 border-0 bg-[rgb(8_10_15/0.42)] p-0 backdrop-blur-[2px] drawer:hidden"
           aria-label="关闭导航"
           onClick={closeSidebar}
         />
       ) : null}
 
-      <main ref={mainRef} className="doc-main" id="doc-content" tabIndex={-1}>
-        <div className="doc-main__inner" key={location.pathname}>
+      <main
+        ref={mainRef}
+        className="outline-none drawer:ml-[var(--doc-sidebar-width)]"
+        id="doc-content"
+        tabIndex={-1}
+      >
+        <div
+          className="mx-auto max-w-[1180px] px-12 pt-[46px] pb-[72px] max-tablet:px-8 max-tablet:pt-[38px] max-tablet:pb-16 max-phone:px-5 max-phone:pt-[30px] max-phone:pb-14"
+          key={location.pathname}
+        >
           <Outlet />
 
           {previous || next ? (
-            <nav className="doc-pagenav" aria-label="上一页与下一页">
+            <nav
+              className="mx-auto mt-16 grid max-w-[920px] grid-cols-2 gap-3 border-t border-line pt-6 max-phone:max-w-none max-phone:grid-cols-1"
+              aria-label="上一页与下一页"
+            >
               {previous ? (
-                <Link className="doc-pagenav__prev" to={toRoute(previous.path)}>
+                <Link
+                  className="flex flex-col gap-[3px] rounded-[11px] border border-line bg-surface px-4 py-[13px] text-ink no-underline transition-colors hover:border-accent hover:no-underline [&_span]:text-[11.5px] [&_span]:text-muted [&_strong]:text-sm [&_strong]:font-semibold"
+                  to={toRoute(previous.path)}
+                >
                   <span>上一页</span>
                   <strong>{previous.label}</strong>
                 </Link>
               ) : null}
               {next ? (
-                <Link className="doc-pagenav__next" to={toRoute(next.path)}>
+                <Link
+                  className="col-start-2 flex flex-col gap-[3px] rounded-[11px] border border-line bg-surface px-4 py-[13px] text-right text-ink no-underline transition-colors hover:border-accent hover:no-underline max-phone:col-start-1 [&_span]:text-[11.5px] [&_span]:text-muted [&_strong]:text-sm [&_strong]:font-semibold"
+                  to={toRoute(next.path)}
+                >
                   <span>下一页</span>
                   <strong>{next.label}</strong>
                 </Link>
@@ -359,7 +410,7 @@ export function AppLayout() {
           ) : null}
         </div>
 
-        <footer className="doc-footer">
+        <footer className="mx-auto flex max-w-[920px] justify-between gap-4 px-12 pb-11 text-xs text-faint max-tablet:px-8 max-tablet:pb-10 max-phone:flex-col max-phone:px-5 max-phone:pb-9 [&_a]:text-muted [&_a]:no-underline [&_a:hover]:text-accent">
           <span>MIT License © ChenHaoJie9527</span>
           <span>
             <a href={REPO_URL} target="_blank" rel="noreferrer">

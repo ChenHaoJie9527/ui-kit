@@ -14,7 +14,7 @@ function BasicDemo() {
   const [enabled, setEnabled] = useState(true);
 
   return (
-    <div className="demo-stack">
+    <div className="flex max-w-[420px] flex-col gap-4">
       <Switch checked={enabled} onCheckedChange={setEnabled}>
         启用实验特性
       </Switch>
@@ -35,7 +35,7 @@ function GroupDemo() {
   };
 
   return (
-    <ul className="demo-settings">
+    <ul className="m-0 flex list-none flex-col gap-4 [&>li]:flex [&>li]:flex-col [&>li]:gap-[3px] [&>li>p]:m-0 [&>li>p]:ml-[52px] [&>li>p]:text-[12.5px] [&>li>p]:text-muted">
       <li>
         <Switch
           checked={settings.replies}
@@ -69,7 +69,7 @@ function GroupDemo() {
 
 function StatesDemo() {
   return (
-    <div className="demo-stack">
+    <div className="flex max-w-[420px] flex-col gap-4">
       <Switch defaultChecked>未受控，默认开启</Switch>
       <Switch defaultChecked disabled>
         已禁用

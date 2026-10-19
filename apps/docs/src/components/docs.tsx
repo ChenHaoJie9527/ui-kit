@@ -50,6 +50,7 @@ export interface PageProps {
  * 文档页外壳。
  *
  * 负责页面标题区、章节收集（供右侧目录使用）以及目录/正文的双栏布局。
+ * 窄屏时目录降到正文上方。
  */
 export function Page({ kind, title, description, tags, children }: PageProps) {
   const [entries, setEntries] = useState<TocEntry[]>([]);
@@ -69,17 +70,31 @@ export function Page({ kind, title, description, tags, children }: PageProps) {
   return (
     <TocRegisterContext.Provider value={register}>
       <TocEntriesContext.Provider value={entries}>
-        <div className="doc-page-layout">
+        <div className="grid items-start gap-12 max-desk:gap-0 desk:grid-cols-[minmax(0,1fr)_200px]">
           <TableOfContents />
-          <article className="doc-page">
-            <header className="doc-page__header">
-              <p className="doc-eyebrow">{kind}</p>
-              <h1 className="doc-title">{title}</h1>
-              <p className="doc-lede">{description}</p>
+          <article className="row-start-2 min-w-0 desk:col-start-1 desk:row-start-1">
+            <header className="border-b border-line pb-[22px]">
+              <p className="mb-2.5 font-mono text-[11.5px] font-medium tracking-[0.1em] text-accent uppercase">
+                {kind}
+              </p>
+              <h1 className="m-0 text-[clamp(32px,4vw,42px)] leading-[1.1] font-bold tracking-[-0.035em] phone:text-[32px]">
+                {title}
+              </h1>
+              <p className="mt-3.5 max-w-[70ch] text-base leading-[1.7] text-muted phone:text-[15px]">
+                {description}
+              </p>
               {tags && tags.length > 0 ? (
-                <ul className="doc-tags" aria-label="特性">
+                <ul
+                  className="mt-[18px] flex list-none flex-wrap gap-[7px] p-0"
+                  aria-label="特性"
+                >
                   {tags.map((tag) => (
-                    <li key={tag}>{tag}</li>
+                    <li
+                      className="rounded-full border border-line bg-surface-2 px-[9px] py-0.5 text-[11.5px] text-muted"
+                      key={tag}
+                    >
+                      {tag}
+                    </li>
                   ))}
                 </ul>
               ) : null}
@@ -102,6 +117,8 @@ export interface SectionProps {
 
 /**
  * 正文里的一个章节，会带一个稳定的锚点 id，并自动登记到页面目录。
+ *
+ * 直接子元素统一 16px 上边距，免去每个原语各自声明间距。
  */
 export function Section({ title, description, children, id }: SectionProps) {
   const register = useContext(TocRegisterContext);
@@ -116,12 +133,19 @@ export function Section({ title, description, children, id }: SectionProps) {
   }, [register, sectionId, title]);
 
   return (
-    <section className="doc-section" id={sectionId}>
-      <h2 className="doc-section__title">{title}</h2>
+    <section
+      className="mt-[46px] scroll-mt-[calc(var(--doc-topbar-height)+24px)]"
+      id={sectionId}
+    >
+      <h2 className="m-0 text-[21px] font-[650] tracking-[-0.02em]">
+        {title}
+      </h2>
       {description ? (
-        <p className="doc-section__description">{description}</p>
+        <p className="mt-[7px] max-w-[70ch] text-[14.5px] text-muted">
+          {description}
+        </p>
       ) : null}
-      {children}
+      <div className="[&>*]:mt-4">{children}</div>
     </section>
   );
 }
@@ -139,9 +163,9 @@ export interface DemoProps {
 
 export function Demo({ children, code, label }: DemoProps) {
   return (
-    <div className="doc-demo">
-      <div className="doc-demo__preview">{children}</div>
-      <CodeBlock code={code} label={label} />
+    <div className="overflow-hidden rounded-[14px] border border-line bg-surface">
+      <div className="demo-grid p-[26px] phone:p-[18px]">{children}</div>
+      <CodeBlock flush code={code} label={label} />
     </div>
   );
 }
@@ -149,19 +173,27 @@ export function Demo({ children, code, label }: DemoProps) {
 export interface CodeBlockProps {
   code: string;
   label?: string;
+  /** 嵌在 Demo 里时只保留顶部分隔线，不再叠一层外框。 */
+  flush?: boolean;
 }
 
-export function CodeBlock({ code, label = "tsx" }: CodeBlockProps) {
+export function CodeBlock({ code, label = "tsx", flush = false }: CodeBlockProps) {
   const [state, copy] = useCopyToClipboard();
   const copied = state.copied && state.value === code;
 
+  const shell = flush
+    ? "overflow-hidden rounded-none border-t border-line bg-code"
+    : "overflow-hidden rounded-xl border border-line bg-code";
+
   return (
-    <div className="doc-code">
-      <div className="doc-code__bar">
-        <span className="doc-code__label">{label}</span>
+    <div className={shell}>
+      <div className="flex h-[38px] items-center justify-between border-b border-white/[0.07] bg-white/[0.025] pr-3 pl-4">
+        <span className="font-mono text-[10.5px] tracking-[0.08em] text-code-muted uppercase">
+          {label}
+        </span>
         <button
           type="button"
-          className="doc-code__copy"
+          className="cursor-pointer rounded-md border border-white/[0.14] bg-transparent px-[9px] py-[3px] font-mono text-[11px] text-code-ink transition-colors hover:bg-white/[0.08] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
           onClick={() => {
             void copy(code);
           }}
@@ -169,10 +201,10 @@ export function CodeBlock({ code, label = "tsx" }: CodeBlockProps) {
           {copied ? "已复制" : "复制"}
         </button>
       </div>
-      <pre className="doc-code__pre">
+      <pre className="m-0 overflow-x-auto px-[18px] py-4 text-[12.5px] leading-[1.75] break-words whitespace-pre-wrap text-code-ink [tab-size:2]">
         <code>{code}</code>
       </pre>
-      <span className="doc-visually-hidden" aria-live="polite">
+      <span className="sr-only" aria-live="polite">
         {copied ? "代码已复制到剪贴板" : ""}
       </span>
     </div>
@@ -187,40 +219,65 @@ export interface PropRow {
   required?: boolean;
 }
 
+const thClass =
+  "border-b border-line bg-surface-2 px-3.5 py-[11px] text-left text-[11.5px] font-semibold tracking-[0.03em] whitespace-nowrap text-muted";
+
+const cellClass = "border-b border-line px-3.5 py-[11px] align-top";
+
+const codeChip = "rounded-[5px] bg-surface-2 px-[5px] py-px font-mono text-xs";
+
 export function PropsTable({ rows }: { rows: PropRow[] }) {
   return (
-    <div className="doc-table-wrap">
-      <table className="doc-table">
+    <div className="overflow-x-auto rounded-xl border border-line">
+      <table className="w-full border-collapse text-[13.5px]">
         <thead>
           <tr>
-            <th scope="col">属性</th>
-            <th scope="col">类型</th>
-            <th scope="col">默认值</th>
-            <th scope="col">说明</th>
+            <th scope="col" className={thClass}>
+              属性
+            </th>
+            <th scope="col" className={thClass}>
+              类型
+            </th>
+            <th scope="col" className={thClass}>
+              默认值
+            </th>
+            <th scope="col" className={thClass}>
+              说明
+            </th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.name}>
-              <th scope="row">
-                <code>{row.name}</code>
+            <tr key={row.name} className="[&:last-child>*]:border-b-0">
+              <th
+                scope="row"
+                className={`${cellClass} text-left font-medium whitespace-nowrap text-ink`}
+              >
+                <code className={`${codeChip} text-accent-strong`}>
+                  {row.name}
+                </code>
                 {row.required ? (
-                  <span className="doc-table__required" title="必填">
+                  <span
+                    className="ml-1.5 rounded-full bg-accent/15 px-[5px] py-0 text-[10px] font-semibold text-accent-strong"
+                    title="必填"
+                  >
                     必填
                   </span>
                 ) : null}
               </th>
-              <td>
-                <code className="doc-table__type">{row.type}</code>
+              <td className={cellClass}>
+                <code className={`${codeChip} text-ink`}>{row.type}</code>
               </td>
-              <td>
+              <td className={cellClass}>
                 {row.defaultValue ? (
-                  <code>{row.defaultValue}</code>
+                  <code className={`${codeChip} text-accent-strong`}>
+                    {row.defaultValue}
+                  </code>
                 ) : (
-                  <span className="doc-table__empty">—</span>
+                  <span className="text-faint">—</span>
                 )}
               </td>
-              <td>{row.description}</td>
+              <td className={cellClass}>{row.description}</td>
             </tr>
           ))}
         </tbody>
@@ -236,17 +293,27 @@ export interface CalloutProps {
 }
 
 export function Callout({ tone = "info", title, children }: CalloutProps) {
+  const warning = tone === "warning";
+
   return (
-    <aside className="doc-callout" data-tone={tone}>
-      {title ? <p className="doc-callout__title">{title}</p> : null}
-      <div className="doc-callout__body">{children}</div>
+    <aside
+      className={
+        warning
+          ? "rounded-[10px] border border-warning/30 bg-[color-mix(in_srgb,var(--doc-warning)_9%,var(--doc-surface))] px-4 py-3.5 text-[13.5px]"
+          : "rounded-[10px] border border-accent/25 bg-accent-soft px-4 py-3.5 text-[13.5px]"
+      }
+    >
+      {title ? (
+        <p className="mt-0 mb-[3px] font-[650] text-ink">{title}</p>
+      ) : null}
+      <div className="[&_p]:m-0">{children}</div>
     </aside>
   );
 }
 
 export function BulletList({ items }: { items: ReactNode[] }) {
   return (
-    <ul className="doc-list">
+    <ul className="mt-3 list-disc pl-[19px] [&_li]:my-[7px] [&_li::marker]:text-accent">
       {items.map((item, index) => (
         // eslint-disable-next-line react/no-array-index-key -- 静态文案列表，顺序不变
         <li key={index}>{item}</li>
@@ -256,19 +323,27 @@ export function BulletList({ items }: { items: ReactNode[] }) {
 }
 
 export function InlineCode({ children }: { children: ReactNode }) {
-  return <code className="doc-inline-code">{children}</code>;
+  return (
+    <code className="rounded-[5px] border border-line bg-surface-2 px-[5px] py-px text-[0.88em]">
+      {children}
+    </code>
+  );
 }
 
 export function ButtonRow({ children }: { children: ReactNode }) {
-  return <div className="doc-button-row">{children}</div>;
+  return (
+    <div className="flex flex-wrap items-center gap-3">{children}</div>
+  );
 }
 
 /** 状态文本，用于演示里展示当前值。 */
 export function Readout({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <p className="doc-readout">
+    <p className="m-0 flex items-baseline gap-2 text-[12.5px] text-muted">
       <span>{label}</span>
-      <code>{value}</code>
+      <code className="rounded-md bg-surface px-[7px] py-px text-xs text-ink">
+        {value}
+      </code>
     </p>
   );
 }

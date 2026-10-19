@@ -4,21 +4,32 @@ export function NotFoundPage() {
   const location = useLocation();
 
   return (
-    <article className="doc-page">
-      <header className="doc-page__header">
-        <p className="doc-eyebrow">404</p>
-        <h1 className="doc-title">没有这个页面</h1>
-        <p className="doc-lede">
-          找不到 <code className="doc-inline-code">{location.pathname}</code>
+    <article>
+      <header className="border-b border-line pb-[22px]">
+        <p className="mb-2.5 font-mono text-[11.5px] font-medium tracking-[0.1em] text-accent uppercase">
+          404
+        </p>
+        <h1 className="m-0 text-[clamp(32px,4vw,42px)] leading-[1.1] font-bold tracking-[-0.035em]">
+          没有这个页面
+        </h1>
+        <p className="mt-3.5 max-w-[70ch] text-base leading-[1.7] text-muted">
+          找不到{" "}
+          <code className="rounded-[5px] border border-line bg-surface-2 px-[5px] py-px text-[0.88em]">
+            {location.pathname}
+          </code>
           。可能是链接过期，或者这个组件还没写文档。
         </p>
       </header>
-      <div className="doc-link-row">
-        <Link className="doc-link-button" to="/">
+
+      <div className="mt-6 flex flex-wrap gap-2.5">
+        <Link
+          className="inline-flex h-10 items-center justify-center rounded-[10px] border border-transparent bg-accent px-[18px] text-sm font-semibold text-white no-underline transition-colors hover:bg-accent-strong hover:no-underline"
+          to="/"
+        >
           回到总览
         </Link>
         <Link
-          className="doc-link-button doc-link-button--ghost"
+          className="inline-flex h-10 items-center justify-center rounded-[10px] border border-line-strong bg-transparent px-[18px] text-sm font-semibold text-ink no-underline transition-colors hover:bg-surface-2 hover:no-underline"
           to="/components/button"
         >
           浏览组件

@@ -48,24 +48,41 @@ function DecisionTable({
 }: {
   rows: Array<{ need: string; way: string; detail: string }>;
 }) {
+  const th =
+    "border-b border-line bg-surface-2 px-3.5 py-[11px] text-left text-[11.5px] font-semibold tracking-[0.03em] whitespace-nowrap text-muted";
+  const cell = "border-b border-line px-3.5 py-[11px] align-top";
+
   return (
-    <div className="doc-table-wrap">
-      <table className="doc-table">
+    <div className="overflow-x-auto rounded-xl border border-line">
+      <table className="w-full border-collapse text-[13.5px]">
         <thead>
           <tr>
-            <th scope="col">你要改什么</th>
-            <th scope="col">用哪种方式</th>
-            <th scope="col">怎么做</th>
+            <th scope="col" className={th}>
+              你要改什么
+            </th>
+            <th scope="col" className={th}>
+              用哪种方式
+            </th>
+            <th scope="col" className={th}>
+              怎么做
+            </th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.need}>
-              <th scope="row">{row.need}</th>
-              <td>
-                <code>{row.way}</code>
+            <tr key={row.need} className="[&:last-child>*]:border-b-0">
+              <th
+                scope="row"
+                className={`${cell} text-left font-medium whitespace-nowrap text-ink`}
+              >
+                {row.need}
+              </th>
+              <td className={cell}>
+                <code className="rounded-[5px] bg-surface-2 px-[5px] py-px font-mono text-xs text-accent-strong">
+                  {row.way}
+                </code>
               </td>
-              <td>{row.detail}</td>
+              <td className={cell}>{row.detail}</td>
             </tr>
           ))}
         </tbody>
@@ -78,7 +95,7 @@ function DecisionTable({
 
 function BrandThemeDemo() {
   return (
-    <div className="theme-scope theme-brand">
+    <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-brand">
       <ButtonRow>
         <Button>品牌主色</Button>
         <Button variant="secondary">次要</Button>
@@ -93,17 +110,17 @@ function BrandThemeDemo() {
 
 function CompactThemeDemo() {
   return (
-    <div className="demo-split">
-      <div className="theme-scope">
-        <p className="demo-scope-label">默认</p>
+    <div className="grid grid-cols-2 gap-3.5 max-phone:grid-cols-1">
+      <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4">
+        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">默认</p>
         <ButtonRow>
           <Button size="sm">保存</Button>
           <Button size="md">取消</Button>
           <Input aria-label="默认输入框" placeholder="默认圆角" />
         </ButtonRow>
       </div>
-      <div className="theme-scope theme-compact">
-        <p className="demo-scope-label">紧凑圆角</p>
+      <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-compact">
+        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">紧凑圆角</p>
         <ButtonRow>
           <Button size="sm">保存</Button>
           <Button size="md">取消</Button>
@@ -123,22 +140,22 @@ function ComponentScopeDemo() {
   useRootVariable("--uk-dialog-width", "26rem", open);
 
   return (
-    <div className="demo-split">
-      <div className="theme-scope" style={capsuleStyle}>
-        <p className="demo-scope-label">只改按钮圆角</p>
+    <div className="grid grid-cols-2 gap-3.5 max-phone:grid-cols-1">
+      <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4" style={capsuleStyle}>
+        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">只改按钮圆角</p>
         <ButtonRow>
           <Button>胶囊按钮</Button>
           <Input aria-label="未受影响的输入框" placeholder="输入框不受影响" />
         </ButtonRow>
       </div>
-      <div className="theme-scope">
-        <p className="demo-scope-label">只改对话框宽度</p>
+      <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4">
+        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">只改对话框宽度</p>
         <ButtonRow>
           <Button variant="outline" onClick={() => setOpen(true)}>
             打开窄对话框
           </Button>
         </ButtonRow>
-        <p className="demo-hint">--uk-dialog-width: 26rem，仅影响 Dialog。</p>
+        <p className="m-0 text-[12.5px] text-muted">--uk-dialog-width: 26rem，仅影响 Dialog。</p>
         <Dialog
           open={open}
           onOpenChange={setOpen}
@@ -146,7 +163,7 @@ function ComponentScopeDemo() {
           description="宽度来自 --uk-dialog-width。"
           footer={<Button onClick={() => setOpen(false)}>关闭</Button>}
         >
-          <p className="demo-copy">
+          <p className="m-0 text-sm leading-[1.65] text-muted">
             Dialog 渲染在 body 下，所以演示时把变量挂到了 documentElement。
           </p>
         </Dialog>
@@ -159,13 +176,13 @@ function ComponentScopeDemo() {
 
 function ThemeIslandDemo() {
   return (
-    <div className="demo-split">
-      <div className="theme-scope theme-brand">
-        <p className="demo-scope-label">同一页面 · 品牌主题</p>
+    <div className="grid grid-cols-2 gap-3.5 max-phone:grid-cols-1">
+      <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-brand">
+        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">同一页面 · 品牌主题</p>
         <Switch defaultChecked>跟随品牌色</Switch>
       </div>
-      <div className="theme-scope theme-contrast">
-        <p className="demo-scope-label">同一页面 · 高对比度</p>
+      <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-contrast">
+        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">同一页面 · 高对比度</p>
         <Switch defaultChecked>高对比度</Switch>
       </div>
     </div>
@@ -176,7 +193,7 @@ function ThemeIslandDemo() {
 
 function TargetDemo() {
   return (
-    <div className="theme-scope">
+    <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4">
       <ButtonRow>
         <Button>默认主按钮</Button>
         <Button className="demo-outline-primary">仅这个按钮</Button>
@@ -190,14 +207,14 @@ function TargetDemo() {
 
 function StateTargetDemo() {
   return (
-    <div className="theme-scope">
+    <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4">
       <Tabs defaultValue="a" className="demo-dashed-tabs">
         <Tabs.List aria-label="定向覆盖示例">
           <Tabs.Trigger value="a">选中项用虚线</Tabs.Trigger>
           <Tabs.Trigger value="b">第二项</Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="a">
-          <p className="demo-copy">
+          <p className="m-0 text-sm leading-[1.65] text-muted">
             通过{" "}
             <InlineCode>
               .uk-tabs__trigger[data-state=&quot;active&quot;]
@@ -206,7 +223,7 @@ function StateTargetDemo() {
           </p>
         </Tabs.Content>
         <Tabs.Content value="b">
-          <p className="demo-copy">面板切换时 data-state 会同步更新。</p>
+          <p className="m-0 text-sm leading-[1.65] text-muted">面板切换时 data-state 会同步更新。</p>
         </Tabs.Content>
       </Tabs>
     </div>
@@ -333,7 +350,7 @@ export function CustomizingPage() {
           或打包器引入后， 在同一个入口文件里追加自己的覆盖规则即可。
         </Callout>
 
-        <p className="doc-prose">
+        <p className="mt-3.5 max-w-[72ch] text-sm leading-[1.7] text-muted">
           主要 token 分四组：颜色（<InlineCode>--uk-primary*</InlineCode>、
           <InlineCode>--uk-surface*</InlineCode>、
           <InlineCode>--uk-text*</InlineCode>、
@@ -482,7 +499,7 @@ export function CustomizingPage() {
           <TargetDemo />
         </Demo>
 
-        <p className="doc-prose">
+        <p className="mt-3.5 max-w-[72ch] text-sm leading-[1.7] text-muted">
           稳定可用的选择器只有三类，其余内部类名可能随版本调整：
         </p>
         <BulletList
@@ -568,7 +585,7 @@ function MySwitch({ value, defaultValue, onChange }) {
   );
 }`}
         />
-        <p className="doc-prose">
+        <p className="mt-3.5 max-w-[72ch] text-sm leading-[1.7] text-muted">
           同理，<InlineCode>useFocusTrap</InlineCode>{" "}
           可以给任意自绘弹层补焦点管理，
           <InlineCode>useAsync</InlineCode> 可以给任意异步 UI 补加载状态。
@@ -590,19 +607,19 @@ function MySwitch({ value, defaultValue, onChange }) {
   --uk-primary-solid: #0f766e;
 }`}
         >
-          <div className="demo-split">
-            <div className="theme-scope theme-broken-dark">
-              <p className="demo-scope-label">只给一个值</p>
+          <div className="grid grid-cols-2 gap-3.5 max-phone:grid-cols-1">
+            <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-broken-dark">
+              <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">只给一个值</p>
               <Button>深色下对比度偏低</Button>
             </div>
-            <div className="theme-scope theme-brand">
-              <p className="demo-scope-label">light-dark() 两个值</p>
+            <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-brand">
+              <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">light-dark() 两个值</p>
               <Button>深色下仍然清晰</Button>
             </div>
           </div>
         </Demo>
 
-        <p className="doc-prose">
+        <p className="mt-3.5 max-w-[72ch] text-sm leading-[1.7] text-muted">
           强制主题只需改变 <InlineCode>color-scheme</InlineCode>，所有{" "}
           <InlineCode>light-dark()</InlineCode> 会整体切换：
         </p>
@@ -654,16 +671,16 @@ document.documentElement.style.colorScheme = "dark";
   <Button>紧凑按钮</Button>
 </div>`}
         >
-          <div className="demo-split">
-            <div className="theme-scope theme-compact">
-              <p className="demo-scope-label">② 紧凑型</p>
+          <div className="grid grid-cols-2 gap-3.5 max-phone:grid-cols-1">
+            <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-compact">
+              <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">② 紧凑型</p>
               <ButtonRow>
                 <Button>保存</Button>
                 <Input aria-label="紧凑输入框" placeholder="0.25rem 圆角" />
               </ButtonRow>
             </div>
-            <div className="theme-scope theme-contrast">
-              <p className="demo-scope-label">③ 高对比度</p>
+            <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-contrast">
+              <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">③ 高对比度</p>
               <ButtonRow>
                 <Button variant="secondary">次要按钮</Button>
                 <Input aria-label="高对比输入框" placeholder="更深的边框" />
@@ -701,14 +718,14 @@ document.documentElement.style.colorScheme = "dark";
         title="Portal 组件的宽度示例"
         description="Toast 与 Dialog 都在 body 下渲染，演示时把变量挂在 documentElement 上，真实项目里也可以只设置一次。"
       >
-        <div className="demo-split">
-          <div className="theme-scope">
-            <p className="demo-scope-label">Toast</p>
+        <div className="grid grid-cols-2 gap-3.5 max-phone:grid-cols-1">
+          <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4">
+            <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">Toast</p>
             <ToastWidthDemo />
           </div>
-          <div className="theme-scope">
-            <p className="demo-scope-label">Dialog</p>
-            <p className="demo-hint">
+          <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4">
+            <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">Dialog</p>
+            <p className="m-0 text-[12.5px] text-muted">
               打开「只改对话框宽度」里的按钮即可看到 26rem 的窄弹窗。
             </p>
           </div>

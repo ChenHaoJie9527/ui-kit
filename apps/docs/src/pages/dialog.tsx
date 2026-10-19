@@ -32,7 +32,7 @@ function BasicDemo() {
           </>
         }
       >
-        <p className="demo-copy">
+        <p className="m-0 text-sm leading-[1.65] text-muted">
           按 Tab 在对话框内循环，按 Esc 或点击遮罩关闭。
         </p>
       </Dialog>
@@ -66,9 +66,9 @@ function FormDemo() {
           </>
         }
       >
-        <div className="demo-stack">
-          <div className="demo-field">
-            <label className="demo-label" htmlFor="dialog-name">
+        <div className="flex max-w-[420px] flex-col gap-4">
+          <div className="flex max-w-[380px] flex-col gap-1.5">
+            <label className="text-[13px] font-semibold text-ink" htmlFor="dialog-name">
               显示名称
             </label>
             <Input
@@ -79,8 +79,8 @@ function FormDemo() {
               onChange={(event) => setName(event.target.value)}
             />
           </div>
-          <div className="demo-field">
-            <label className="demo-label" htmlFor={emailId}>
+          <div className="flex max-w-[380px] flex-col gap-1.5">
+            <label className="text-[13px] font-semibold text-ink" htmlFor={emailId}>
               邮箱
             </label>
             <Input id={emailId} type="email" placeholder="you@example.com" />
@@ -118,7 +118,7 @@ function PersistentDemo() {
           </>
         }
       >
-        <p className="demo-copy">
+        <p className="m-0 text-sm leading-[1.65] text-muted">
           这个对话框必须通过按钮明确选择，遮罩点击和 Esc 都被禁用。
         </p>
       </Dialog>

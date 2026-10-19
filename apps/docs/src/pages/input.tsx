@@ -17,8 +17,8 @@ function BasicDemo() {
   const hintId = useId();
 
   return (
-    <div className="demo-field">
-      <label className="demo-label" htmlFor={inputId}>
+    <div className="flex max-w-[380px] flex-col gap-1.5">
+      <label className="text-[13px] font-semibold text-ink" htmlFor={inputId}>
         项目名称
       </label>
       <Input
@@ -28,7 +28,7 @@ function BasicDemo() {
         placeholder="例如 ui-kit"
         onChange={(event) => setName(event.target.value)}
       />
-      <p className="demo-hint" id={hintId}>
+      <p className="m-0 text-[12.5px] text-muted" id={hintId}>
         会显示在 npm 与文档标题里。
       </p>
       <Readout label="当前值" value={name || "—"} />
@@ -38,7 +38,7 @@ function BasicDemo() {
 
 function SizesDemo() {
   return (
-    <div className="demo-stack">
+    <div className="flex max-w-[420px] flex-col gap-4">
       <Input inputSize="sm" aria-label="小号输入框" placeholder="sm" />
       <Input inputSize="md" aria-label="中号输入框" placeholder="md" />
       <Input inputSize="lg" aria-label="大号输入框" placeholder="lg" />
@@ -51,9 +51,9 @@ function StatesDemo() {
   const errorId = useId();
 
   return (
-    <div className="demo-stack">
-      <div className="demo-field">
-        <label className="demo-label" htmlFor={emailId}>
+    <div className="flex max-w-[420px] flex-col gap-4">
+      <div className="flex max-w-[380px] flex-col gap-1.5">
+        <label className="text-[13px] font-semibold text-ink" htmlFor={emailId}>
           邮箱
         </label>
         <Input
@@ -62,7 +62,7 @@ function StatesDemo() {
           invalid
           aria-describedby={errorId}
         />
-        <p className="demo-error" id={errorId}>
+        <p className="m-0 text-[12.5px] text-danger" id={errorId}>
           请输入有效的邮箱地址。
         </p>
       </div>
