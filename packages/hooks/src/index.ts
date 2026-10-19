@@ -29,3 +29,9 @@ export type {
 } from "./useDropArea";
 export { useDrop } from "./useDrop";
 export type { UseDropResult } from "./useDrop";
+
+export { useFullscreen } from "./useFullscreen";
+export type {
+  UseFullscreenOptions,
+  UseFullscreenResult,
+} from "./useFullscreen";
