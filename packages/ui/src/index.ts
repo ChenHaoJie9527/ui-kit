@@ -8,3 +8,12 @@ export type { InputProps, InputSize } from "./Input";
 
 export { Switch } from "./Switch";
 export type { SwitchProps } from "./Switch";
+
+export { Tabs } from "./Tabs";
+export type {
+  TabsContentProps,
+  TabsListProps,
+  TabsOrientation,
+  TabsProps,
+  TabsTriggerProps,
+} from "./Tabs";

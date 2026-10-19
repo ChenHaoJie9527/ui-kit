@@ -1,0 +1,101 @@
+@layer uk.components {
+  .uk-tabs {
+    font-family: var(--uk-font-sans);
+    color: var(--uk-text);
+  }
+
+  .uk-tabs__list {
+    display: flex;
+    gap: var(--uk-space-1);
+    border-bottom: 1px solid var(--uk-border);
+  }
+
+  .uk-tabs__trigger {
+    position: relative;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--uk-text-muted);
+    font: inherit;
+    font-size: var(--uk-text-md);
+    font-weight: 500;
+    padding: var(--uk-space-2) var(--uk-space-3);
+    border-radius: var(--uk-radius-sm) var(--uk-radius-sm) 0 0;
+    cursor: pointer;
+    transition:
+      color var(--uk-transition),
+      background-color var(--uk-transition);
+  }
+
+  .uk-tabs__trigger:hover:not(:disabled) {
+    color: var(--uk-text);
+    background: var(--uk-surface);
+  }
+
+  .uk-tabs__trigger[data-state="active"] {
+    color: var(--uk-primary);
+  }
+
+  .uk-tabs__trigger[data-state="active"]::after {
+    content: "";
+    position: absolute;
+    right: var(--uk-space-2);
+    bottom: -1px;
+    left: var(--uk-space-2);
+    height: 2px;
+    border-radius: 2px;
+    background: var(--uk-primary);
+  }
+
+  .uk-tabs__trigger:focus-visible {
+    outline: 2px solid var(--uk-focus-ring);
+    outline-offset: -2px;
+  }
+
+  .uk-tabs__trigger:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .uk-tabs__panel {
+    padding-top: var(--uk-space-4);
+    color: var(--uk-text);
+  }
+
+  .uk-tabs__panel:focus-visible {
+    outline: 2px solid var(--uk-focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--uk-radius-sm);
+  }
+
+  .uk-tabs[data-orientation="vertical"] {
+    display: flex;
+    gap: var(--uk-space-4);
+  }
+
+  .uk-tabs[data-orientation="vertical"] .uk-tabs__list {
+    flex-direction: column;
+    border-bottom: 0;
+    border-inline-end: 1px solid var(--uk-border);
+  }
+
+  .uk-tabs[data-orientation="vertical"] .uk-tabs__trigger {
+    text-align: start;
+    border-radius: var(--uk-radius-sm) 0 0 var(--uk-radius-sm);
+  }
+
+  .uk-tabs[data-orientation="vertical"]
+    .uk-tabs__trigger[data-state="active"]::after {
+    top: var(--uk-space-2);
+    right: -1px;
+    bottom: var(--uk-space-2);
+    left: auto;
+    width: 2px;
+    height: auto;
+  }
+
+  .uk-tabs[data-orientation="vertical"] .uk-tabs__panel {
+    flex: 1;
+    padding-top: 0;
+  }
+}
