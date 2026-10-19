@@ -68,3 +68,6 @@ export type { UseAsyncRetryResult } from "./useAsyncRetry";
 
 export { useDebounce } from "./useDebounce";
 export type { DebouncedFunction } from "./useDebounce";
+
+export { useThrottle } from "./useThrottle";
+export type { ThrottleOptions, ThrottledFunction } from "./useThrottle";
