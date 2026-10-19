@@ -4,7 +4,7 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-7-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=black)](https://react.dev/)
-[![Tests](https://img.shields.io/badge/tests-87%20passed-22c55e)](#)
+[![Tests](https://img.shields.io/badge/tests-120%20passed-22c55e)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 [![Docs](https://img.shields.io/badge/docs-online-4f46e5)](https://chenhaojie9527.github.io/ui-kit/)
 
@@ -25,7 +25,8 @@
 - **性能基础设施**：`useVirtualList` 把万级列表的渲染量压到可视区间。
 - **高频输入控制**：`useDebouncedValue` 支持可配置延迟与同步退化。
 - **可发布**：ESM + CJS 双产物、类型声明、`sideEffects: false`、tree-shaking 友好。
-- **可验证**：Vitest + Testing Library，87 个用例覆盖状态切换、定时器、异步竞态与边界索引。
+- **可访问的组件**：原生语义优先，Tabs / Dialog / Toast 自带键盘导航与 ARIA 关联。
+- **可验证**：Vitest + Testing Library，120 个用例覆盖状态切换、定时器、异步竞态、焦点与边界索引。
 
 ## Hooks 一览
 
@@ -67,12 +68,29 @@
 
 已有的 `useControllableState`、`useEventCallback`、`useDebouncedValue`、`useVirtualList` 保持不变。
 
+## 组件一览
+
+- `Button`：primary / secondary / outline / ghost / danger 五种变体，三种尺寸，loading 自动禁用。
+- `Input`：透传原生输入属性，`invalid` 映射到 `aria-invalid`。
+- `Switch`：基于原生 checkbox，受控与非受控写法一致。
+- `Tabs`：组合式 API，roving tabindex、方向键循环、Home/End 与完整 ARIA 关联。
+- `Dialog`：基于原生 `<dialog>`，焦点陷阱、Esc、遮罩与 body 滚动锁定开箱即用。
+- `Toast`：`ToastProvider` + `useToast()`，带队列、自动关闭、悬停暂停与 `aria-live` 区域。
+
+样式通过 `@ui-kit/ui/styles.css` 引入；所有颜色、间距、圆角与阴影都是 CSS 变量，支持 `light-dark()` 跟随系统主题。
+
 ## 安装
 
 ```bash
-pnpm add @ui-kit/hooks
+pnpm add @ui-kit/ui
 # 或
-npm i @ui-kit/hooks
+npm i @ui-kit/ui
+```
+
+`@ui-kit/ui` 依赖 `@ui-kit/hooks`，安装组件包即可同时使用全部 hooks。只想要无渲染逻辑时，也可以单独安装：
+
+```bash
+pnpm add @ui-kit/hooks
 ```
 
 ## 使用
@@ -114,14 +132,39 @@ const report = useEventCallback(() => {
 });
 ```
 
+### 组件
+
+```tsx
+import { Button, Dialog, Tabs, ToastProvider, useToast } from "@ui-kit/ui";
+import "@ui-kit/ui/styles.css";
+
+function App() {
+  return (
+    <ToastProvider>
+      <Tabs defaultValue="overview">
+        <Tabs.List aria-label="说明">
+          <Tabs.Trigger value="overview">概览</Tabs.Trigger>
+          <Tabs.Trigger value="api">API</Tabs.Trigger>
+        </Tabs.List>
+        <Tabs.Content value="overview">
+          <Button>保存</Button>
+        </Tabs.Content>
+        <Tabs.Content value="api">...</Tabs.Content>
+      </Tabs>
+    </ToastProvider>
+  );
+}
+```
+
 ## 包结构
 
 ```
 ui-kit/
 ├─ packages/
-│  └─ hooks/          @ui-kit/hooks —— 无渲染逻辑
+│  ├─ hooks/          @ui-kit/hooks —— 无渲染逻辑
+│  └─ ui/             @ui-kit/ui —— 组件与样式
 ├─ apps/
-│  └─ docs/           文档演示（构建为静态站点）
+│  └─ docs/           文档与交互演示（构建为静态站点）
 └─ docs/              GitHub Pages 站点产物
 ```
 
@@ -132,6 +175,9 @@ pnpm install
 pnpm --filter @ui-kit/hooks test
 pnpm --filter @ui-kit/hooks typecheck
 pnpm --filter @ui-kit/hooks build
+pnpm --filter @ui-kit/ui test
+pnpm --filter @ui-kit/ui typecheck
+pnpm --filter @ui-kit/ui build
 pnpm build:docs    # 用 Vite 构建静态文档站到 docs/
 ```
 
@@ -162,8 +208,9 @@ pnpm check         # format:check + lint + typecheck + test
 
 ## Roadmap
 
-- [ ] `packages/ui`：Tabs（键盘导航 / ARIA）、Dialog（焦点陷阱）、VirtualList 组件
-- [ ] 文档站补充 API 与边界用例
+- [x] `packages/ui`：Button、Input、Switch、Tabs、Dialog、Toast 最小闭环
+- [ ] `packages/ui`：VirtualList、Menu、Select 等第二批组件
+- [ ] 文档站补充每个组件的 API 表格与边界用例
 - [ ] 用 Changesets 管理版本并发布 npm
 - [ ] 增加 1 万行列表的首屏渲染基准（全量 vs 虚拟滚动）
 

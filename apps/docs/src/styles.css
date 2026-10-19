@@ -260,3 +260,104 @@ footer {
   color: var(--muted);
   font-size: 13px;
 }
+
+.section-title {
+  margin: 56px 0 20px;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+
+.component-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.field > span {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.tabs-demo p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.dialog-copy {
+  margin: 0;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0b0d12;
+    --card: #141821;
+    --ink: #e7eaf0;
+    --muted: #98a2b3;
+    --line: #2a3141;
+    --accent: #a5b4fc;
+    --accent-soft: #1e1b4b;
+    --code-bg: #05070b;
+  }
+
+  body {
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #1e1b4b 0%, transparent 60%),
+      var(--bg);
+  }
+
+  .install,
+  .card,
+  .notes,
+  .viewport {
+    background: var(--card);
+  }
+
+  .demo {
+    background: #10141c;
+  }
+
+  .row-item {
+    border-bottom-color: var(--line);
+    color: var(--ink);
+  }
+
+  .btn {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #0b0d12;
+  }
+
+  .btn.ghost {
+    background: transparent;
+    color: var(--accent);
+  }
+
+  .input {
+    background: var(--card);
+    color: var(--ink);
+  }
+
+  .input:focus {
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .notes ul {
+    color: var(--ink);
+  }
+}

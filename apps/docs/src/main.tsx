@@ -6,7 +6,16 @@ import {
   useDebouncedValue,
   useEventCallback,
   useVirtualList,
-} from "../../../packages/hooks/src";
+} from "@ui-kit/hooks";
+import {
+  Button,
+  Dialog,
+  Input,
+  Switch,
+  Tabs,
+  ToastProvider,
+  useToast,
+} from "@ui-kit/ui";
 
 function CounterDemo() {
   const [count, setCount] = useControllableState({ defaultValue: 0 });
@@ -120,6 +129,179 @@ function EventCallbackDemo() {
   );
 }
 
+function ButtonDemo() {
+  return (
+    <div className="demo">
+      <div className="component-row">
+        <Button>主要操作</Button>
+        <Button variant="secondary">次要</Button>
+        <Button variant="outline">描边</Button>
+        <Button variant="ghost">幽灵</Button>
+        <Button variant="danger">删除</Button>
+      </div>
+      <div className="component-row">
+        <Button size="sm">Small</Button>
+        <Button size="md">Medium</Button>
+        <Button size="lg">Large</Button>
+        <Button loading>保存中</Button>
+      </div>
+    </div>
+  );
+}
+
+function InputDemo() {
+  const [name, setName] = useState("ui-kit");
+
+  return (
+    <div className="demo">
+      <label className="field" htmlFor="demo-project-name">
+        <span>项目名称</span>
+        <Input
+          id="demo-project-name"
+          value={name}
+          placeholder="输入名称"
+          onChange={(event) => setName(event.target.value)}
+        />
+      </label>
+      <label className="field" htmlFor="demo-project-email">
+        <span>邮箱（错误态）</span>
+        <Input id="demo-project-email" defaultValue="not-an-email" invalid />
+      </label>
+      <div className="kv">
+        <span>当前值</span>
+        <code>{name || "—"}</code>
+      </div>
+    </div>
+  );
+}
+
+function SwitchDemo() {
+  const [enabled, setEnabled] = useState(true);
+  const [autoSave, setAutoSave] = useState(false);
+
+  return (
+    <div className="demo">
+      <Switch checked={enabled} onCheckedChange={setEnabled}>
+        启用实验特性
+      </Switch>
+      <Switch checked={autoSave} onCheckedChange={setAutoSave}>
+        自动保存
+      </Switch>
+      <div className="kv">
+        <span>实验特性</span>
+        <code>{enabled ? "开" : "关"}</code>
+      </div>
+    </div>
+  );
+}
+
+function TabsDemo() {
+  return (
+    <Tabs defaultValue="overview" className="tabs-demo">
+      <Tabs.List aria-label="组件说明">
+        <Tabs.Trigger value="overview">概览</Tabs.Trigger>
+        <Tabs.Trigger value="api">API</Tabs.Trigger>
+        <Tabs.Trigger value="a11y">可访问性</Tabs.Trigger>
+      </Tabs.List>
+      <Tabs.Content value="overview">
+        <p>受控与非受控共用一套 API，方向键可以循环切换。</p>
+      </Tabs.Content>
+      <Tabs.Content value="api">
+        <p>组合式组件：Tabs、List、Trigger、Content。</p>
+      </Tabs.Content>
+      <Tabs.Content value="a11y">
+        <p>
+          自动生成 aria-controls / aria-labelledby，并维护 roving tabindex。
+        </p>
+      </Tabs.Content>
+    </Tabs>
+  );
+}
+
+function DialogDemo() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="demo">
+      <div className="component-row">
+        <Button onClick={() => setOpen(true)}>打开对话框</Button>
+      </div>
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+        title="确认发布"
+        description="发布后文档站会立即更新。"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={() => setOpen(false)}>确认发布</Button>
+          </>
+        }
+      >
+        <p className="dialog-copy">
+          对话框基于原生 &lt;dialog&gt;，焦点陷阱、Esc
+          关闭和遮罩都由浏览器处理。
+        </p>
+      </Dialog>
+    </div>
+  );
+}
+
+function ToastDemo() {
+  const { toast, dismissAll } = useToast();
+
+  return (
+    <div className="demo">
+      <div className="component-row">
+        <Button
+          onClick={() =>
+            toast({
+              title: "已保存",
+              description: "改动已同步到本地。",
+              variant: "success",
+            })
+          }
+        >
+          成功提示
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() =>
+            toast({
+              title: "部署进行中",
+              description: "预计 2 分钟完成。",
+              variant: "info",
+            })
+          }
+        >
+          信息提示
+        </Button>
+        <Button
+          variant="danger"
+          onClick={() =>
+            toast({
+              title: "部署失败",
+              description: "请检查构建日志。",
+              variant: "danger",
+              duration: 0,
+            })
+          }
+        >
+          常驻错误
+        </Button>
+      </div>
+      <div className="component-row">
+        <Button variant="ghost" size="sm" onClick={dismissAll}>
+          清空提示
+        </Button>
+        <span className="hint">错误提示默认常驻，悬停可暂停倒计时。</span>
+      </div>
+    </div>
+  );
+}
+
 const hooks = [
   {
     name: "useControllableState",
@@ -164,7 +346,68 @@ useEffect(() => {
   },
 ];
 
-function App() {
+const components = [
+  {
+    name: "Button",
+    desc: "5 种变体、3 种尺寸；loading 时自动禁用并标记 aria-busy。",
+    demo: <ButtonDemo />,
+    code: `<Button variant="primary" size="md">保存</Button>
+<Button variant="danger" loading>删除中</Button>`,
+  },
+  {
+    name: "Input",
+    desc: "透传原生输入属性，invalid 映射到 aria-invalid。",
+    demo: <InputDemo />,
+    code: `<Input value={name} onChange={(e) => setName(e.target.value)} />
+<Input invalid defaultValue="not-an-email" />`,
+  },
+  {
+    name: "Switch",
+    desc: "原生 checkbox 承载语义，受控与非受控写法一致。",
+    demo: <SwitchDemo />,
+    code: `<Switch checked={enabled} onCheckedChange={setEnabled}>
+  启用实验特性
+</Switch>`,
+  },
+  {
+    name: "Tabs",
+    desc: "roving tabindex、方向键循环与完整的 ARIA 关联。",
+    demo: <TabsDemo />,
+    code: `<Tabs defaultValue="overview">
+  <Tabs.List aria-label="说明">
+    <Tabs.Trigger value="overview">概览</Tabs.Trigger>
+  </Tabs.List>
+  <Tabs.Content value="overview">...</Tabs.Content>
+</Tabs>`,
+  },
+  {
+    name: "Dialog",
+    desc: "基于原生 <dialog>，自带焦点陷阱、Esc 与遮罩关闭。",
+    demo: <DialogDemo />,
+    code: `<Dialog
+  open={open}
+  onOpenChange={setOpen}
+  title="确认发布"
+  footer={<Button onClick={close}>确认</Button>}
+>
+  内容
+</Dialog>`,
+  },
+  {
+    name: "Toast",
+    desc: "队列、自动关闭、悬停暂停与 aria-live 通知区域。",
+    demo: <ToastDemo />,
+    code: `const { toast } = useToast();
+
+toast({
+  title: "已保存",
+  description: "改动已同步到本地。",
+  variant: "success",
+});`,
+  },
+];
+
+function AppContent() {
   return (
     <main>
       <header className="hero">
@@ -174,7 +417,7 @@ function App() {
           hooks 内核 + 组件库。逻辑可单测，组件只负责渲染与可访问性。
         </p>
         <div className="install">
-          <span className="prompt">$</span> pnpm add @ui-kit/hooks
+          <span className="prompt">$</span> pnpm add @ui-kit/ui
         </div>
         <div className="links">
           <a href="https://github.com/ChenHaoJie9527/ui-kit">GitHub</a>
@@ -196,6 +439,20 @@ function App() {
         ))}
       </section>
 
+      <h2 className="section-title">组件</h2>
+      <section className="grid">
+        {components.map((component) => (
+          <article className="card" key={component.name}>
+            <h2>{component.name}</h2>
+            <p className="desc">{component.desc}</p>
+            {component.demo}
+            <pre>
+              <code>{component.code}</code>
+            </pre>
+          </article>
+        ))}
+      </section>
+
       <section className="notes">
         <h2>设计原则</h2>
         <ul>
@@ -211,6 +468,14 @@ function App() {
         · ui-kit
       </footer>
     </main>
+  );
+}
+
+function App() {
+  return (
+    <ToastProvider placement="top-right">
+      <AppContent />
+    </ToastProvider>
   );
 }
 
