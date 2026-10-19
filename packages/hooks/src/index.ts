@@ -53,3 +53,6 @@ export { useObservable } from "./useObservable";
 export type { ObservableLike, Observer, Subscription } from "./useObservable";
 
 export { useGetSet } from "./useGetSet";
+
+export { useSetState } from "./useSetState";
+export type { SetStatePatch, UseSetStateResult } from "./useSetState";
