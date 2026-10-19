@@ -2,8 +2,8 @@
 
 > React hooks 内核 + 组件库。逻辑可单测，组件只负责渲染与可访问性。
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=black)](https://react.dev/)
 [![Tests](https://img.shields.io/badge/tests-10%20passed-22c55e)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 [![Docs](https://img.shields.io/badge/docs-online-4f46e5)](https://chenhaojie9527.github.io/ui-kit/)
@@ -96,7 +96,7 @@ pnpm install
 pnpm --filter @ui-kit/hooks test
 pnpm --filter @ui-kit/hooks typecheck
 pnpm --filter @ui-kit/hooks build
-pnpm docs          # 构建静态文档站到 docs/
+pnpm build:docs    # 用 Vite 构建静态文档站到 docs/
 ```
 
 ## 设计取舍

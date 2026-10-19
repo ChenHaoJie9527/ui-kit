@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
+import "./styles.css";
 import {
   useControllableState,
   useDebouncedValue,
   useEventCallback,
   useVirtualList,
-} from "../../packages/hooks/src";
+} from "../../../packages/hooks/src";
 
 function CounterDemo() {
   const [count, setCount] = useControllableState({ defaultValue: 0 });
@@ -167,7 +168,7 @@ function App() {
   return (
     <main>
       <header className="hero">
-        <div className="badge">React 18 · TypeScript · 零依赖</div>
+        <div className="badge">React 19 · TypeScript 7 · Vite 7</div>
         <h1>ui-kit</h1>
         <p className="tagline">
           hooks 内核 + 组件库。逻辑可单测，组件只负责渲染与可访问性。
