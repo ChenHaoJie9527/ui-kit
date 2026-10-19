@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { Dialog } from "../Dialog";
 
@@ -23,6 +23,27 @@ function Harness() {
       </button>
       <Dialog open={open} onOpenChange={setOpen} title="受控对话框">
         内容
+      </Dialog>
+    </>
+  );
+}
+
+function FocusHarness() {
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}>
+        打开
+      </button>
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+        title="编辑"
+        initialFocusRef={inputRef}
+      >
+        <input ref={inputRef} aria-label="名称" />
       </Dialog>
     </>
   );
@@ -163,5 +184,30 @@ describe("Dialog", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(getDialog().hasAttribute("open")).toBe(false);
+  });
+
+  it("focuses initialFocusRef when opened", () => {
+    render(<FocusHarness />);
+    fireEvent.click(screen.getByRole("button", { name: "打开" }));
+
+    expect(document.activeElement).toBe(
+      screen.getByRole("textbox", { name: "名称" }),
+    );
+  });
+
+  it("restores focus to the opener after closing", () => {
+    render(<Harness />);
+
+    const trigger = screen.getByRole("button", { name: "打开" });
+    act(() => {
+      trigger.focus();
+    });
+
+    fireEvent.click(trigger);
+    expect(document.activeElement).not.toBe(trigger);
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+    expect(document.activeElement).toBe(trigger);
   });
 });

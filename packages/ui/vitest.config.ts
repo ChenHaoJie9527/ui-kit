@@ -1,6 +1,14 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@ui-kit/hooks": fileURLToPath(
+        new URL("../hooks/src/index.ts", import.meta.url),
+      ),
+    },
+  },
   test: {
     environment: "jsdom",
     globals: true,

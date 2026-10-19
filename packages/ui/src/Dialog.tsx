@@ -7,7 +7,11 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { useEventCallback, useLockBodyScroll } from "@ui-kit/hooks";
+import {
+  useEventCallback,
+  useFocusTrap,
+  useLockBodyScroll,
+} from "@ui-kit/hooks";
 import { Button } from "./Button";
 import { cx } from "./utils/cx";
 import "./dialog.css";
@@ -28,8 +32,10 @@ export interface DialogProps {
   closeOnBackdropClick?: boolean;
   /** 按 Esc 是否关闭，默认 true。 */
   closeOnEscape?: boolean;
-  /** 打开后优先聚焦的元素；不传则使用浏览器默认行为。 */
+  /** 打开后优先聚焦的元素；不传则聚焦第一个可聚焦元素。 */
   initialFocusRef?: RefObject<HTMLElement | null>;
+  /** 关闭后恢复焦点的元素；默认恢复到打开前的活动元素。 */
+  returnFocusRef?: RefObject<HTMLElement | null>;
   className?: string;
   "aria-label"?: string;
 }
@@ -41,9 +47,9 @@ const getServerSnapshot = () => false;
 /**
  * 模态对话框。
  *
- * 基于原生 <dialog> + showModal()：焦点陷阱、Esc 关闭、遮罩和
- * 顶层渲染都由浏览器负责；组件额外提供受控开关、关闭按钮、遮罩点击
- * 与 body 滚动锁定。
+ * 基于原生 <dialog> + showModal()：Esc 关闭、遮罩和顶层渲染由浏览器
+ * 负责；焦点陷阱由 useFocusTrap 补上反向循环、外部聚焦回收与焦点恢复，
+ * 组件本身额外提供受控开关、关闭按钮、遮罩点击与 body 滚动锁定。
  */
 export function Dialog({
   open,
@@ -57,10 +63,12 @@ export function Dialog({
   closeOnBackdropClick = true,
   closeOnEscape = true,
   initialFocusRef,
+  returnFocusRef,
   className,
   "aria-label": ariaLabel,
 }: DialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
   const openRef = useRef(open);
   const titleId = useId();
   const descriptionId = useId();
@@ -90,13 +98,17 @@ export function Dialog({
     }
 
     if (open && !dialog.open) {
+      // 必须在 showModal() 之前记录，否则拿到的已经是对话框内部元素。
+      openerRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+
       if (typeof dialog.showModal === "function") {
         dialog.showModal();
       } else {
         dialog.setAttribute("open", "");
       }
-
-      initialFocusRef?.current?.focus();
     } else if (!open && dialog.open) {
       if (typeof dialog.close === "function") {
         dialog.close();
@@ -104,7 +116,15 @@ export function Dialog({
         dialog.removeAttribute("open");
       }
     }
-  }, [initialFocusRef, open]);
+  }, [open]);
+
+  // 声明顺序很关键：上面的 effect 先调用 showModal()，本 hook 再接管焦点。
+  useFocusTrap({
+    active: open,
+    containerRef: dialogRef,
+    initialFocusRef,
+    returnFocusRef: returnFocusRef ?? openerRef,
+  });
 
   useEffect(() => {
     const dialog = dialogRef.current;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import {
@@ -220,6 +220,7 @@ function TabsDemo() {
 
 function DialogDemo() {
   const [open, setOpen] = useState(false);
+  const noteRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="demo">
@@ -231,6 +232,7 @@ function DialogDemo() {
         onOpenChange={setOpen}
         title="确认发布"
         description="发布后文档站会立即更新。"
+        initialFocusRef={noteRef}
         footer={
           <>
             <Button variant="ghost" onClick={() => setOpen(false)}>
@@ -240,9 +242,16 @@ function DialogDemo() {
           </>
         }
       >
+        <label className="field" htmlFor="demo-release-note">
+          <span>发布说明</span>
+          <Input
+            id="demo-release-note"
+            ref={noteRef}
+            placeholder="本次改动的摘要"
+          />
+        </label>
         <p className="dialog-copy">
-          对话框基于原生 &lt;dialog&gt;，焦点陷阱、Esc
-          关闭和遮罩都由浏览器处理。
+          打开后焦点落在输入框；Tab 在对话框内循环，关闭后回到触发按钮。
         </p>
       </Dialog>
     </div>
@@ -382,12 +391,13 @@ const components = [
   },
   {
     name: "Dialog",
-    desc: "基于原生 <dialog>，自带焦点陷阱、Esc 与遮罩关闭。",
+    desc: "基于原生 <dialog>，焦点陷阱、Esc、遮罩关闭与焦点恢复。",
     demo: <DialogDemo />,
     code: `<Dialog
   open={open}
   onOpenChange={setOpen}
   title="确认发布"
+  initialFocusRef={noteRef}
   footer={<Button onClick={close}>确认</Button>}
 >
   内容

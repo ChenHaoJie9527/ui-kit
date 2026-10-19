@@ -41,6 +41,7 @@
 **交互**
 
 - `useClickAway(ref, handler, events?)`：点击目标区域外时触发。
+- `useFocusTrap({ active, containerRef, ... })`：把焦点限制在容器内，支持初始焦点、关闭后恢复与嵌套陷阱。
 - `useDropArea(options)` / `useDrop()`：拖放文件、链接和文本。
 - `useFullscreen(ref, options?)`：元素全屏，提供 enter / exit / toggle。
 - `useVideo(ref)`：播放、暂停、seek、音量、倍速与状态跟踪。
@@ -74,7 +75,7 @@
 - `Input`：透传原生输入属性，`invalid` 映射到 `aria-invalid`。
 - `Switch`：基于原生 checkbox，受控与非受控写法一致。
 - `Tabs`：组合式 API，roving tabindex、方向键循环、Home/End 与完整 ARIA 关联。
-- `Dialog`：基于原生 `<dialog>`，焦点陷阱、Esc、遮罩与 body 滚动锁定开箱即用。
+- `Dialog`：基于原生 `<dialog>`，焦点陷阱（双向循环 / 外部聚焦回收 / 焦点恢复）、Esc、遮罩与 body 滚动锁定开箱即用。
 - `Toast`：`ToastProvider` + `useToast()`，带队列、自动关闭、悬停暂停与 `aria-live` 区域。
 
 样式通过 `@ui-kit/ui/styles.css` 引入；所有颜色、间距、圆角与阴影都是 CSS 变量，支持 `light-dark()` 跟随系统主题。
