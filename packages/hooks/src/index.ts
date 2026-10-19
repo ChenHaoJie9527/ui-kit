@@ -42,3 +42,6 @@ export type {
   UseVideoResult,
   UseVideoState,
 } from "./useVideo";
+
+export { useMap } from "./useMap";
+export type { MapActions, UseMapResult } from "./useMap";
