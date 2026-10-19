@@ -20,6 +20,17 @@
       media="(prefers-color-scheme: dark)"
     />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <style>
+      /*
+       * 全局层顺序。必须出现在任何打包 CSS 之前 —— CSS 的层优先级由第一次
+       * 声明决定，写在 HTML 里比依赖 JS 模块导入顺序更稳。
+       *
+       * utilities 必须高于 uk.components，否则 className 里的 Tailwind 类
+       * 覆盖不了组件样式；base 必须低于 uk.components，否则 reset 会抹掉
+       * 组件自带的边框与背景。
+       */
+      @layer theme, base, uk.tokens, uk.components, components, utilities;
+    </style>
     <script>
       // 在首帧前应用已保存的主题，避免暗色模式闪白。
       (function () {
