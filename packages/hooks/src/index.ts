@@ -35,3 +35,10 @@ export type {
   UseFullscreenOptions,
   UseFullscreenResult,
 } from "./useFullscreen";
+
+export { useVideo } from "./useVideo";
+export type {
+  UseVideoControls,
+  UseVideoResult,
+  UseVideoState,
+} from "./useVideo";
