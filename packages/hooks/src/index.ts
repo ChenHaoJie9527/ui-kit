@@ -85,3 +85,6 @@ export type {
 } from "./useLocalStorage";
 
 export { useLockBodyScroll } from "./useLockBodyScroll";
+
+export { useTitle } from "./useTitle";
+export type { UseTitleOptions } from "./useTitle";
