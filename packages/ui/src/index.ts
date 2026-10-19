@@ -20,3 +20,12 @@ export type {
 
 export { Dialog } from "./Dialog";
 export type { DialogProps } from "./Dialog";
+
+export { ToastProvider, useToast } from "./Toast";
+export type {
+  ToastApi,
+  ToastOptions,
+  ToastPlacement,
+  ToastProviderProps,
+  ToastVariant,
+} from "./Toast";
