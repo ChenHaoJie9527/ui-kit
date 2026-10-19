@@ -12,9 +12,21 @@
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
     "dev": "pnpm --filter @chenhaojie9527/docs dev",
     "dev:docs": "pnpm --filter @chenhaojie9527/docs dev",
-    "build:docs": "pnpm --filter @chenhaojie9527/docs build"
+    "build:docs": "pnpm --filter @chenhaojie9527/docs build",
+    "commit": "cz",
+    "prepare": "husky"
+  },
+  "config": {
+    "commitizen": {
+      "path": "node_modules/cz-git"
+    }
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "commitizen": "^4.3.2",
+    "cz-git": "^1.14.0",
+    "husky": "^9.1.7",
     "oxfmt": "^0.64.0",
     "oxlint": "^1.88.0",
     "react": "^19.0.0",
