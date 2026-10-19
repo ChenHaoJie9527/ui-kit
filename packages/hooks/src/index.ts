@@ -71,3 +71,9 @@ export type { DebouncedFunction } from "./useDebounce";
 
 export { useThrottle } from "./useThrottle";
 export type { ThrottleOptions, ThrottledFunction } from "./useThrottle";
+
+export { useCopyToClipboard } from "./useCopyToClipboard";
+export type {
+  CopyToClipboard,
+  CopyToClipboardState,
+} from "./useCopyToClipboard";
