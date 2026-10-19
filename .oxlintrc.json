@@ -1,0 +1,53 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "oxc",
+    "react",
+    "import",
+    "vitest",
+    "jsx-a11y",
+    "promise"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "env": {
+    "builtin": true,
+    "browser": true,
+    "node": true
+  },
+  "ignorePatterns": [
+    "docs/**",
+    "**/dist/**",
+    "**/coverage/**",
+    ".codewhale/**"
+  ],
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "import/no-unassigned-import": ["warn", { "allow": ["**/*.css"] }]
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx"],
+      "env": {
+        "vitest": true
+      }
+    },
+    {
+      "files": ["packages/hooks/src/useControllableState.ts"],
+      "rules": {
+        "react/refs": "off"
+      }
+    },
+    {
+      "files": ["packages/hooks/src/useDebouncedValue.ts"],
+      "rules": {
+        "react/set-state-in-effect": "off"
+      }
+    }
+  ]
+}

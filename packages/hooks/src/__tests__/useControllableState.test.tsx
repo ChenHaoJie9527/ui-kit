@@ -4,7 +4,7 @@ import { useControllableState } from "../useControllableState";
 
 describe("useControllableState", () => {
   it("updates internal state in uncontrolled mode", () => {
-    const onChange = vi.fn();
+    const onChange = vi.fn<(value: number) => void>();
     const { result } = renderHook(() =>
       useControllableState({ defaultValue: 0, onChange }),
     );
@@ -32,7 +32,7 @@ describe("useControllableState", () => {
   });
 
   it("ignores internal writes in controlled mode", () => {
-    const onChange = vi.fn();
+    const onChange = vi.fn<(value: number) => void>();
     const { result } = renderHook(() =>
       useControllableState({ value: 10, defaultValue: 0, onChange }),
     );
@@ -46,7 +46,7 @@ describe("useControllableState", () => {
   });
 
   it("does not notify when the value is unchanged", () => {
-    const onChange = vi.fn();
+    const onChange = vi.fn<(value: number) => void>();
     const { result } = renderHook(() =>
       useControllableState({ defaultValue: 5, onChange }),
     );

@@ -207,8 +207,8 @@ function App() {
       </section>
 
       <footer>
-        Built by{" "}
-        <a href="https://github.com/ChenHaoJie9527">ChenHaoJie9527</a> · ui-kit
+        Built by <a href="https://github.com/ChenHaoJie9527">ChenHaoJie9527</a>{" "}
+        · ui-kit
       </footer>
     </main>
   );

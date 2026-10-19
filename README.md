@@ -49,9 +49,7 @@ function Input({ value, defaultValue = "", onChange }: Props) {
     onChange,
   });
 
-  return (
-    <input value={current} onChange={(e) => setCurrent(e.target.value)} />
-  );
+  return <input value={current} onChange={(e) => setCurrent(e.target.value)} />;
 }
 ```
 
@@ -84,9 +82,7 @@ ui-kit/
 │  └─ hooks/          @ui-kit/hooks —— 无渲染逻辑
 ├─ apps/
 │  └─ docs/           文档演示（构建为静态站点）
-├─ docs/              GitHub Pages 站点产物
-└─ scripts/
-   └─ build-docs.mjs  文档构建脚本
+└─ docs/              GitHub Pages 站点产物
 ```
 
 ## 开发
@@ -99,14 +95,30 @@ pnpm --filter @ui-kit/hooks build
 pnpm build:docs    # 用 Vite 构建静态文档站到 docs/
 ```
 
+## 代码规范
+
+Lint 与格式化统一交给 [Oxc](https://oxc.rs)：`oxlint` 负责规则检查，`oxfmt` 负责格式。
+
+```bash
+pnpm lint          # oxlint .
+pnpm lint:fix      # oxlint . --fix
+pnpm format        # oxfmt .
+pnpm format:check  # 只检查，不改文件
+pnpm check         # format:check + lint + typecheck + test
+```
+
+仓库内置 `.vscode/settings.json`，打开项目后安装推荐扩展 `oxc.oxc-vscode` 即可：
+保存时自动格式化（默认格式化器已指向 Oxc）、按类型实时提示 lint，
+无需再装 ESLint / Prettier 扩展。
+
 ## 设计取舍
 
-| 决策 | 选择 | 原因 |
-| --- | --- | --- |
-| 状态管理 | `useState` + `ref` | 不引入外部状态库，保持零依赖 |
-| 虚拟滚动 | 固定行高 | 区间计算是 O(1)，可单测；动态高度另开 hook |
-| 回调稳定 | `useLayoutEffect` 更新 ref | 绘制前同步，避免事件读到旧闭包 |
-| 产物格式 | ESM + CJS | 兼容现代构建工具与 Node 环境 |
+| 决策     | 选择                       | 原因                                       |
+| -------- | -------------------------- | ------------------------------------------ |
+| 状态管理 | `useState` + `ref`         | 不引入外部状态库，保持零依赖               |
+| 虚拟滚动 | 固定行高                   | 区间计算是 O(1)，可单测；动态高度另开 hook |
+| 回调稳定 | `useLayoutEffect` 更新 ref | 绘制前同步，避免事件读到旧闭包             |
+| 产物格式 | ESM + CJS                  | 兼容现代构建工具与 Node 环境               |
 
 ## Roadmap
 
