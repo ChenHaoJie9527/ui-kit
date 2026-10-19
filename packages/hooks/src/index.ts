@@ -77,3 +77,9 @@ export type {
   CopyToClipboard,
   CopyToClipboardState,
 } from "./useCopyToClipboard";
+
+export { useLocalStorage } from "./useLocalStorage";
+export type {
+  UseLocalStorageOptions,
+  UseLocalStorageResult,
+} from "./useLocalStorage";
