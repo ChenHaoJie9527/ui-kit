@@ -173,14 +173,23 @@ ui-kit/
 
 ```bash
 pnpm install
+
+# 启动开发服务器（默认 http://localhost:5173）
+# 直接消费 packages/*/src，改组件或 hooks 会热更新，不需要先 build
+pnpm dev
+
+# 单项校验
 pnpm --filter @ui-kit/hooks test
 pnpm --filter @ui-kit/hooks typecheck
-pnpm --filter @ui-kit/hooks build
 pnpm --filter @ui-kit/ui test
 pnpm --filter @ui-kit/ui typecheck
-pnpm --filter @ui-kit/ui build
-pnpm dev:docs      # 启动文档站（侧边栏布局，hash 路由）
-pnpm build:docs    # 用 Vite 构建静态文档站到 docs/
+
+# 提交前一次性跑完 format / lint / typecheck / test
+pnpm check
+
+# 发布前构建静态文档站到 docs/
+pnpm build
+pnpm build:docs
 ```
 
 ## 代码规范

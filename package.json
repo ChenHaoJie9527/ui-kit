@@ -10,6 +10,7 @@
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
+    "dev": "pnpm --filter @ui-kit/docs dev",
     "dev:docs": "pnpm --filter @ui-kit/docs dev",
     "build:docs": "pnpm --filter @ui-kit/docs build"
   },
