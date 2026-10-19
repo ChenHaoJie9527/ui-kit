@@ -210,8 +210,11 @@ pnpm build:docs
 - `packages/ui` 的样式不依赖 Tailwind，消费者不需要安装或配置它
 - `apps/docs/src/app.css` 用 `@theme inline` 把 `--doc-*` 桥接成 Tailwind token，
   `light-dark()` 与 `[data-theme]` 继续生效
-- 全局 `@layer` 顺序写在 `apps/docs/src/layers.css`（必须最先加载）：
-  `utilities` 高于 `uk.components`，所以 `className="rounded-full"` 能覆盖组件样式
+- 全局 `@layer` 顺序写在 `apps/docs/index.html` 的内联 `<style>` 里（必须先于任何打包 CSS）：
+  `properties, theme, base, uk.tokens, uk.components, components, utilities`。
+  `utilities` 高于 `uk.components`，所以 `className="rounded-full"` 能覆盖组件样式；
+  `properties` 必须最先，否则 Tailwind 给 Safari 生成的 `--tw-*` 兜底层会成为
+  最高优先级的层，把 translate / rotate / shadow 等工具类全部盖掉
 - 覆盖层、`<details>` 三角、滚动条等无法用工具类表达的细节放在 `app.css` 的自定义 utility 里
 
 ## 代码规范

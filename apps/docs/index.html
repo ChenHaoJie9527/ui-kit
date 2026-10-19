@@ -28,8 +28,14 @@
        * utilities 必须高于 uk.components，否则 className 里的 Tailwind 类
        * 覆盖不了组件样式；base 必须低于 uk.components，否则 reset 会抹掉
        * 组件自带的边框与背景。
+       *
+       * properties 必须最先：Tailwind 会生成一个兜底层，里面给所有元素写
+       * `--tw-translate-x: 0` 等默认值（用于不支持 @property 的浏览器，
+       * 主要是 Safari）。若不在这里声明，它会按出现顺序落到最后、成为优先级
+       * 最高的层，把 translate / rotate / shadow 等工具类全部覆盖掉。
        */
-      @layer theme, base, uk.tokens, uk.components, components, utilities;
+      @layer properties, theme, base, uk.tokens, uk.components, components,
+        utilities;
     </style>
     <script>
       // 在首帧前应用已保存的主题，避免暗色模式闪白。
