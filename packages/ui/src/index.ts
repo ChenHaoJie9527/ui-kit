@@ -17,3 +17,6 @@ export type {
   TabsProps,
   TabsTriggerProps,
 } from "./Tabs";
+
+export { Dialog } from "./Dialog";
+export type { DialogProps } from "./Dialog";
