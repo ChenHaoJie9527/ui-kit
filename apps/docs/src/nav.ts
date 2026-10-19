@@ -52,6 +52,17 @@ export const navItems = navGroups.flatMap((group) =>
 
 export const navItemByPath = new Map(navItems.map((item) => [item.path, item]));
 
+/** 把导航里的相对 path 转成路由绝对路径。 */
+export function toRoute(path: string): string {
+  return path === "overview" ? "/" : `/${path}`;
+}
+
+/** 把 location.pathname 转回导航用的 key。 */
+export function routeKeyFromPathname(pathname: string): string {
+  const key = pathname.replace(/^\/+/, "").replace(/\/+$/, "");
+  return key.length > 0 ? key : "overview";
+}
+
 export function pageTitle(path: string): string {
   const item = navItemByPath.get(path);
   return item ? item.label : "未找到页面";

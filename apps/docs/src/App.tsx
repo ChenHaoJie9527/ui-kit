@@ -1,10 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Link,
+  NavLink,
+  Outlet,
+  ScrollRestoration,
+  useLocation,
+} from "react-router";
 import { useFocusTrap, useLockBodyScroll, useMedia } from "@ui-kit/hooks";
 import { Button } from "@ui-kit/ui";
-import { navGroups, navItems, pageTitle } from "./nav";
-import { NotFoundPage } from "./pages/not-found";
-import { routeRenderers } from "./pages/registry";
-import { routeHref, useRoute } from "./router";
+import {
+  navGroups,
+  navItems,
+  navItemByPath,
+  routeKeyFromPathname,
+  toRoute,
+} from "./nav";
 import { THEME_MODES, useTheme, type ThemeMode } from "./theme";
 
 const THEME_LABELS: Record<ThemeMode, string> = {
@@ -73,14 +83,25 @@ function matches(value: string, query: string): boolean {
   return value.toLowerCase().includes(query);
 }
 
-export function App() {
-  const route = useRoute();
+/**
+ * 文档站外壳：顶栏、可搜索的侧边栏、内容区与上一页/下一页。
+ *
+ * 路由由 react-router 的 HashRouter 提供，页面内容通过 <Outlet /> 渲染。
+ */
+export function AppLayout() {
+  const location = useLocation();
+  const routeKey = routeKeyFromPathname(location.pathname);
+  const activeItem = navItemByPath.get(routeKey);
   const { mode, setMode } = useTheme();
   const [query, setQuery] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // 抽屉记录「在哪个路由下打开的」。路由一变，表达式自然为 false，
+  // 不需要在 effect 里 setState 去同步。
+  const [drawerPath, setDrawerPath] = useState<string | null>(null);
+  const sidebarOpen = drawerPath === location.pathname;
   const isMobile = useMedia("(max-width: 960px)");
   const sidebarRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
   useLockBodyScroll(sidebarOpen && isMobile);
 
@@ -108,11 +129,10 @@ export function App() {
 
   useEffect(() => {
     document.title =
-      route === "overview"
+      routeKey === "overview"
         ? "ui-kit · React hooks 与组件库"
-        : `${pageTitle(route)} · ui-kit`;
-    window.scrollTo(0, 0);
-  }, [route]);
+        : `${activeItem?.label ?? "页面未找到"} · ui-kit`;
+  }, [activeItem, routeKey]);
 
   useEffect(() => {
     if (!sidebarOpen) {
@@ -121,7 +141,7 @@ export function App() {
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setSidebarOpen(false);
+        setDrawerPath(null);
       }
     };
 
@@ -129,15 +149,14 @@ export function App() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [sidebarOpen]);
 
-  const renderPage = routeRenderers[route];
-  const activeIndex = navItems.findIndex((item) => item.path === route);
+  const activeIndex = navItems.findIndex((item) => item.path === routeKey);
   const previous = activeIndex > 0 ? navItems[activeIndex - 1] : undefined;
   const next =
     activeIndex >= 0 && activeIndex < navItems.length - 1
       ? navItems[activeIndex + 1]
       : undefined;
 
-  const closeSidebar = () => setSidebarOpen(false);
+  const closeSidebar = () => setDrawerPath(null);
 
   const nextMode =
     THEME_MODES[(THEME_MODES.indexOf(mode) + 1) % THEME_MODES.length] ??
@@ -145,7 +164,15 @@ export function App() {
 
   return (
     <div className="doc-shell">
-      <a className="doc-skip-link" href="#doc-content">
+      <a
+        className="doc-skip-link"
+        href="#doc-content"
+        onClick={(event) => {
+          // hash 路由下不能改 hash，否则会跳到一个不存在的路由。
+          event.preventDefault();
+          mainRef.current?.focus();
+        }}
+      >
         跳到正文
       </a>
 
@@ -160,37 +187,39 @@ export function App() {
             aria-label={sidebarOpen ? "关闭导航" : "打开导航"}
             aria-expanded={sidebarOpen}
             aria-controls="doc-sidebar"
-            onClick={() => setSidebarOpen((open) => !open)}
+            onClick={() =>
+              setDrawerPath(sidebarOpen ? null : location.pathname)
+            }
           >
             <MenuIcon />
           </Button>
 
-          <a
-            className="doc-brand"
-            href={routeHref("overview")}
-            onClick={closeSidebar}
-          >
+          <Link className="doc-brand" to="/" onClick={closeSidebar}>
             <span className="doc-brand__mark" aria-hidden="true">
               uk
             </span>
             <span className="doc-brand__name">ui-kit</span>
             <span className="doc-brand__badge">0.1</span>
-          </a>
+          </Link>
         </div>
 
         <nav className="doc-topnav" aria-label="主导航">
-          <a
-            href={routeHref("components/button")}
-            data-active={route.startsWith("components/") ? "true" : undefined}
+          <Link
+            to="/components/button"
+            data-active={
+              location.pathname.startsWith("/components") ? "true" : undefined
+            }
           >
             组件
-          </a>
-          <a
-            href={routeHref("hooks/use-controllable-state")}
-            data-active={route.startsWith("hooks/") ? "true" : undefined}
+          </Link>
+          <Link
+            to="/hooks/use-controllable-state"
+            data-active={
+              location.pathname.startsWith("/hooks") ? "true" : undefined
+            }
           >
             Hooks
-          </a>
+          </Link>
           <a href={REPO_URL} target="_blank" rel="noreferrer">
             GitHub
           </a>
@@ -268,14 +297,13 @@ export function App() {
                 <ul>
                   {group.items.map((item) => (
                     <li key={item.path}>
-                      <a
+                      <NavLink
                         className="doc-nav__link"
-                        href={routeHref(item.path)}
-                        aria-current={route === item.path ? "page" : undefined}
+                        to={toRoute(item.path)}
                         onClick={closeSidebar}
                       >
                         {item.label}
-                      </a>
+                      </NavLink>
                     </li>
                   ))}
                 </ul>
@@ -305,26 +333,23 @@ export function App() {
         />
       ) : null}
 
-      <main className="doc-main" id="doc-content" tabIndex={-1}>
-        <div className="doc-main__inner" key={route}>
-          {renderPage ? renderPage() : <NotFoundPage route={route} />}
+      <main ref={mainRef} className="doc-main" id="doc-content" tabIndex={-1}>
+        <div className="doc-main__inner" key={location.pathname}>
+          <Outlet />
 
           {previous || next ? (
             <nav className="doc-pagenav" aria-label="上一页与下一页">
               {previous ? (
-                <a
-                  className="doc-pagenav__prev"
-                  href={routeHref(previous.path)}
-                >
+                <Link className="doc-pagenav__prev" to={toRoute(previous.path)}>
                   <span>上一页</span>
                   <strong>{previous.label}</strong>
-                </a>
+                </Link>
               ) : null}
               {next ? (
-                <a className="doc-pagenav__next" href={routeHref(next.path)}>
+                <Link className="doc-pagenav__next" to={toRoute(next.path)}>
                   <span>下一页</span>
                   <strong>{next.label}</strong>
-                </a>
+                </Link>
               ) : null}
             </nav>
           ) : null}
@@ -340,6 +365,8 @@ export function App() {
           </span>
         </footer>
       </main>
+
+      <ScrollRestoration />
     </div>
   );
 }

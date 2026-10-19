@@ -1,7 +1,7 @@
+import { Link } from "react-router";
 import { useCopyToClipboard } from "@ui-kit/hooks";
 import { componentMetas } from "../content/components";
 import { hookGroups } from "../content/hooks";
-import { routeHref } from "../router";
 
 const DESIGN_PRINCIPLES = [
   {
@@ -41,15 +41,15 @@ export function OverviewPage() {
         </p>
 
         <div className="doc-hero__actions">
-          <a className="doc-link-button" href={routeHref("components/button")}>
+          <Link className="doc-link-button" to="/components/button">
             浏览组件
-          </a>
-          <a
+          </Link>
+          <Link
             className="doc-link-button doc-link-button--ghost"
-            href={routeHref("hooks/use-media")}
+            to="/hooks/use-media"
           >
             Hooks 参考
-          </a>
+          </Link>
         </div>
 
         <button
@@ -91,17 +91,17 @@ export function OverviewPage() {
       <section className="doc-home-section">
         <div className="doc-home-heading">
           <h2>组件</h2>
-          <a href={routeHref("components/button")}>查看全部</a>
+          <Link to="/components/button">查看全部</Link>
         </div>
         <div className="doc-tiles">
           {componentMetas.map((meta) => (
-            <a className="doc-tile" href={routeHref(meta.path)} key={meta.path}>
+            <Link className="doc-tile" to={`/${meta.path}`} key={meta.path}>
               <span className="doc-tile__name">{meta.name}</span>
               <span className="doc-tile__summary">{meta.summary}</span>
               <span className="doc-tile__arrow" aria-hidden="true">
                 →
               </span>
-            </a>
+            </Link>
           ))}
         </div>
       </section>
@@ -109,7 +109,7 @@ export function OverviewPage() {
       <section className="doc-home-section">
         <div className="doc-home-heading">
           <h2>Hooks</h2>
-          <a href={routeHref("hooks/use-controllable-state")}>查看全部</a>
+          <Link to="/hooks/use-controllable-state">查看全部</Link>
         </div>
         <div className="doc-hook-groups">
           {hookGroups.map((group) => (
@@ -118,7 +118,7 @@ export function OverviewPage() {
               <ul>
                 {group.items.map((doc) => (
                   <li key={doc.path}>
-                    <a href={routeHref(doc.path)}>{doc.name}</a>
+                    <Link to={`/${doc.path}`}>{doc.name}</Link>
                   </li>
                 ))}
               </ul>

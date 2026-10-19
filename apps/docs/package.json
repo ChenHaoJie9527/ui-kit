@@ -12,7 +12,8 @@
     "@ui-kit/hooks": "workspace:*",
     "@ui-kit/ui": "workspace:*",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router": "^8.4.0"
   },
   "devDependencies": {
     "@types/node": "26.2.0",
