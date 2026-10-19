@@ -6,3 +6,6 @@ export { useVirtualList } from "./useVirtualList";
 export type { UseVirtualListOptions, VirtualListRange } from "./useVirtualList";
 
 export { useMedia } from "./useMedia";
+
+export { useWindowSize } from "./useWindowSize";
+export type { WindowSize } from "./useWindowSize";
