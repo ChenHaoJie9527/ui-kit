@@ -82,6 +82,13 @@
 
 ## 安装
 
+包发布在 **GitHub Packages**。先让 npm 指向 GitHub 的 registry，并在 `~/.npmrc` 配置一个有 `read:packages` 权限的 GitHub Token：
+
+```ini
+@chenhaojie9527:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
 ```bash
 pnpm add @chenhaojie9527/ui-kit
 # 或
@@ -230,6 +237,11 @@ pnpm check         # format:check + lint + typecheck + test
 - [ ] 文档站补充每个组件的 API 表格与边界用例
 - [ ] 用 Changesets 管理版本并发布 npm
 - [ ] 增加 1 万行列表的首屏渲染基准（全量 vs 虚拟滚动）
+
+## 发布
+
+发布通过 GitHub Actions 完成：推送 `v*` 标签，或在 Actions 里手动触发 `publish` 工作流。
+工作流会先构建两个包，再按 `hooks` → `ui` 的顺序发布到 GitHub Packages。
 
 ## License
 

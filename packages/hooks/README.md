@@ -4,6 +4,13 @@
 
 ## 安装
 
+包发布在 GitHub Packages，需要先在 `~/.npmrc` 配置：
+
+```ini
+@chenhaojie9527:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
 ```bash
 pnpm add @chenhaojie9527/ui-kit-hooks
 ```
