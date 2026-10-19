@@ -83,3 +83,5 @@ export type {
   UseLocalStorageOptions,
   UseLocalStorageResult,
 } from "./useLocalStorage";
+
+export { useLockBodyScroll } from "./useLockBodyScroll";
