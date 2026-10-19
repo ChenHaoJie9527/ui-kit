@@ -65,3 +65,6 @@ export type { AsyncFn, AsyncFnState, UseAsyncFnResult } from "./useAsyncFn";
 
 export { useAsyncRetry } from "./useAsyncRetry";
 export type { UseAsyncRetryResult } from "./useAsyncRetry";
+
+export { useDebounce } from "./useDebounce";
+export type { DebouncedFunction } from "./useDebounce";
