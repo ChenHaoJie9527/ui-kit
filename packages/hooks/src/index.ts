@@ -56,3 +56,6 @@ export { useGetSet } from "./useGetSet";
 
 export { useSetState } from "./useSetState";
 export type { SetStatePatch, UseSetStateResult } from "./useSetState";
+
+export { useAsync } from "./useAsync";
+export type { AsyncState, UseAsyncOptions } from "./useAsync";
