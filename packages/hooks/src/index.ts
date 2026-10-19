@@ -9,3 +9,6 @@ export { useMedia } from "./useMedia";
 
 export { useWindowSize } from "./useWindowSize";
 export type { WindowSize } from "./useWindowSize";
+
+export { useLocation } from "./useLocation";
+export type { LocationState } from "./useLocation";
