@@ -1,5 +1,42 @@
-import { useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { useCopyToClipboard } from "@ui-kit/hooks";
+import { TableOfContents } from "./table-of-contents";
+
+export interface TocEntry {
+  id: string;
+  label: string;
+}
+
+type TocRegister = (entry: TocEntry) => () => void;
+
+// 拆成两个 context：注册函数保持稳定，条目变化只让目录重新渲染，
+// 不会让每个 Section 都跟着重跑 effect。
+const TocEntriesContext = createContext<TocEntry[]>([]);
+const TocRegisterContext = createContext<TocRegister | null>(null);
+
+/**
+ * 把标题转成 URL 安全的锚点 id。
+ *
+ * 保留中日韩文字与数字，其余标点去掉，空白折叠成连字符。
+ */
+export function slugifyHeading(value: string): string {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^\p{L}\p{N}-]/gu, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return slug.length > 0 ? slug : "section";
+}
 
 export interface PageProps {
   kind: string;
@@ -9,23 +46,49 @@ export interface PageProps {
   children: ReactNode;
 }
 
+/**
+ * 文档页外壳。
+ *
+ * 负责页面标题区、章节收集（供右侧目录使用）以及目录/正文的双栏布局。
+ */
 export function Page({ kind, title, description, tags, children }: PageProps) {
+  const [entries, setEntries] = useState<TocEntry[]>([]);
+
+  const register = useCallback<TocRegister>((entry) => {
+    setEntries((previous) =>
+      previous.some((item) => item.id === entry.id)
+        ? previous
+        : [...previous, entry],
+    );
+
+    return () => {
+      setEntries((previous) => previous.filter((item) => item.id !== entry.id));
+    };
+  }, []);
+
   return (
-    <article className="doc-page">
-      <header className="doc-page__header">
-        <p className="doc-eyebrow">{kind}</p>
-        <h1 className="doc-title">{title}</h1>
-        <p className="doc-lede">{description}</p>
-        {tags && tags.length > 0 ? (
-          <ul className="doc-tags" aria-label="特性">
-            {tags.map((tag) => (
-              <li key={tag}>{tag}</li>
-            ))}
-          </ul>
-        ) : null}
-      </header>
-      {children}
-    </article>
+    <TocRegisterContext.Provider value={register}>
+      <TocEntriesContext.Provider value={entries}>
+        <div className="doc-page-layout">
+          <TableOfContents />
+          <article className="doc-page">
+            <header className="doc-page__header">
+              <p className="doc-eyebrow">{kind}</p>
+              <h1 className="doc-title">{title}</h1>
+              <p className="doc-lede">{description}</p>
+              {tags && tags.length > 0 ? (
+                <ul className="doc-tags" aria-label="特性">
+                  {tags.map((tag) => (
+                    <li key={tag}>{tag}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </header>
+            {children}
+          </article>
+        </div>
+      </TocEntriesContext.Provider>
+    </TocRegisterContext.Provider>
   );
 }
 
@@ -33,11 +96,27 @@ export interface SectionProps {
   title: string;
   description?: ReactNode;
   children: ReactNode;
+  /** 自定义锚点 id；默认由标题生成。 */
+  id?: string;
 }
 
-export function Section({ title, description, children }: SectionProps) {
+/**
+ * 正文里的一个章节，会带一个稳定的锚点 id，并自动登记到页面目录。
+ */
+export function Section({ title, description, children, id }: SectionProps) {
+  const register = useContext(TocRegisterContext);
+  const sectionId = id ?? slugifyHeading(title);
+
+  useEffect(() => {
+    if (!register) {
+      return;
+    }
+
+    return register({ id: sectionId, label: title });
+  }, [register, sectionId, title]);
+
   return (
-    <section className="doc-section">
+    <section className="doc-section" id={sectionId}>
       <h2 className="doc-section__title">{title}</h2>
       {description ? (
         <p className="doc-section__description">{description}</p>
@@ -45,6 +124,10 @@ export function Section({ title, description, children }: SectionProps) {
       {children}
     </section>
   );
+}
+
+export function useTocEntries(): TocEntry[] {
+  return useContext(TocEntriesContext);
 }
 
 export interface DemoProps {

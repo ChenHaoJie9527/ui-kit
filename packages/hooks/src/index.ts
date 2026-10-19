@@ -89,5 +89,8 @@ export { useLockBodyScroll } from "./useLockBodyScroll";
 export { useFocusTrap } from "./useFocusTrap";
 export type { UseFocusTrapOptions } from "./useFocusTrap";
 
+export { useActiveSection } from "./useActiveSection";
+export type { UseActiveSectionOptions } from "./useActiveSection";
+
 export { useTitle } from "./useTitle";
 export type { UseTitleOptions } from "./useTitle";
