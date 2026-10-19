@@ -1,18 +1,18 @@
-# @ui-kit/ui
+# @momotom/ui
 
-基于 `@ui-kit/hooks` 的 React 组件库，内置可访问性与主题 token。
+基于 `@momotom/hooks` 的 React 组件库，内置可访问性与主题 token。
 
 ## 安装
 
 ```bash
-pnpm add @ui-kit/ui
+pnpm add @momotom/ui
 ```
 
 ## 使用
 
 ```tsx
-import { Button, Tabs, Dialog } from "@ui-kit/ui";
-import "@ui-kit/ui/styles.css";
+import { Button, Tabs, Dialog } from "@momotom/ui";
+import "@momotom/ui/styles.css";
 ```
 
 组件包含：Button、Input、Switch、Tabs、Dialog、Toast。

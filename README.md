@@ -78,20 +78,20 @@
 - `Dialog`：基于原生 `<dialog>`，焦点陷阱（双向循环 / 外部聚焦回收 / 焦点恢复）、Esc、遮罩与 body 滚动锁定开箱即用。
 - `Toast`：`ToastProvider` + `useToast()`，带队列、自动关闭、悬停暂停与 `aria-live` 区域。
 
-样式通过 `@ui-kit/ui/styles.css` 引入；所有颜色、间距、圆角与阴影都是 CSS 变量，支持 `light-dark()` 跟随系统主题。
+样式通过 `@momotom/ui/styles.css` 引入；所有颜色、间距、圆角与阴影都是 CSS 变量，支持 `light-dark()` 跟随系统主题。
 
 ## 安装
 
 ```bash
-pnpm add @ui-kit/ui
+pnpm add @momotom/ui
 # 或
-npm i @ui-kit/ui
+npm i @momotom/ui
 ```
 
-`@ui-kit/ui` 依赖 `@ui-kit/hooks`，安装组件包即可同时使用全部 hooks。只想要无渲染逻辑时，也可以单独安装：
+`@momotom/ui` 依赖 `@momotom/hooks`，安装组件包即可同时使用全部 hooks。只想要无渲染逻辑时，也可以单独安装：
 
 ```bash
-pnpm add @ui-kit/hooks
+pnpm add @momotom/hooks
 ```
 
 ## 使用
@@ -99,7 +99,7 @@ pnpm add @ui-kit/hooks
 ### 受控 / 非受控
 
 ```tsx
-import { useControllableState } from "@ui-kit/hooks";
+import { useControllableState } from "@momotom/hooks";
 
 function Input({ value, defaultValue = "", onChange }: Props) {
   const [current, setCurrent] = useControllableState({
@@ -115,7 +115,7 @@ function Input({ value, defaultValue = "", onChange }: Props) {
 ### 万级列表
 
 ```tsx
-import { useVirtualList } from "@ui-kit/hooks";
+import { useVirtualList } from "@momotom/hooks";
 
 const { start, end, totalHeight, offsetTop } = useVirtualList({
   count: 10_000,
@@ -136,8 +136,8 @@ const report = useEventCallback(() => {
 ### 组件
 
 ```tsx
-import { Button, Dialog, Tabs, ToastProvider, useToast } from "@ui-kit/ui";
-import "@ui-kit/ui/styles.css";
+import { Button, Dialog, Tabs, ToastProvider, useToast } from "@momotom/ui";
+import "@momotom/ui/styles.css";
 
 function App() {
   return (
@@ -162,8 +162,8 @@ function App() {
 ```
 ui-kit/
 ├─ packages/
-│  ├─ hooks/          @ui-kit/hooks —— 无渲染逻辑
-│  └─ ui/             @ui-kit/ui —— 组件与样式
+│  ├─ hooks/          @momotom/hooks —— 无渲染逻辑
+│  └─ ui/             @momotom/ui —— 组件与样式
 ├─ apps/
 │  └─ docs/           文档与交互演示（构建为静态站点）
 └─ docs/              GitHub Pages 站点产物
@@ -179,10 +179,10 @@ pnpm install
 pnpm dev
 
 # 单项校验
-pnpm --filter @ui-kit/hooks test
-pnpm --filter @ui-kit/hooks typecheck
-pnpm --filter @ui-kit/ui test
-pnpm --filter @ui-kit/ui typecheck
+pnpm --filter @momotom/hooks test
+pnpm --filter @momotom/hooks typecheck
+pnpm --filter @momotom/ui test
+pnpm --filter @momotom/ui typecheck
 
 # 提交前一次性跑完 format / lint / typecheck / test
 pnpm check

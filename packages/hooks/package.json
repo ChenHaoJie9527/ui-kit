@@ -1,26 +1,26 @@
 {
-  "name": "@ui-kit/hooks",
+  "name": "@momotom/hooks",
   "version": "0.1.0",
   "description": "29 个生产级 React hooks：受控状态、虚拟滚动、异步竞态、焦点管理与浏览器能力封装",
+  "keywords": [
+    "hooks",
+    "react",
+    "typescript",
+    "ui-kit",
+    "use-async",
+    "virtual-list"
+  ],
+  "homepage": "https://chenhaojie9527.github.io/ui-kit/",
+  "bugs": {
+    "url": "https://github.com/ChenHaoJie9527/ui-kit/issues"
+  },
   "license": "MIT",
   "author": "ChenHaoJie9527",
-  "homepage": "https://chenhaojie9527.github.io/ui-kit/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ChenHaoJie9527/ui-kit.git",
     "directory": "packages/hooks"
   },
-  "bugs": {
-    "url": "https://github.com/ChenHaoJie9527/ui-kit/issues"
-  },
-  "keywords": [
-    "react",
-    "hooks",
-    "typescript",
-    "virtual-list",
-    "use-async",
-    "ui-kit"
-  ],
   "files": [
     "dist"
   ],
@@ -36,17 +36,14 @@
       "require": "./dist/index.cjs"
     }
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm build && pnpm test"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "publishConfig": {
-    "access": "public"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",
@@ -63,5 +60,8 @@
   },
   "peerDependencies": {
     "react": ">=18"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

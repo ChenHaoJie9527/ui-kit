@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useCopyToClipboard } from "@ui-kit/hooks";
+import { useCopyToClipboard } from "@momotom/hooks";
 import { TableOfContents } from "./table-of-contents";
 
 export interface TocEntry {

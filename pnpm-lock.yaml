@@ -29,10 +29,10 @@ importers:
 
   apps/docs:
     dependencies:
-      '@ui-kit/hooks':
+      '@momotom/hooks':
         specifier: workspace:*
         version: link:../../packages/hooks
-      '@ui-kit/ui':
+      '@momotom/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       react:
@@ -102,7 +102,7 @@ importers:
 
   packages/ui:
     dependencies:
-      '@ui-kit/hooks':
+      '@momotom/hooks':
         specifier: workspace:*
         version: link:../hooks
     devDependencies:

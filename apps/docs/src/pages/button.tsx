@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@ui-kit/ui";
+import { Button } from "@momotom/ui";
 import {
   BulletList,
   ButtonRow,
@@ -127,7 +127,7 @@ export function ButtonPage() {
       tags={["5 种变体", "3 种尺寸", "加载态", "原生属性透传"]}
     >
       <Section title="引入">
-        <CodeBlock code={'import { Button } from "@ui-kit/ui";'} />
+        <CodeBlock code={'import { Button } from "@momotom/ui";'} />
       </Section>
 
       <Section

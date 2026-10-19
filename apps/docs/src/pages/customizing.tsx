@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { Button, Dialog, Input, Switch, Tabs, useToast } from "@ui-kit/ui";
+import { Button, Dialog, Input, Switch, Tabs, useToast } from "@momotom/ui";
 import {
   BulletList,
   ButtonRow,
@@ -321,7 +321,7 @@ export function CustomizingPage() {
         </Demo>
 
         <Callout title="放在库的样式之后">
-          用 <InlineCode>@import "@ui-kit/ui/styles.css"</InlineCode>{" "}
+          用 <InlineCode>@import "@momotom/ui/styles.css"</InlineCode>{" "}
           或打包器引入后， 在同一个入口文件里追加自己的覆盖规则即可。
         </Callout>
 
@@ -538,7 +538,7 @@ export function CustomizingPage() {
         description="如果视觉和交互都要重写，不必和组件较劲。组件内部用的就是公开的 hooks，直接拿这套逻辑写自己的结构。"
       >
         <CodeBlock
-          code={`import { useControllableState } from "@ui-kit/hooks";
+          code={`import { useControllableState } from "@momotom/hooks";
 
 function MySwitch({ value, defaultValue, onChange }) {
   const [on, setOn] = useControllableState({

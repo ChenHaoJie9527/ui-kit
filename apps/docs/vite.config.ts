@@ -15,8 +15,8 @@ export default defineConfig({
   resolve: {
     // 直接指向源码，开发时改 hooks / 组件会立刻热更新，无需先构建 dist。
     alias: {
-      "@ui-kit/hooks": hooksEntry,
-      "@ui-kit/ui": uiEntry,
+      "@momotom/hooks": hooksEntry,
+      "@momotom/ui": uiEntry,
     },
   },
   server: {

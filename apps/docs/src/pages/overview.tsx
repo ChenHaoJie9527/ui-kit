@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { useCopyToClipboard } from "@ui-kit/hooks";
+import { useCopyToClipboard } from "@momotom/hooks";
 import { componentMetas } from "../content/components";
 import { hookGroups } from "../content/hooks";
 
@@ -24,7 +24,7 @@ const DESIGN_PRINCIPLES = [
 
 export function OverviewPage() {
   const [state, copy] = useCopyToClipboard();
-  const command = "pnpm add @ui-kit/ui";
+  const command = "pnpm add @momotom/ui";
   const copied = state.copied && state.value === command;
 
   return (

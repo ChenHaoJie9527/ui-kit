@@ -6,8 +6,8 @@ import {
   ScrollRestoration,
   useLocation,
 } from "react-router";
-import { useFocusTrap, useLockBodyScroll, useMedia } from "@ui-kit/hooks";
-import { Button } from "@ui-kit/ui";
+import { useFocusTrap, useLockBodyScroll, useMedia } from "@momotom/hooks";
+import { Button } from "@momotom/ui";
 import {
   navGroups,
   navItems,

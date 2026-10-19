@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useLocalStorage } from "@ui-kit/hooks";
+import { useLocalStorage } from "@momotom/hooks";
 
 export type ThemeMode = "system" | "light" | "dark";
 

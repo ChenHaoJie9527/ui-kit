@@ -1,5 +1,5 @@
 {
-  "name": "@ui-kit/docs",
+  "name": "@momotom/docs",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,8 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ui-kit/hooks": "workspace:*",
-    "@ui-kit/ui": "workspace:*",
+    "@momotom/hooks": "workspace:*",
+    "@momotom/ui": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router": "^8.4.0"

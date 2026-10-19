@@ -1,17 +1,17 @@
-# @ui-kit/hooks
+# @momotom/hooks
 
 29 个生产级 React hooks：受控状态、虚拟滚动、异步竞态、焦点管理与浏览器能力封装。
 
 ## 安装
 
 ```bash
-pnpm add @ui-kit/hooks
+pnpm add @momotom/hooks
 ```
 
 ## 快速开始
 
 ```tsx
-import { useControllableState, useVirtualList } from "@ui-kit/hooks";
+import { useControllableState, useVirtualList } from "@momotom/hooks";
 
 const [value, setValue] = useControllableState({ defaultValue: "" });
 
