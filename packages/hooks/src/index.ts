@@ -16,3 +16,6 @@ export type { LocationState } from "./useLocation";
 export { useStartTyping } from "./useStartTyping";
 
 export { usePageLeave } from "./usePageLeave";
+
+export { useClickAway } from "./useClickAway";
+export type { ClickAwayEvent } from "./useClickAway";
