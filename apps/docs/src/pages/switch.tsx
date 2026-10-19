@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Switch } from "@momotom/ui";
+import { Switch } from "@chenhaojie9527/ui-kit";
 import {
   BulletList,
   Demo,
@@ -87,7 +87,7 @@ export function SwitchPage() {
       tags={["原生 checkbox", "受控 / 非受控", "role=switch"]}
     >
       <Section title="引入">
-        <CodeBlock code={'import { Switch } from "@momotom/ui";'} />
+        <CodeBlock code={'import { Switch } from "@chenhaojie9527/ui-kit";'} />
       </Section>
 
       <Section

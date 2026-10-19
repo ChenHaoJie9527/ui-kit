@@ -14,7 +14,9 @@ export function HookPage({ doc }: { doc: HookDoc }) {
       tags={[hookGroupOf(doc), "无渲染", "可单测"]}
     >
       <Section title="引入">
-        <CodeBlock code={`import { ${doc.name} } from "@momotom/hooks";`} />
+        <CodeBlock
+          code={`import { ${doc.name} } from "@chenhaojie9527/ui-kit-hooks";`}
+        />
       </Section>
 
       <Section title="签名">

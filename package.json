@@ -10,9 +10,9 @@
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
-    "dev": "pnpm --filter @momotom/docs dev",
-    "dev:docs": "pnpm --filter @momotom/docs dev",
-    "build:docs": "pnpm --filter @momotom/docs build"
+    "dev": "pnpm --filter @chenhaojie9527/docs dev",
+    "dev:docs": "pnpm --filter @chenhaojie9527/docs dev",
+    "build:docs": "pnpm --filter @chenhaojie9527/docs build"
   },
   "devDependencies": {
     "oxfmt": "^0.64.0",

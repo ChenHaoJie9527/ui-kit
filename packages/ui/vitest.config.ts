@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: {
     alias: {
-      "@momotom/hooks": fileURLToPath(
+      "@chenhaojie9527/ui-kit-hooks": fileURLToPath(
         new URL("../hooks/src/index.ts", import.meta.url),
       ),
     },

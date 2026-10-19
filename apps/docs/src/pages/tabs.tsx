@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Tabs } from "@momotom/ui";
+import { Button, Tabs } from "@chenhaojie9527/ui-kit";
 import {
   BulletList,
   ButtonRow,
@@ -137,7 +137,7 @@ export function TabsPage() {
       tags={["键盘导航", "roving tabindex", "受控 / 非受控", "横向 / 纵向"]}
     >
       <Section title="引入">
-        <CodeBlock code={'import { Tabs } from "@momotom/ui";'} />
+        <CodeBlock code={'import { Tabs } from "@chenhaojie9527/ui-kit";'} />
       </Section>
 
       <Section

@@ -1,18 +1,18 @@
-# @momotom/ui
+# @chenhaojie9527/ui-kit
 
-基于 `@momotom/hooks` 的 React 组件库，内置可访问性与主题 token。
+基于 `@chenhaojie9527/ui-kit-hooks` 的 React 组件库，内置可访问性与主题 token。
 
 ## 安装
 
 ```bash
-pnpm add @momotom/ui
+pnpm add @chenhaojie9527/ui-kit
 ```
 
 ## 使用
 
 ```tsx
-import { Button, Tabs, Dialog } from "@momotom/ui";
-import "@momotom/ui/styles.css";
+import { Button, Tabs, Dialog } from "@chenhaojie9527/ui-kit";
+import "@chenhaojie9527/ui-kit/styles.css";
 ```
 
 组件包含：Button、Input、Switch、Tabs、Dialog、Toast。

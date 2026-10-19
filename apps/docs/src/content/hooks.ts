@@ -263,7 +263,7 @@ return <div {...bind} data-over={over} />;`,
         "复制文本到剪贴板，Clipboard API 不可用时退回 execCommand。",
         `const [state, copy] = useCopyToClipboard();
 
-await copy("pnpm add @momotom/ui");`,
+await copy("pnpm add @chenhaojie9527/ui-kit");`,
       ),
       hook(
         "useLocalStorage",

@@ -8,7 +8,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from "react";
-import { useControllableState } from "@momotom/hooks";
+import { useControllableState } from "@chenhaojie9527/ui-kit-hooks";
 import { cx } from "./utils/cx";
 import "./tabs.css";
 

@@ -11,7 +11,7 @@ import {
   useEventCallback,
   useFocusTrap,
   useLockBodyScroll,
-} from "@momotom/hooks";
+} from "@chenhaojie9527/ui-kit-hooks";
 import { Button } from "./Button";
 import { cx } from "./utils/cx";
 import "./dialog.css";

@@ -1,6 +1,6 @@
-import { Button } from "@momotom/ui";
+import { Button } from "@chenhaojie9527/ui-kit";
 import { useRef } from "react";
-import { useToast } from "@momotom/ui";
+import { useToast } from "@chenhaojie9527/ui-kit";
 import {
   BulletList,
   ButtonRow,
@@ -151,7 +151,7 @@ export function ToastPage() {
     >
       <Section title="引入">
         <CodeBlock
-          code={`import { ToastProvider, useToast } from "@momotom/ui";
+          code={`import { ToastProvider, useToast } from "@chenhaojie9527/ui-kit";
 
 // 应用根部
 <ToastProvider>

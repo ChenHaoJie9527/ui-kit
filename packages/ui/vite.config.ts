@@ -13,7 +13,12 @@ export default defineConfig({
       cssFileName: "styles",
     },
     rollupOptions: {
-      external: ["react", "react-dom", "react/jsx-runtime", "@momotom/hooks"],
+      external: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "@chenhaojie9527/ui-kit-hooks",
+      ],
     },
   },
 });

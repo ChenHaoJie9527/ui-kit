@@ -1,7 +1,7 @@
 {
-  "name": "@momotom/ui",
+  "name": "@chenhaojie9527/ui-kit",
   "version": "0.1.0",
-  "description": "基于 @momotom/hooks 的 React 组件库：Button、Input、Switch、Tabs、Dialog、Toast",
+  "description": "基于 @chenhaojie9527/ui-kit-hooks 的 React 组件库：Button、Input、Switch、Tabs、Dialog、Toast",
   "keywords": [
     "component-library",
     "dialog",
@@ -40,7 +40,8 @@
     "./styles.css": "./dist/styles.css"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json",
@@ -49,7 +50,7 @@
     "prepublishOnly": "pnpm build && pnpm test"
   },
   "dependencies": {
-    "@momotom/hooks": "workspace:*"
+    "@chenhaojie9527/ui-kit-hooks": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",
