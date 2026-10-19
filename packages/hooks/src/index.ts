@@ -19,3 +19,13 @@ export { usePageLeave } from "./usePageLeave";
 
 export { useClickAway } from "./useClickAway";
 export type { ClickAwayEvent } from "./useClickAway";
+
+export { useDropArea } from "./useDropArea";
+export type {
+  DropAreaBindings,
+  DropPayload,
+  UseDropAreaOptions,
+  UseDropAreaResult,
+} from "./useDropArea";
+export { useDrop } from "./useDrop";
+export type { UseDropResult } from "./useDrop";
