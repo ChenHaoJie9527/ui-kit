@@ -59,3 +59,6 @@ export type { SetStatePatch, UseSetStateResult } from "./useSetState";
 
 export { useAsync } from "./useAsync";
 export type { AsyncState, UseAsyncOptions } from "./useAsync";
+
+export { useAsyncFn } from "./useAsyncFn";
+export type { AsyncFn, AsyncFnState, UseAsyncFnResult } from "./useAsyncFn";
