@@ -28,7 +28,7 @@
     width: 2.5rem;
     height: 1.5rem;
     border-radius: var(--uk-radius-full);
-    background: var(--uk-border-strong);
+    background: var(--uk-switch-track, var(--uk-border-strong));
     transition: background-color var(--uk-transition);
   }
 
@@ -39,13 +39,13 @@
     width: 1.25rem;
     height: 1.25rem;
     border-radius: 50%;
-    background: #ffffff;
+    background: var(--uk-switch-thumb, #ffffff);
     box-shadow: var(--uk-shadow-sm);
     transition: transform var(--uk-transition);
   }
 
   .uk-switch__input:checked + .uk-switch__track {
-    background: var(--uk-primary-solid);
+    background: var(--uk-switch-track-checked, var(--uk-primary-solid));
   }
 
   .uk-switch__input:checked + .uk-switch__track .uk-switch__thumb {

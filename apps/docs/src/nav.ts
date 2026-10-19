@@ -21,6 +21,11 @@ export const navGroups: NavGroup[] = [
         label: "总览",
         hint: "安装、特性与设计取向",
       },
+      {
+        path: "customizing",
+        label: "自定义样式",
+        hint: "CSS 变量、组件级变量与定向覆盖",
+      },
     ],
   },
   {

@@ -5,7 +5,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--uk-space-2);
-    width: min(22rem, calc(100vw - var(--uk-space-8)));
+    width: min(var(--uk-toast-width, 22rem), calc(100vw - var(--uk-space-8)));
     padding: var(--uk-space-4);
     pointer-events: none;
     font-family: var(--uk-font-sans);
@@ -42,7 +42,7 @@
     padding: var(--uk-space-3) var(--uk-space-4);
     border: 1px solid var(--uk-border);
     border-inline-start: 3px solid var(--uk-toast-accent, var(--uk-info));
-    border-radius: var(--uk-radius-md);
+    border-radius: var(--uk-toast-radius, var(--uk-radius-md));
     background: var(--uk-surface-raised);
     color: var(--uk-text);
     box-shadow: var(--uk-shadow-md);

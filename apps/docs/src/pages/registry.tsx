@@ -1,6 +1,7 @@
 import type { ComponentType, ReactNode } from "react";
 import { hookDocs } from "../content/hooks";
 import { ButtonPage } from "./button";
+import { CustomizingPage } from "./customizing";
 import { DialogPage } from "./dialog";
 import { HookPage } from "./hook";
 import { InputPage } from "./input";
@@ -20,6 +21,7 @@ const componentPages: Record<string, ComponentType> = {
 
 export const routeRenderers: Record<string, () => ReactNode> = {
   overview: () => <OverviewPage />,
+  customizing: () => <CustomizingPage />,
 };
 
 for (const [path, PageComponent] of Object.entries(componentPages)) {

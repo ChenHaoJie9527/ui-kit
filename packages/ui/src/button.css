@@ -5,9 +5,9 @@
     justify-content: center;
     gap: var(--uk-space-2);
     border: 1px solid transparent;
-    border-radius: var(--uk-radius-md);
+    border-radius: var(--uk-button-radius, var(--uk-radius-md));
     font-family: var(--uk-font-sans);
-    font-weight: 600;
+    font-weight: var(--uk-button-font-weight, 600);
     line-height: 1;
     white-space: nowrap;
     cursor: pointer;
@@ -32,19 +32,19 @@
   }
 
   .uk-button[data-size="sm"] {
-    height: 2rem;
+    height: var(--uk-button-height-sm, 2rem);
     padding: 0 var(--uk-space-3);
     font-size: var(--uk-text-sm);
   }
 
   .uk-button[data-size="md"] {
-    height: 2.5rem;
+    height: var(--uk-button-height-md, 2.5rem);
     padding: 0 var(--uk-space-4);
     font-size: var(--uk-text-md);
   }
 
   .uk-button[data-size="lg"] {
-    height: 3rem;
+    height: var(--uk-button-height-lg, 3rem);
     padding: 0 var(--uk-space-5);
     font-size: var(--uk-text-lg);
   }

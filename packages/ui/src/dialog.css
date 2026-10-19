@@ -1,6 +1,6 @@
 @layer uk.components {
   .uk-dialog {
-    width: min(32rem, calc(100vw - var(--uk-space-8)));
+    width: min(var(--uk-dialog-width, 32rem), calc(100vw - var(--uk-space-8)));
     max-width: none;
     max-height: none;
     margin: auto;
@@ -25,7 +25,7 @@
     flex-direction: column;
     max-height: min(85vh, 42rem);
     border: 1px solid var(--uk-border);
-    border-radius: var(--uk-radius-lg);
+    border-radius: var(--uk-dialog-radius, var(--uk-radius-lg));
     background: var(--uk-surface-raised);
     box-shadow: var(--uk-shadow-lg);
     font-family: var(--uk-font-sans);

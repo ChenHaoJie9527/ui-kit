@@ -42,9 +42,9 @@
     right: var(--uk-space-2);
     bottom: -1px;
     left: var(--uk-space-2);
-    height: 2px;
+    height: var(--uk-tabs-indicator-size, 2px);
     border-radius: 2px;
-    background: var(--uk-primary);
+    background: var(--uk-tabs-indicator, var(--uk-primary));
   }
 
   .uk-tabs__trigger:focus-visible {
@@ -90,7 +90,7 @@
     right: -1px;
     bottom: var(--uk-space-2);
     left: auto;
-    width: 2px;
+    width: var(--uk-tabs-indicator-size, 2px);
     height: auto;
   }
 

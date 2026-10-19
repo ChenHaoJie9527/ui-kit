@@ -2,7 +2,7 @@
   .uk-input {
     width: 100%;
     border: 1px solid var(--uk-border-strong);
-    border-radius: var(--uk-radius-md);
+    border-radius: var(--uk-input-radius, var(--uk-radius-md));
     background: var(--uk-bg);
     color: var(--uk-text);
     font-family: var(--uk-font-sans);
