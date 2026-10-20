@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { Button } from "@seam/ui";
-import { useObservable } from "@seam/hooks";
+import { Button } from "seam-react";
+import { useObservable } from "seam-hooks";
 
 const INITIAL_PRICE = 128.4;
 

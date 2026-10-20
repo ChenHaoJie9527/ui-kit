@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button } from "@seam/ui";
-import { useAsync } from "@seam/hooks";
+import { Button } from "seam-react";
+import { useAsync } from "seam-hooks";
 
 const USERS = [
   null,

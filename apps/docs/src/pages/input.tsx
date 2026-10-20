@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { Input } from "@seam/ui";
+import { Input } from "seam-react";
 import {
   BulletList,
   Callout,
@@ -80,7 +80,7 @@ export function InputPage() {
       tags={["原生输入", "3 种尺寸", "错误态", "受控"]}
     >
       <Section title="引入">
-        <CodeBlock code={'import { Input } from "@seam/ui";'} />
+        <CodeBlock code={'import { Input } from "seam-react";'} />
       </Section>
 
       <Section

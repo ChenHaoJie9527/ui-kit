@@ -1,4 +1,4 @@
-import { useMedia } from "@seam/hooks";
+import { useMedia } from "seam-hooks";
 
 const row = {
   display: "flex",

@@ -143,7 +143,7 @@ function LegacyArticle({ doc }: { doc: HookDoc }) {
   return (
     <>
       <Section title="引入">
-        <CodeBlock code={`import { ${doc.name} } from "@seam/hooks";`} />
+        <CodeBlock code={`import { ${doc.name} } from "seam-hooks";`} />
       </Section>
 
       <Section title="签名">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Input } from "@seam/ui";
-import { useDebouncedValue } from "@seam/hooks";
+import { Input } from "seam-react";
+import { useDebouncedValue } from "seam-hooks";
 
 const HOOKS = [
   "useControllableState",

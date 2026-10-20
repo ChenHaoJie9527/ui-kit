@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useCopyToClipboard } from "@seam/hooks";
+import { useCopyToClipboard } from "seam-hooks";
 import { CodeHighlight } from "./live/highlight";
 import { TableOfContents } from "./table-of-contents";
 

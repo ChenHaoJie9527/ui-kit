@@ -35,7 +35,7 @@ const cases: CheckCase[] = [
     name: "跨行 import / Fragment / 属性",
     source: `import {
   Button,
-} from "@seam/ui";
+} from "seam-react";
 
 export function Demo() {
   return (

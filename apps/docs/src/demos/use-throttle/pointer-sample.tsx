@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { Button } from "@seam/ui";
-import { useThrottle } from "@seam/hooks";
+import { Button } from "seam-react";
+import { useThrottle } from "seam-hooks";
 
 export function Demo() {
   const [point, setPoint] = useState({ x: 0, y: 0 });

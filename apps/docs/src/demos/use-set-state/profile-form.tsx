@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button, Input } from "@seam/ui";
-import { useSetState } from "@seam/hooks";
+import { Button, Input } from "seam-react";
+import { useSetState } from "seam-hooks";
 
 export function Demo() {
   const [profile, patch] = useSetState({

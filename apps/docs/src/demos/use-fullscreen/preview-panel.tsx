@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { Button } from "@seam/ui";
-import { useFullscreen } from "@seam/hooks";
+import { Button } from "seam-react";
+import { useFullscreen } from "seam-hooks";
 
 export function Demo() {
   const panelRef = useRef(document.createElement("div"));

@@ -1,4 +1,4 @@
-import { useWindowSize } from "@seam/hooks";
+import { useWindowSize } from "seam-hooks";
 
 export function Demo() {
   const { width, height } = useWindowSize();

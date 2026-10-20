@@ -1,22 +1,24 @@
-# @seam/ui
+# seam-react
 
-基于 `@seam/hooks` 的 React 组件库，内置可访问性与主题 token。
+基于 `seam-hooks` 的 React 组件库，内置可访问性与主题 token。
 
 ## 安装
 
-包发布在 JSR，公共包安装不需要登录或访问令牌：
+包发布在 npm，安装不需要访问令牌：
 
 ```bash
-pnpm add jsr:@seam/ui
-# npm 项目
-npx jsr add @seam/ui
+pnpm add seam-react
+# 或
+npm install seam-react
 ```
+
+也可以从 JSR 安装 `@seam/ui`。
 
 ## 使用
 
 ```tsx
-import { Button, Tabs, Dialog } from "@seam/ui";
-import { SeamStyles } from "@seam/ui/styles";
+import { Button, Tabs, Dialog } from "seam-react";
+import { SeamStyles } from "seam-react/styles";
 
 export function Root() {
   return (

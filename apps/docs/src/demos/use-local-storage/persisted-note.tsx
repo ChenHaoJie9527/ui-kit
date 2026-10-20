@@ -1,4 +1,4 @@
-import { useLocalStorage } from "@seam/hooks";
+import { useLocalStorage } from "seam-hooks";
 
 export function Demo() {
   const [note, setNote, remove] = useLocalStorage(

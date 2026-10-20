@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button } from "@seam/ui";
-import { useLockBodyScroll } from "@seam/hooks";
+import { Button } from "seam-react";
+import { useLockBodyScroll } from "seam-hooks";
 
 export function Demo() {
   const [open, setOpen] = useState(false);

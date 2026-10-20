@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { Button, Dialog, Input, Switch, Tabs, useToast } from "@seam/ui";
+import { Button, Dialog, Input, Switch, Tabs, useToast } from "seam-react";
 import {
   BulletList,
   ButtonRow,
@@ -575,7 +575,7 @@ export function CustomizingPage() {
         description="如果视觉和交互都要重写，不必和组件较劲。组件内部用的就是公开的 hooks，直接拿这套逻辑写自己的结构。"
       >
         <CodeBlock
-          code={`import { useControllableState } from "@seam/hooks";
+          code={`import { useControllableState } from "seam-hooks";
 
 function MySwitch({ value, defaultValue, onChange }) {
   const [on, setOn] = useControllableState({

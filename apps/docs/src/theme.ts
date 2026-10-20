@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useLocalStorage } from "@seam/hooks";
+import { useLocalStorage } from "seam-hooks";
 
 export type ThemeMode = "system" | "light" | "dark";
 

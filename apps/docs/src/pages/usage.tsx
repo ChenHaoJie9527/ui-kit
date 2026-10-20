@@ -11,7 +11,7 @@ import {
 
 const NEXT_DIRECTIVES = `"use client";
 
-import { Button, useToast } from "@seam/ui";
+import { Button, useToast } from "seam-react";
 
 export function SaveButton() {
   const { toast } = useToast();
@@ -35,16 +35,16 @@ const PACKAGE_MANAGERS = ["pnpm", "npm", "yarn", "bun"] as const;
 type PackageManager = (typeof PACKAGE_MANAGERS)[number];
 
 const INSTALL_COMMANDS: Record<PackageManager, string> = {
-  pnpm: "pnpm add jsr:@seam/ui",
-  npm: "npx jsr add @seam/ui",
-  yarn: "yarn add jsr:@seam/ui",
-  bun: "bunx jsr add @seam/ui",
+  pnpm: "pnpm add seam-react",
+  npm: "npm install seam-react",
+  yarn: "yarn add seam-react",
+  bun: "bun add seam-react",
 };
 
 const REACT_ENTRY = `import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { ToastProvider } from "@seam/ui";
-import { SeamStyles } from "@seam/ui/styles";
+import { ToastProvider } from "seam-react";
+import { SeamStyles } from "seam-react/styles";
 
 import "./index.css";
 import { App } from "./App";
@@ -63,7 +63,7 @@ import {
   Button,
   Switch,
   useToast,
-} from "@seam/ui";
+} from "seam-react";
 
 export function App() {
   const { toast } = useToast();
@@ -96,7 +96,7 @@ export function App() {
 const NEXT_PROVIDER = `"use client";
 
 import type { ReactNode } from "react";
-import { ToastProvider } from "@seam/ui";
+import { ToastProvider } from "seam-react";
 
 export function Providers({ children }: { children: ReactNode }) {
   return <ToastProvider>{children}</ToastProvider>;
@@ -104,7 +104,7 @@ export function Providers({ children }: { children: ReactNode }) {
 
 const NEXT_LAYOUT = `import type { ReactNode } from "react";
 import { Providers } from "./providers";
-import { SeamStyles } from "@seam/ui/styles";
+import { SeamStyles } from "seam-react/styles";
 
 import "./globals.css";
 
@@ -126,7 +126,7 @@ export default function RootLayout({
 const NEXT_HOOKS = `"use client";
 
 import { useState } from "react";
-import { useMedia } from "@seam/hooks";
+import { useMedia } from "seam-hooks";
 
 export function ResponsiveSummary() {
   const narrow = useMedia("(max-width: 720px)");
@@ -177,7 +177,7 @@ const NOTES = [
   {
     number: "04",
     title: "公共包无需认证",
-    body: "@seam/ui 与 @seam/hooks 发布在 JSR。消费者无需登录或配置 npm token；npm 项目使用 JSR CLI 安装即可。",
+    body: "seam-react 与 seam-hooks 发布在 npm，也提供 @seam/ui 与 @seam/hooks 的 JSR 版本。两种渠道都不需要消费者配置令牌。",
   },
 ];
 
@@ -265,38 +265,39 @@ export function UsagePage() {
       kind="指南"
       title="使用指南"
       description="从安装到渲染，用一份最短路径把 ui-kit 接入 React 或 Next.js 应用。下面的示例适用于 React 18+，并包含 Next.js App Router 的客户端边界与全局样式配置。"
-      tags={["React 18+", "Next.js App Router", "TypeScript", "JSR"]}
+      tags={["React 18+", "Next.js App Router", "TypeScript", "npm", "JSR"]}
     >
       <Section
         title="开始之前"
-        description="组件包依赖 React 和 ReactDOM；两个包都发布在 JSR，公共包安装不需要 token。pnpm 10.9+ 和 Yarn 4.9+ 原生支持 JSR，npm 与 Bun 可通过 JSR CLI 安装。"
+        description="组件包依赖 React 和 ReactDOM。组件发布为 seam-react，Hooks 发布为 seam-hooks；也可以从 JSR 使用 @seam/ui 与 @seam/hooks。"
       >
         <Requirements />
 
-        <Callout title="安装命令会自动配置 JSR">
+        <Callout title="npm 与 JSR 使用同一套 API">
           <p>
-            不需要手动编辑 <InlineCode>~/.npmrc</InlineCode>。npm 项目运行{" "}
-            <InlineCode>npx jsr add @seam/ui</InlineCode> 时，CLI 会自动配置 JSR
-            registry。
+            npm 安装后直接导入 <InlineCode>seam-react</InlineCode> 和{" "}
+            <InlineCode>seam-hooks</InlineCode>。JSR 安装后则导入{" "}
+            <InlineCode>@seam/ui</InlineCode> 和{" "}
+            <InlineCode>@seam/hooks</InlineCode>，组件和 Hooks 的 API 完全一致。
           </p>
         </Callout>
       </Section>
 
       <Section
         title="安装"
-        description="选择项目正在使用的包管理器。安装组件包会自动安装 ui-kit-hooks；React 与 ReactDOM 由你的应用提供，不会被重复打包。"
+        description="选择项目正在使用的包管理器。安装组件包会自动安装 seam-hooks；React 与 ReactDOM 由你的应用提供，不会被重复打包。"
       >
         <InstallCommand />
 
         <BulletList
           items={[
             <>
-              <InlineCode>@seam/ui</InlineCode>：Button、Input、
+              <InlineCode>seam-react</InlineCode>：Button、Input、
               Switch、Tabs、Dialog、Toast 与样式。
             </>,
             <>
               只使用无渲染逻辑时，可以单独安装{" "}
-              <InlineCode>@seam/hooks</InlineCode>
+              <InlineCode>seam-hooks</InlineCode>
               ，它包含状态、异步、性能与浏览器能力 hooks。
             </>,
           ]}

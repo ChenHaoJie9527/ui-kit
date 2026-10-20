@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { Button } from "@seam/ui";
-import { useClickAway } from "@seam/hooks";
+import { Button } from "seam-react";
+import { useClickAway } from "seam-hooks";
 
 export function Demo() {
   const menuRef = useRef(document.createElement("div"));

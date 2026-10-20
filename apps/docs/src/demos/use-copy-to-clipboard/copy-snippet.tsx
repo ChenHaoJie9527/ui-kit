@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Button, Input } from "@seam/ui";
-import { useCopyToClipboard } from "@seam/hooks";
+import { Button, Input } from "seam-react";
+import { useCopyToClipboard } from "seam-hooks";
 
 export function Demo() {
-  const [text, setText] = useState("pnpm add jsr:@seam/hooks");
+  const [text, setText] = useState("pnpm add seam-hooks");
   const [state, copy] = useCopyToClipboard();
 
   return (

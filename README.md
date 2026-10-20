@@ -78,21 +78,28 @@
 - `Dialog`：基于原生 `<dialog>`，焦点陷阱（双向循环 / 外部聚焦回收 / 焦点恢复）、Esc、遮罩与 body 滚动锁定开箱即用。
 - `Toast`：`ToastProvider` + `useToast()`，带队列、自动关闭、悬停暂停与 `aria-live` 区域。
 
-JSR 版本通过在应用根部渲染一次 `<SeamStyles />` 引入组件样式；所有颜色、间距、圆角与阴影都是 CSS 变量，支持 `light-dark()` 跟随系统主题。
+在应用根部渲染一次 `<SeamStyles />` 即可引入组件样式；所有颜色、间距、圆角与阴影都是 CSS 变量，支持 `light-dark()` 跟随系统主题。
 
 ## 安装
 
-包发布在 **JSR**，公共包安装不需要登录或访问令牌：
+包发布在 **npm**，安装不需要访问令牌：
+
+```bash
+pnpm add seam-react
+# 或
+npm install seam-react
+```
+
+`seam-react` 依赖 `seam-hooks`，安装组件包即可同时使用全部 hooks。只想要无渲染逻辑时，也可以单独安装：
+
+```bash
+pnpm add seam-hooks
+```
+
+也可以从 JSR 安装同名能力：
 
 ```bash
 pnpm add jsr:@seam/ui
-# npm 项目可通过 JSR CLI 安装
-npx jsr add @seam/ui
-```
-
-`@seam/ui` 依赖 `@seam/hooks`，安装组件包即可同时使用全部 hooks。只想要无渲染逻辑时，也可以单独安装：
-
-```bash
 pnpm add jsr:@seam/hooks
 ```
 
@@ -101,7 +108,7 @@ pnpm add jsr:@seam/hooks
 ### 受控 / 非受控
 
 ```tsx
-import { useControllableState } from "@seam/hooks";
+import { useControllableState } from "seam-hooks";
 
 function Input({ value, defaultValue = "", onChange }: Props) {
   const [current, setCurrent] = useControllableState({
@@ -117,7 +124,7 @@ function Input({ value, defaultValue = "", onChange }: Props) {
 ### 万级列表
 
 ```tsx
-import { useVirtualList } from "@seam/hooks";
+import { useVirtualList } from "seam-hooks";
 
 const { start, end, totalHeight, offsetTop } = useVirtualList({
   count: 10_000,
@@ -138,8 +145,8 @@ const report = useEventCallback(() => {
 ### 组件
 
 ```tsx
-import { Button, Dialog, Tabs, ToastProvider, useToast } from "@seam/ui";
-import { SeamStyles } from "@seam/ui/styles";
+import { Button, Dialog, Tabs, ToastProvider, useToast } from "seam-react";
+import { SeamStyles } from "seam-react/styles";
 
 function App() {
   return (
@@ -167,8 +174,8 @@ function App() {
 ```
 ui-kit/
 ├─ packages/
-│  ├─ hooks/          @seam/hooks —— 无渲染逻辑
-│  └─ ui/             @seam/ui —— 组件与样式
+│  ├─ hooks/          seam-hooks —— 无渲染逻辑
+│  └─ ui/             seam-react —— 组件与样式
 ├─ apps/
 │  └─ docs/           文档与交互演示（构建为静态站点）
 └─ .github/workflows/ CI：发布包、构建并部署文档站
@@ -184,10 +191,10 @@ pnpm install
 pnpm dev
 
 # 单项校验
-pnpm --filter @seam/hooks test
-pnpm --filter @seam/hooks typecheck
-pnpm --filter @seam/ui test
-pnpm --filter @seam/ui typecheck
+pnpm --filter seam-hooks test
+pnpm --filter seam-hooks typecheck
+pnpm --filter seam-react test
+pnpm --filter seam-react typecheck
 
 # 提交前一次性跑完 format / lint / typecheck / test
 pnpm check
@@ -239,13 +246,13 @@ pnpm check         # format:check + lint + typecheck + test
 - [x] `packages/ui`：Button、Input、Switch、Tabs、Dialog、Toast 最小闭环
 - [ ] `packages/ui`：VirtualList、Menu、Select 等第二批组件
 - [ ] 文档站补充每个组件的 API 表格与边界用例
-- [x] 用 Changesets 管理版本并发布到 JSR
+- [x] 用 Changesets 管理版本并发布到 npm 与 JSR
 - [ ] 增加 1 万行列表的首屏渲染基准（全量 vs 虚拟滚动）
 
 ## 发布
 
-发布通过 GitHub Actions OIDC 完成：推送 `v*` 标签，或在 Actions 里手动触发
-`publish` 工作流。工作流会按 `hooks` → `ui` 的顺序发布到 JSR，无需保存 npm token。
+npm 发布使用 `pnpm publish:npm`，JSR 发布使用 `pnpm publish:jsr`。
+JSR workflow 通过 GitHub Actions OIDC 发布，不需要保存 token。
 
 ## License
 

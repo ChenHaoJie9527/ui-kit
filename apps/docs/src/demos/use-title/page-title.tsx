@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { Button, Input } from "@seam/ui";
-import { useTitle } from "@seam/hooks";
+import { Button, Input } from "seam-react";
+import { useTitle } from "seam-hooks";
 
 export function Demo() {
   const original = useRef(document.title);

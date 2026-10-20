@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button, Input } from "@seam/ui";
-import { useMap } from "@seam/hooks";
+import { Button, Input } from "seam-react";
+import { useMap } from "seam-hooks";
 
 export function Demo() {
   const [values, { set, remove, clear, reset }] = useMap(

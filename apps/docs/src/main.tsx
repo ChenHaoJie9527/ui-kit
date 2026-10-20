@@ -4,7 +4,7 @@ import "./app.css";
 import "../../../packages/ui/src/styles.css";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
-import { ToastProvider } from "@seam/ui";
+import { ToastProvider } from "seam-react";
 import { router } from "./routes";
 
 createRoot(document.getElementById("root")!).render(

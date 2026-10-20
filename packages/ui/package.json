@@ -1,7 +1,7 @@
 {
-  "name": "@seam/ui",
+  "name": "seam-react",
   "version": "0.1.1",
-  "description": "基于 @seam/hooks 的 React 组件库：Button、Input、Switch、Tabs、Dialog、Toast",
+  "description": "基于 seam-hooks 的 React 组件库：Button、Input、Switch、Tabs、Dialog、Toast",
   "keywords": [
     "component-library",
     "dialog",
@@ -37,6 +37,11 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./styles": {
+      "types": "./dist/SeamStyles.d.ts",
+      "import": "./dist/styles.js",
+      "require": "./dist/styles.cjs"
+    },
     "./styles.css": "./dist/styles.css"
   },
   "scripts": {
@@ -47,7 +52,7 @@
     "prepublishOnly": "pnpm build && pnpm test"
   },
   "dependencies": {
-    "@seam/hooks": "workspace:*"
+    "seam-hooks": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",

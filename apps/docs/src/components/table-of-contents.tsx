@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useLocation, useSearchParams } from "react-router";
-import { useActiveSection } from "@seam/hooks";
+import { useActiveSection } from "seam-hooks";
 import { useTocEntries, type TocEntry } from "./docs";
 
 /** 吸顶头部高度 + 一点呼吸空间。 */

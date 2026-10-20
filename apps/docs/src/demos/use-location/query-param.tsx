@@ -1,5 +1,5 @@
-import { Button } from "@seam/ui";
-import { useLocation } from "@seam/hooks";
+import { Button } from "seam-react";
+import { useLocation } from "seam-hooks";
 
 function writeParam() {
   const url = new URL(window.location.href);

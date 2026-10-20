@@ -1,25 +1,25 @@
-# @seam/hooks
+# seam-hooks
 
 29 个生产级 React hooks：受控状态、虚拟滚动、异步竞态、焦点管理与浏览器能力封装。
 
 ## 安装
 
-包发布在 JSR，公共包安装不需要登录或访问令牌。
+包发布在 npm，安装不需要访问令牌。
+
+```bash
+pnpm add seam-hooks
+```
+
+也可以从 JSR 安装：
 
 ```bash
 pnpm add jsr:@seam/hooks
 ```
 
-npm 项目可以通过 JSR CLI 安装：
-
-```bash
-npx jsr add @seam/hooks
-```
-
 ## 快速开始
 
 ```tsx
-import { useControllableState, useVirtualList } from "@seam/hooks";
+import { useControllableState, useVirtualList } from "seam-hooks";
 
 const [value, setValue] = useControllableState({ defaultValue: "" });
 

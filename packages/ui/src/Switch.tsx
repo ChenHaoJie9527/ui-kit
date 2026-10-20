@@ -6,7 +6,7 @@ import {
   type ReactNode,
   type RefAttributes,
 } from "react";
-import { useControllableState } from "@seam/hooks";
+import { useControllableState } from "seam-hooks";
 import { cx } from "./utils/cx";
 
 export interface SwitchProps extends Omit<

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button } from "@seam/ui";
-import { usePageLeave } from "@seam/hooks";
+import { Button } from "seam-react";
+import { usePageLeave } from "seam-hooks";
 
 export function Demo() {
   const [leaves, setLeaves] = useState(0);

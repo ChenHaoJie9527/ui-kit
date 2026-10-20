@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { useCopyToClipboard } from "@seam/hooks";
+import { useCopyToClipboard } from "seam-hooks";
 import { componentMetas } from "../content/components";
 import { hookGroups } from "../content/hooks";
 
@@ -37,7 +37,7 @@ const HOOK_GROUP_TITLE =
 
 export function OverviewPage() {
   const [state, copy] = useCopyToClipboard();
-  const command = "pnpm add jsr:@seam/ui";
+  const command = "pnpm add seam-react";
   const copied = state.copied && state.value === command;
 
   return (

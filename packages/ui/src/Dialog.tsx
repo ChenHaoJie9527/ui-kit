@@ -8,7 +8,7 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { useEventCallback, useFocusTrap, useLockBodyScroll } from "@seam/hooks";
+import { useEventCallback, useFocusTrap, useLockBodyScroll } from "seam-hooks";
 import { Button } from "./Button";
 import { cx } from "./utils/cx";
 

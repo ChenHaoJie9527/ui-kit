@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button } from "@seam/ui";
-import { useStartTyping } from "@seam/hooks";
+import { Button } from "seam-react";
+import { useStartTyping } from "seam-hooks";
 
 function Probe() {
   const typing = useStartTyping();

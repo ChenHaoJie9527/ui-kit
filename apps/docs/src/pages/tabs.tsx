@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Tabs } from "@seam/ui";
+import { Button, Tabs } from "seam-react";
 import {
   BulletList,
   ButtonRow,
@@ -157,7 +157,7 @@ export function TabsPage() {
       tags={["键盘导航", "roving tabindex", "受控 / 非受控", "横向 / 纵向"]}
     >
       <Section title="引入">
-        <CodeBlock code={'import { Tabs } from "@seam/ui";'} />
+        <CodeBlock code={'import { Tabs } from "seam-react";'} />
       </Section>
 
       <Section

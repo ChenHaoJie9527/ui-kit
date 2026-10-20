@@ -1,6 +1,6 @@
 import { useRef } from "react";
-import { Button } from "@seam/ui";
-import { useAsyncRetry } from "@seam/hooks";
+import { Button } from "seam-react";
+import { useAsyncRetry } from "seam-hooks";
 
 async function loadReport(attempt = 0) {
   await new Promise((resolve) => setTimeout(resolve, 700));

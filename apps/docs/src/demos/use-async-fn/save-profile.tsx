@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button, Input } from "@seam/ui";
-import { useAsyncFn } from "@seam/hooks";
+import { Button, Input } from "seam-react";
+import { useAsyncFn } from "seam-hooks";
 
 async function saveProfile(name = "") {
   await new Promise((resolve) => setTimeout(resolve, 900));

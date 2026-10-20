@@ -1,6 +1,6 @@
-import { Button } from "@seam/ui";
+import { Button } from "seam-react";
 import { useRef } from "react";
-import { useToast } from "@seam/ui";
+import { useToast } from "seam-react";
 import {
   BulletList,
   ButtonRow,
@@ -151,7 +151,7 @@ export function ToastPage() {
     >
       <Section title="引入">
         <CodeBlock
-          code={`import { ToastProvider, useToast } from "@seam/ui";
+          code={`import { ToastProvider, useToast } from "seam-react";
 
 // 应用根部
 <ToastProvider>

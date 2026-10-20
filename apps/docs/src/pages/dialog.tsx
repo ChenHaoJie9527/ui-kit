@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from "react";
-import { Button, Dialog, Input } from "@seam/ui";
+import { Button, Dialog, Input } from "seam-react";
 import {
   BulletList,
   ButtonRow,
@@ -141,7 +141,7 @@ export function DialogPage() {
       tags={["原生 dialog", "焦点陷阱", "焦点恢复", "body 滚动锁定"]}
     >
       <Section title="引入">
-        <CodeBlock code={'import { Dialog } from "@seam/ui";'} />
+        <CodeBlock code={'import { Dialog } from "seam-react";'} />
       </Section>
 
       <Section
