@@ -1,10 +1,44 @@
+export interface HookNote {
+  tone?: "info" | "warning";
+  title?: string;
+  text: string;
+}
+
+export interface HookUsage {
+  title: string;
+  description?: string;
+  /** 对应 src/demos 下的示例 id（不含扩展名）。 */
+  demo: string;
+}
+
+export interface HookApiRow {
+  name: string;
+  type: string;
+  defaultValue?: string;
+  required?: boolean;
+  description: string;
+}
+
+export interface HookApi {
+  signature: string;
+  parameters: HookApiRow[];
+  returns: HookApiRow[];
+}
+
 export interface HookDoc {
   name: string;
   path: string;
   signature: string;
   description: string;
   example: string;
-  notes: string[];
+  notes: (string | HookNote)[];
+
+  // 补齐这些字段的页面使用「何时使用 / 注意事项 / 用法 / API」结构；
+  // 其余页面暂时沿用旧的「引入 / 签名 / 用法 / 说明」。
+  whenToUse?: string[];
+  notFor?: string[];
+  usage?: HookUsage[];
+  api?: HookApi;
 }
 
 export interface HookGroup {
@@ -230,12 +264,79 @@ return <div {...bind} data-over={over} />;`,
   scrollTop,
 });`,
       ),
-      hook(
-        "useDebouncedValue",
-        "useDebouncedValue<T>(value: T, delay = 300): T",
-        "延迟更新值，适合搜索输入与高频变化的场景。",
-        `const debounced = useDebouncedValue(query, 300);`,
-      ),
+      {
+        name: "useDebouncedValue",
+        path: "hooks/use-debounced-value",
+        signature: "useDebouncedValue<T>(value: T, delay = 300): T",
+        description:
+          "在值停止变化 delay 毫秒后才返回新值。适合搜索联想、大列表过滤这类「输入很快、处理很慢」的场景。",
+        example: `const debounced = useDebouncedValue(query, 300);`,
+        whenToUse: [
+          "搜索框联想：等用户停止输入再请求，避免每个按键都打一次接口。",
+          "大列表过滤或昂贵计算：把防抖值作为 useMemo 的依赖，只在停手后重算。",
+          "同步到 URL、localStorage 或埋点：减少 replaceState 与序列化的次数。",
+          "远程校验：用户输完一段再校验，而不是每敲一个字就报错。",
+        ],
+        notFor: [
+          "需要逐字反馈的 UI（字数统计、即时高亮）——直接用原值。",
+          "输入框自身的 value——受控输入必须实时更新，否则打字会卡。",
+          "事件回调的防抖（滚动、resize）——用 useDebounce，它支持 cancel / flush。",
+        ],
+        notes: [
+          {
+            tone: "info",
+            title: "首次渲染不延迟",
+            text: "内部用 useState(value) 作为初值，所以第一次渲染拿到的就是传入值，不会先渲染成空。",
+          },
+          {
+            tone: "warning",
+            title: "只延迟值的传播，不阻止重渲染",
+            text: "使用它的组件仍会因 value 变化重渲染；它保护的是下游（请求、useMemo、订阅）。要跳过渲染，把消费方拆成 memo 组件。",
+          },
+          {
+            text: "delay <= 0 时同步更新，不创建定时器，便于测试或临时关闭防抖。",
+          },
+          {
+            text: "value 或 delay 每次变化都会重置计时器；组件卸载时自动清理。",
+          },
+          {
+            text: "不提供 cancel / flush。需要在事件层控制时，改用 useDebounce。",
+          },
+        ],
+        usage: [
+          {
+            title: "搜索过滤",
+            description:
+              "输入框的值立即更新，过滤和「下游查询」只在你停手 400ms 后执行。把 delay 改成 0 或 1200 试试。",
+            demo: "use-debounced-value/search",
+          },
+        ],
+        api: {
+          signature: "useDebouncedValue<T>(value: T, delay?: number): T",
+          parameters: [
+            {
+              name: "value",
+              type: "T",
+              required: true,
+              description: "需要延迟传播的值。",
+            },
+            {
+              name: "delay",
+              type: "number",
+              defaultValue: "300",
+              description: "延迟毫秒数；<= 0 时立即同步更新。",
+            },
+          ],
+          returns: [
+            {
+              name: "value",
+              type: "T",
+              description:
+                "防抖后的值。初始等于首次传入的 value，之后在最后一次变化结束 delay 毫秒后更新。",
+            },
+          ],
+        },
+      },
       hook(
         "useDebounce",
         "useDebounce(fn, delay?): DebouncedFunction",

@@ -1,0 +1,307 @@
+/*
+ * 层顺序由 layers.css 在最前面声明（必须单独成文件，见那里的注释）。
+ *
+ * 这里只引入 theme 与 utilities，不用完整包：完整包会带上 preflight，
+ * 而 preflight 用的是 base 层。自己写一份最小 reset 更容易控制行为。
+ *
+ * source(none) 关掉自动内容探测：否则 Tailwind 会把仓库里任意文本
+ * （`if (!container)`、构建产物 sourcemap）当成候选类名。
+ */
+@import "tailwindcss/theme.css" layer(theme) source(none);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source ".";
+
+/*
+ * `inline` 让生成的工具类直接展开成 var(--doc-*)，
+ * 而不是在构建期把值固化成一份新的 --color-* 变量。
+ * 这样 light-dark() 与 [data-theme] 切换才有效。
+ */
+@theme inline {
+  --color-canvas: var(--doc-bg);
+  --color-surface: var(--doc-surface);
+  --color-surface-2: var(--doc-surface-2);
+  --color-ink: var(--doc-text);
+  --color-muted: var(--doc-muted);
+  --color-faint: var(--doc-faint);
+  --color-line: var(--doc-border);
+  --color-line-strong: var(--doc-border-strong);
+  --color-accent: var(--doc-accent);
+  --color-accent-strong: var(--doc-accent-strong);
+  --color-accent-soft: var(--doc-accent-soft);
+  --color-danger: var(--doc-danger);
+  --color-warning: var(--doc-warning);
+  --color-code: var(--doc-code-bg);
+  --color-code-ink: var(--doc-code-text);
+  --color-code-muted: var(--doc-code-muted);
+
+  --font-sans: var(--doc-font-sans);
+  --font-mono: var(--doc-font-mono);
+
+  /* 与迁移前的手写断点保持一致 */
+  --breakpoint-desk: 1180px;
+  --breakpoint-drawer: 960px;
+  --breakpoint-tablet: 1024px;
+  --breakpoint-phone: 720px;
+}
+
+/* ---------- 设计 token（主题的唯一来源） ---------- */
+
+:root {
+  color-scheme: light dark;
+
+  --demo-code-ink: #e2e8f0;
+  --demo-code-comment: #7f8ea3;
+  --demo-code-keyword: #c4b5fd;
+  --demo-code-tag: #7dd3fc;
+  --demo-code-attr: #fcd34d;
+  --demo-code-string: #86efac;
+  --demo-code-number: #fdba74;
+  --demo-code-function: #93c5fd;
+  --demo-code-punctuation: #8b98ad;
+  --demo-code-operator: #cbd5e1;
+  --demo-code-selection: color-mix(in srgb, #818cf8 45%, transparent);
+
+  --doc-bg: light-dark(#fbfbfd, #080a0f);
+  --doc-surface: light-dark(#ffffff, #0f1218);
+  --doc-surface-2: light-dark(#f4f5f9, #151a22);
+  --doc-text: light-dark(#0f172a, #e8ecf4);
+  --doc-muted: light-dark(#5b6577, #94a3b8);
+  --doc-faint: light-dark(#8a94a6, #64748b);
+  --doc-border: light-dark(#e6e8ef, #1e2532);
+  --doc-border-strong: light-dark(#cbd5e1, #2b3444);
+  --doc-accent: light-dark(#4338ca, #a5b4fc);
+  --doc-accent-strong: light-dark(#3730a3, #c7d2fe);
+  --doc-accent-soft: light-dark(#eef2ff, #1b1f3a);
+  --doc-danger: light-dark(#b91c1c, #fca5a5);
+  --doc-warning: light-dark(#b45309, #fcd34d);
+  --doc-code-bg: #0b0f1a;
+  --doc-code-text: #e2e8f0;
+  --doc-code-muted: #8b98ad;
+
+  --doc-topbar-height: 60px;
+  --doc-sidebar-width: 280px;
+  --doc-font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --doc-font-mono:
+    ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after,
+  ::backdrop {
+    box-sizing: border-box;
+    /* 工具类只写 border-width 时需要 solid 才能看见 */
+    border: 0 solid;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    tab-size: 4;
+  }
+
+  body {
+    margin: 0;
+    background: var(--doc-bg);
+    color: var(--doc-text);
+    font-family: var(--doc-font-sans);
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  figure,
+  blockquote,
+  dl,
+  dd,
+  pre {
+    margin: 0;
+  }
+
+  ul,
+  ol {
+    margin: 0;
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    display: block;
+    max-width: 100%;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--doc-accent) 28%, transparent);
+  }
+
+  code,
+  pre {
+    font-family: var(--doc-font-mono);
+  }
+}
+
+/* ---------- 无法用工具类表达的自定义 utility ---------- */
+
+/* 演示区的点阵背景 */
+@utility demo-grid {
+  background-color: var(--doc-surface-2);
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--doc-border-strong) 70%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 16px 16px;
+  background-position: -1px -1px;
+}
+
+/* 侧栏滚动条：细、悬停可见 */
+@utility sidebar-scroll {
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: var(--doc-border-strong);
+    background-clip: content-box;
+  }
+}
+
+/* 搜索框去掉浏览器自带的清除按钮，改用自定义的 */
+@utility no-search-cancel {
+  &::-webkit-search-cancel-button {
+    appearance: none;
+  }
+}
+
+/* <details> 的默认三角，Safari / Chrome 各有一套 */
+@utility no-details-marker {
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &::marker {
+    content: "";
+  }
+}
+
+/* ---------- 主题演示：这些类的作用就是设置变量，属于那页的教学内容 ---------- */
+
+@layer components {
+  /*
+   * 实时示例的叠层编辑器。
+   *
+   * 上下两层（pre 与 textarea）由 react-simple-code-editor 用同一套内联样式
+   * 排版，颜色只在 pre 上出现；textarea 的字形由库置为透明，这里只需要补
+   * 光标与选区——`color: inherit` 会让光标在浅色主题下变成深色，几乎看不见。
+   */
+  .demo-editor textarea {
+    caret-color: var(--demo-code-ink);
+    outline: none;
+  }
+
+  /* 焦点画在整块上，而不是 textarea 的默认轮廓（默认色在深色面板上不可控）。 */
+  .demo-editor:focus-within {
+    box-shadow: inset 0 0 0 2px
+      color-mix(in srgb, var(--doc-accent) 65%, transparent);
+  }
+
+  .demo-editor textarea::selection {
+    background: var(--demo-code-selection);
+  }
+
+  .theme-brand {
+    --uk-primary: light-dark(#0f766e, #5eead4);
+    --uk-primary-solid: light-dark(#0f766e, #0d9488);
+    --uk-primary-solid-hover: light-dark(#115e59, #14b8a6);
+    --uk-focus-ring: light-dark(#0d9488, #5eead4);
+  }
+
+  .theme-compact {
+    --uk-radius-sm: 0.125rem;
+    --uk-radius-md: 0.25rem;
+    --uk-radius-lg: 0.375rem;
+    --uk-button-radius: 0.25rem;
+    --uk-input-radius: 0.25rem;
+  }
+
+  .theme-contrast {
+    --uk-border: light-dark(#94a3b8, #475569);
+    --uk-border-strong: light-dark(#334155, #64748b);
+    --uk-text-muted: light-dark(#334155, #cbd5e1);
+    --uk-focus-ring: light-dark(#1d4ed8, #93c5fd);
+  }
+
+  .theme-broken-dark {
+    /* 故意只给一个值：演示深色模式下对比度不足的问题 */
+    --uk-primary-solid: #7dd3fc;
+    --uk-primary-solid-hover: #38bdf8;
+  }
+
+  /* 下面是「定向选择器」那节的示例代码，本身就是文档内容 */
+  .demo-outline-primary[data-variant="primary"] {
+    background: transparent;
+    border-color: var(--uk-primary-solid);
+    color: var(--uk-primary-solid);
+  }
+
+  .demo-square {
+    --uk-button-radius: 0;
+    aspect-ratio: 1;
+    padding: 0;
+  }
+
+  .demo-wide {
+    letter-spacing: 0.06em;
+    min-width: 10rem;
+  }
+
+  .demo-dashed-tabs .uk-tabs__trigger[data-state="active"]::after {
+    background: repeating-linear-gradient(
+      90deg,
+      currentColor 0 6px,
+      transparent 6px 10px
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

@@ -6,14 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build --base ./ --outDir ../../docs --emptyOutDir",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:live": "node --experimental-strip-types scripts/check-live-compiler.ts"
   },
   "dependencies": {
     "@chenhaojie9527/ui-kit": "workspace:*",
     "@chenhaojie9527/ui-kit-hooks": "workspace:*",
+    "prism-react-renderer": "^2.4.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router": "^8.4.0"
+    "react-router": "^8.4.0",
+    "react-simple-code-editor": "^0.14.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

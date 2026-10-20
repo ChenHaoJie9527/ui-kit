@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { useCopyToClipboard } from "@chenhaojie9527/ui-kit-hooks";
+import { CodeHighlight } from "./live/highlight";
 import { TableOfContents } from "./table-of-contents";
 
 export interface TocEntry {
@@ -137,9 +138,7 @@ export function Section({ title, description, children, id }: SectionProps) {
       className="mt-[46px] scroll-mt-[calc(var(--doc-topbar-height)+24px)]"
       id={sectionId}
     >
-      <h2 className="m-0 text-[21px] font-[650] tracking-[-0.02em]">
-        {title}
-      </h2>
+      <h2 className="m-0 text-[21px] font-[650] tracking-[-0.02em]">{title}</h2>
       {description ? (
         <p className="mt-[7px] max-w-[70ch] text-[14.5px] text-muted">
           {description}
@@ -177,7 +176,28 @@ export interface CodeBlockProps {
   flush?: boolean;
 }
 
-export function CodeBlock({ code, label = "tsx", flush = false }: CodeBlockProps) {
+/** 代码块标签到 Prism 语言的映射；`path` 这类只是文件路径标签，按 tsx 注释处理。 */
+const LANGUAGE_BY_LABEL: Record<string, string> = {
+  tsx: "tsx",
+  jsx: "jsx",
+  typescript: "typescript",
+  javascript: "javascript",
+  css: "css",
+  html: "markup",
+  bash: "bash",
+  json: "json",
+  path: "tsx",
+};
+
+function languageOf(label: string): string {
+  return LANGUAGE_BY_LABEL[label.toLowerCase()] ?? "tsx";
+}
+
+export function CodeBlock({
+  code,
+  label = "tsx",
+  flush = false,
+}: CodeBlockProps) {
   const [state, copy] = useCopyToClipboard();
   const copied = state.copied && state.value === code;
 
@@ -201,8 +221,8 @@ export function CodeBlock({ code, label = "tsx", flush = false }: CodeBlockProps
           {copied ? "已复制" : "复制"}
         </button>
       </div>
-      <pre className="m-0 overflow-x-auto px-[18px] py-4 text-[12.5px] leading-[1.75] break-words whitespace-pre-wrap text-code-ink [tab-size:2]">
-        <code>{code}</code>
+      <pre className="m-0 px-[18px] py-4 font-mono text-[12.5px] leading-[1.75] break-words whitespace-pre-wrap text-code-ink [tab-size:2]">
+        <CodeHighlight code={code} language={languageOf(label)} />
       </pre>
       <span className="sr-only" aria-live="polite">
         {copied ? "代码已复制到剪贴板" : ""}
@@ -226,14 +246,21 @@ const cellClass = "border-b border-line px-3.5 py-[11px] align-top";
 
 const codeChip = "rounded-[5px] bg-surface-2 px-[5px] py-px font-mono text-xs";
 
-export function PropsTable({ rows }: { rows: PropRow[] }) {
+export function PropsTable({
+  rows,
+  firstColumnLabel = "属性",
+}: {
+  rows: PropRow[];
+  /** 第一列表头，参数表里用「参数」。 */
+  firstColumnLabel?: string;
+}) {
   return (
     <div className="overflow-x-auto rounded-xl border border-line">
       <table className="w-full border-collapse text-[13.5px]">
         <thead>
           <tr>
             <th scope="col" className={thClass}>
-              属性
+              {firstColumnLabel}
             </th>
             <th scope="col" className={thClass}>
               类型
@@ -276,6 +303,53 @@ export function PropsTable({ rows }: { rows: PropRow[] }) {
                 ) : (
                   <span className="text-faint">—</span>
                 )}
+              </td>
+              <td className={cellClass}>{row.description}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export interface ApiTableRow {
+  name: string;
+  type: string;
+  description: string;
+}
+
+/** 返回值表：没有默认值列，所以单独一个组件。 */
+export function ApiTable({ rows }: { rows: ApiTableRow[] }) {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-line">
+      <table className="w-full border-collapse text-[13.5px]">
+        <thead>
+          <tr>
+            <th scope="col" className={thClass}>
+              名称
+            </th>
+            <th scope="col" className={thClass}>
+              类型
+            </th>
+            <th scope="col" className={thClass}>
+              说明
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.name} className="[&:last-child>*]:border-b-0">
+              <th
+                scope="row"
+                className={`${cellClass} text-left font-medium whitespace-nowrap text-ink`}
+              >
+                <code className={`${codeChip} text-accent-strong`}>
+                  {row.name}
+                </code>
+              </th>
+              <td className={cellClass}>
+                <code className={`${codeChip} text-ink`}>{row.type}</code>
               </td>
               <td className={cellClass}>{row.description}</td>
             </tr>
@@ -331,9 +405,7 @@ export function InlineCode({ children }: { children: ReactNode }) {
 }
 
 export function ButtonRow({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-center gap-3">{children}</div>
-  );
+  return <div className="flex flex-wrap items-center gap-3">{children}</div>;
 }
 
 /** 状态文本，用于演示里展示当前值。 */
