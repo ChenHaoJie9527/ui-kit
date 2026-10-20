@@ -1,4 +1,5 @@
 node_modules/
+.pnpm-store/
 dist/
 # 只忽略构建产物 docs/，不要连 apps/docs/ 的源码一起忽略。
 /docs/
