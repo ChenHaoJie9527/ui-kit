@@ -251,8 +251,9 @@ pnpm check         # format:check + lint + typecheck + test
 
 ## 发布
 
-npm 发布使用 `pnpm publish:npm`，JSR 发布使用 `pnpm publish:jsr`。
-JSR workflow 通过 GitHub Actions OIDC 发布，不需要保存 token。
+合并 Changesets 的版本 PR 后，GitHub Actions 会通过 npm Trusted Publishing
+自动发布 `seam-hooks` → `seam-react`。JSR 使用独立的 `publish` workflow 和
+GitHub Actions OIDC 发布，两套流程不需要长期 token。
 
 ## License
 

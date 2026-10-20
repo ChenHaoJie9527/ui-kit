@@ -43,8 +43,9 @@ echo "feat(ui): 新增 Badge 组件" | pnpm exec commitlint
 
 1. 对 `packages/*` 有用户可见改动时，运行 `pnpm changeset`，选择包与升级类型（patch / minor / major），写一句说明；
 2. 提交并合并到 `main` 后，`release` 工作流会自动创建一个 “Version Packages” PR（含版本号与 CHANGELOG）；
-3. 合并该 PR 后，通过 `pnpm publish:npm` 发布 `seam-hooks` → `seam-react`。
-   JSR 可通过 GitHub Actions OIDC 使用 `pnpm publish:jsr` 发布。
+3. 合并该 PR 后，`release` 工作流通过 npm Trusted Publishing 自动发布
+   `seam-hooks` → `seam-react`，不需要保存 npm token。
+   JSR 使用独立的 `publish` 工作流和 `pnpm publish:jsr`。
 
 本地预演：
 

@@ -30,7 +30,8 @@ jobs:
       - uses: changesets/action@v1
         with:
           version: pnpm version-packages
-          publish: pnpm release
+          # Trusted Publishers for seam-hooks and seam-react point at this file.
+          publish: pnpm publish:npm
           commit: "chore(release): version packages"
           title: "chore(release): version packages"
         env:
