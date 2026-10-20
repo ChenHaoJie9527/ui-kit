@@ -384,41 +384,47 @@ export function AppLayout() {
           <Outlet />
 
           {previous || next ? (
-            <nav
-              className="mx-auto mt-16 grid max-w-[920px] grid-cols-2 gap-3 border-t border-line pt-6 max-phone:max-w-none max-phone:grid-cols-1"
-              aria-label="上一页与下一页"
-            >
-              {previous ? (
-                <Link
-                  className="flex flex-col gap-[3px] rounded-[11px] border border-line bg-surface px-4 py-[13px] text-ink no-underline transition-colors hover:border-accent hover:no-underline [&_span]:text-[11.5px] [&_span]:text-muted [&_strong]:text-sm [&_strong]:font-semibold"
-                  to={toRoute(previous.path)}
-                >
-                  <span>上一页</span>
-                  <strong>{previous.label}</strong>
-                </Link>
-              ) : null}
-              {next ? (
-                <Link
-                  className="col-start-2 flex flex-col gap-[3px] rounded-[11px] border border-line bg-surface px-4 py-[13px] text-right text-ink no-underline transition-colors hover:border-accent hover:no-underline max-phone:col-start-1 [&_span]:text-[11.5px] [&_span]:text-muted [&_strong]:text-sm [&_strong]:font-semibold"
-                  to={toRoute(next.path)}
-                >
-                  <span>下一页</span>
-                  <strong>{next.label}</strong>
-                </Link>
-              ) : null}
-            </nav>
+            <div className="doc-bottom-column">
+              <nav
+                className="mt-16 grid grid-cols-2 gap-3 border-t border-line pt-6 max-phone:grid-cols-1"
+                aria-label="上一页与下一页"
+              >
+                {previous ? (
+                  <Link
+                    className="flex flex-col gap-[3px] rounded-[11px] border border-line bg-surface px-4 py-[13px] text-ink no-underline transition-colors hover:border-accent hover:no-underline [&_span]:text-[11.5px] [&_span]:text-muted [&_strong]:text-sm [&_strong]:font-semibold"
+                    to={toRoute(previous.path)}
+                  >
+                    <span>上一页</span>
+                    <strong>{previous.label}</strong>
+                  </Link>
+                ) : null}
+                {next ? (
+                  <Link
+                    className="col-start-2 flex flex-col gap-[3px] rounded-[11px] border border-line bg-surface px-4 py-[13px] text-end text-ink no-underline transition-colors hover:border-accent hover:no-underline max-phone:col-start-1 [&_span]:text-[11.5px] [&_span]:text-muted [&_strong]:text-sm [&_strong]:font-semibold"
+                    to={toRoute(next.path)}
+                  >
+                    <span>下一页</span>
+                    <strong>{next.label}</strong>
+                  </Link>
+                ) : null}
+              </nav>
+            </div>
           ) : null}
         </div>
 
-        <footer className="mx-auto flex max-w-[920px] justify-between gap-4 px-12 pb-11 text-xs text-faint max-tablet:px-8 max-tablet:pb-10 max-phone:flex-col max-phone:px-5 max-phone:pb-9 [&_a]:text-muted [&_a]:no-underline [&_a:hover]:text-accent">
-          <span>MIT License © ChenHaoJie9527</span>
-          <span>
-            <a href={REPO_URL} target="_blank" rel="noreferrer">
-              GitHub
-            </a>{" "}
-            · React 19 · TypeScript 7
-          </span>
-        </footer>
+        <div className="mx-auto max-w-[1180px] px-12 max-tablet:px-8 max-phone:px-5">
+          <div className="doc-bottom-column">
+            <footer className="flex justify-between gap-4 pb-11 text-xs text-faint max-tablet:pb-10 max-phone:flex-col max-phone:pb-9 [&_a]:text-muted [&_a]:no-underline [&_a:hover]:text-accent">
+              <span>MIT License © ChenHaoJie9527</span>
+              <span>
+                <a href={REPO_URL} target="_blank" rel="noreferrer">
+                  GitHub
+                </a>{" "}
+                · React 19 · TypeScript 7
+              </span>
+            </footer>
+          </div>
+        </div>
       </main>
 
       <ScrollRestoration />

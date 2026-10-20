@@ -71,7 +71,7 @@ export function Page({ kind, title, description, tags, children }: PageProps) {
   return (
     <TocRegisterContext.Provider value={register}>
       <TocEntriesContext.Provider value={entries}>
-        <div className="grid items-start gap-12 max-desk:gap-0 desk:grid-cols-[minmax(0,1fr)_200px]">
+        <div className="doc-page-with-toc grid items-start gap-12 max-desk:gap-0 desk:grid-cols-[minmax(0,1fr)_200px]">
           <TableOfContents />
           <article className="row-start-2 min-w-0 desk:col-start-1 desk:row-start-1">
             <header className="border-b border-line pb-[22px]">

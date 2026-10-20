@@ -219,6 +219,22 @@
 
 @layer components {
   /*
+   * 上一页/下一页与页脚跟随正文列，而不是横跨“正文 + 本页目录”的整块区域。
+   * 没有本页目录的页面仍使用完整内容宽度。
+   */
+  @media (min-width: 1180px) {
+    #doc-content:has(.doc-page-with-toc) .doc-bottom-column {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 200px;
+      column-gap: 3rem;
+    }
+
+    #doc-content:has(.doc-page-with-toc) .doc-bottom-column > * {
+      grid-column: 1;
+    }
+  }
+
+  /*
    * 实时示例的叠层编辑器。
    *
    * 上下两层（pre 与 textarea）由 react-simple-code-editor 用同一套内联样式
