@@ -41,7 +41,7 @@
   },
   "scripts": {
     "generate:styles": "node scripts/generate-styles.mjs",
-    "build": "pnpm generate:styles && vite build && tsc -p tsconfig.build.json",
+    "build": "pnpm generate:styles && pnpm exec oxfmt src/styles.generated.ts && vite build && tsc -p tsconfig.build.json",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm build && pnpm test"
