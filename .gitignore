@@ -1,6 +1,7 @@
 node_modules/
 dist/
-docs/
+# 只忽略构建产物 docs/，不要连 apps/docs/ 的源码一起忽略。
+/docs/
 *.log
 .DS_Store
 work-docs.png

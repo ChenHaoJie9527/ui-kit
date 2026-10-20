@@ -9,5 +9,8 @@
   "oxc.enable.oxfmt": true,
   "oxc.fmt.experimental": true,
   "oxc.lint.run": "onType",
-  "files.eol": "\n"
+  "files.eol": "\n",
+  "[css]": {
+    "editor.defaultFormatter": "stylelint.vscode-stylelint"
+  }
 }
