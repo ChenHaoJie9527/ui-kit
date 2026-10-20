@@ -68,7 +68,10 @@ function FormDemo() {
       >
         <div className="flex max-w-[420px] flex-col gap-4">
           <div className="flex max-w-[380px] flex-col gap-1.5">
-            <label className="text-[13px] font-semibold text-ink" htmlFor="dialog-name">
+            <label
+              className="text-[13px] font-semibold text-ink"
+              htmlFor="dialog-name"
+            >
               显示名称
             </label>
             <Input
@@ -80,7 +83,10 @@ function FormDemo() {
             />
           </div>
           <div className="flex max-w-[380px] flex-col gap-1.5">
-            <label className="text-[13px] font-semibold text-ink" htmlFor={emailId}>
+            <label
+              className="text-[13px] font-semibold text-ink"
+              htmlFor={emailId}
+            >
               邮箱
             </label>
             <Input id={emailId} type="email" placeholder="you@example.com" />

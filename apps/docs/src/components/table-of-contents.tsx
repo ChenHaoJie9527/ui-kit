@@ -38,9 +38,7 @@ function TocList({
   className?: string;
 }) {
   return (
-    <ul
-      className={`m-0 flex list-none flex-col gap-px p-0 ${className ?? ""}`}
-    >
+    <ul className={`m-0 flex list-none flex-col gap-px p-0 ${className ?? ""}`}>
       {entries.map((entry) => {
         const current = entry.id === activeId;
 

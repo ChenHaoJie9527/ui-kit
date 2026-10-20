@@ -112,7 +112,9 @@ function CompactThemeDemo() {
   return (
     <div className="grid grid-cols-2 gap-3.5 max-phone:grid-cols-1">
       <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4">
-        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">默认</p>
+        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
+          默认
+        </p>
         <ButtonRow>
           <Button size="sm">保存</Button>
           <Button size="md">取消</Button>
@@ -120,7 +122,9 @@ function CompactThemeDemo() {
         </ButtonRow>
       </div>
       <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-compact">
-        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">紧凑圆角</p>
+        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
+          紧凑圆角
+        </p>
         <ButtonRow>
           <Button size="sm">保存</Button>
           <Button size="md">取消</Button>
@@ -141,21 +145,30 @@ function ComponentScopeDemo() {
 
   return (
     <div className="grid grid-cols-2 gap-3.5 max-phone:grid-cols-1">
-      <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4" style={capsuleStyle}>
-        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">只改按钮圆角</p>
+      <div
+        className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4"
+        style={capsuleStyle}
+      >
+        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
+          只改按钮圆角
+        </p>
         <ButtonRow>
           <Button>胶囊按钮</Button>
           <Input aria-label="未受影响的输入框" placeholder="输入框不受影响" />
         </ButtonRow>
       </div>
       <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4">
-        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">只改对话框宽度</p>
+        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
+          只改对话框宽度
+        </p>
         <ButtonRow>
           <Button variant="outline" onClick={() => setOpen(true)}>
             打开窄对话框
           </Button>
         </ButtonRow>
-        <p className="m-0 text-[12.5px] text-muted">--uk-dialog-width: 26rem，仅影响 Dialog。</p>
+        <p className="m-0 text-[12.5px] text-muted">
+          --uk-dialog-width: 26rem，仅影响 Dialog。
+        </p>
         <Dialog
           open={open}
           onOpenChange={setOpen}
@@ -178,11 +191,15 @@ function ThemeIslandDemo() {
   return (
     <div className="grid grid-cols-2 gap-3.5 max-phone:grid-cols-1">
       <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-brand">
-        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">同一页面 · 品牌主题</p>
+        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
+          同一页面 · 品牌主题
+        </p>
         <Switch defaultChecked>跟随品牌色</Switch>
       </div>
       <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-contrast">
-        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">同一页面 · 高对比度</p>
+        <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
+          同一页面 · 高对比度
+        </p>
         <Switch defaultChecked>高对比度</Switch>
       </div>
     </div>
@@ -223,7 +240,9 @@ function StateTargetDemo() {
           </p>
         </Tabs.Content>
         <Tabs.Content value="b">
-          <p className="m-0 text-sm leading-[1.65] text-muted">面板切换时 data-state 会同步更新。</p>
+          <p className="m-0 text-sm leading-[1.65] text-muted">
+            面板切换时 data-state 会同步更新。
+          </p>
         </Tabs.Content>
       </Tabs>
     </div>
@@ -609,11 +628,15 @@ function MySwitch({ value, defaultValue, onChange }) {
         >
           <div className="grid grid-cols-2 gap-3.5 max-phone:grid-cols-1">
             <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-broken-dark">
-              <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">只给一个值</p>
+              <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
+                只给一个值
+              </p>
               <Button>深色下对比度偏低</Button>
             </div>
             <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-brand">
-              <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">light-dark() 两个值</p>
+              <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
+                light-dark() 两个值
+              </p>
               <Button>深色下仍然清晰</Button>
             </div>
           </div>
@@ -673,14 +696,18 @@ document.documentElement.style.colorScheme = "dark";
         >
           <div className="grid grid-cols-2 gap-3.5 max-phone:grid-cols-1">
             <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-compact">
-              <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">② 紧凑型</p>
+              <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
+                ② 紧凑型
+              </p>
               <ButtonRow>
                 <Button>保存</Button>
                 <Input aria-label="紧凑输入框" placeholder="0.25rem 圆角" />
               </ButtonRow>
             </div>
             <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4 theme-contrast">
-              <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">③ 高对比度</p>
+              <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
+                ③ 高对比度
+              </p>
               <ButtonRow>
                 <Button variant="secondary">次要按钮</Button>
                 <Input aria-label="高对比输入框" placeholder="更深的边框" />
@@ -720,11 +747,15 @@ document.documentElement.style.colorScheme = "dark";
       >
         <div className="grid grid-cols-2 gap-3.5 max-phone:grid-cols-1">
           <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4">
-            <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">Toast</p>
+            <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
+              Toast
+            </p>
             <ToastWidthDemo />
           </div>
           <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4">
-            <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">Dialog</p>
+            <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
+              Dialog
+            </p>
             <p className="m-0 text-[12.5px] text-muted">
               打开「只改对话框宽度」里的按钮即可看到 26rem 的窄弹窗。
             </p>

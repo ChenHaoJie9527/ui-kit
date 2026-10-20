@@ -227,7 +227,10 @@ export function AppLayout() {
           </Link>
         </div>
 
-        <nav className="ml-auto flex items-center gap-0.5 max-drawer:hidden" aria-label="主导航">
+        <nav
+          className="ml-auto flex items-center gap-0.5 max-drawer:hidden"
+          aria-label="主导航"
+        >
           <Link
             className={TOP_NAV_LINK}
             to="/components/button"
@@ -325,10 +328,7 @@ export function AppLayout() {
 
           <nav className="flex-1" aria-label="文档导航">
             {filteredGroups.map((group) => (
-              <div
-                className="mt-[18px] [&:first-child]:mt-1"
-                key={group.title}
-              >
+              <div className="mt-[18px] [&:first-child]:mt-1" key={group.title}>
                 <p className={NAV_GROUP_TITLE}>{group.title}</p>
                 <ul className="m-0 flex list-none flex-col gap-px p-0">
                   {group.items.map((item) => (

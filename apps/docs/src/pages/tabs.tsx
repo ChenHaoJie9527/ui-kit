@@ -25,7 +25,9 @@ function HorizontalDemo() {
         </p>
       </Tabs.Content>
       <Tabs.Content value="api">
-        <p className="m-0 text-sm leading-[1.65] text-muted">组合式 API：Tabs、List、Trigger、Content。</p>
+        <p className="m-0 text-sm leading-[1.65] text-muted">
+          组合式 API：Tabs、List、Trigger、Content。
+        </p>
       </Tabs.Content>
       <Tabs.Content value="a11y">
         <p className="m-0 text-sm leading-[1.65] text-muted">
@@ -49,13 +51,19 @@ function VerticalDemo() {
         <Tabs.Trigger value="billing">账单</Tabs.Trigger>
       </Tabs.List>
       <Tabs.Content value="profile">
-        <p className="m-0 text-sm leading-[1.65] text-muted">用户名、头像与公开信息。</p>
+        <p className="m-0 text-sm leading-[1.65] text-muted">
+          用户名、头像与公开信息。
+        </p>
       </Tabs.Content>
       <Tabs.Content value="security">
-        <p className="m-0 text-sm leading-[1.65] text-muted">密码、两步验证与会话管理。</p>
+        <p className="m-0 text-sm leading-[1.65] text-muted">
+          密码、两步验证与会话管理。
+        </p>
       </Tabs.Content>
       <Tabs.Content value="billing">
-        <p className="m-0 text-sm leading-[1.65] text-muted">发票、支付方式与用量。</p>
+        <p className="m-0 text-sm leading-[1.65] text-muted">
+          发票、支付方式与用量。
+        </p>
       </Tabs.Content>
     </Tabs>
   );
@@ -74,13 +82,19 @@ function ControlledDemo() {
           <Tabs.Trigger value="published">已发布</Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="draft">
-          <p className="m-0 text-sm leading-[1.65] text-muted">只有你能看到这份文档。</p>
+          <p className="m-0 text-sm leading-[1.65] text-muted">
+            只有你能看到这份文档。
+          </p>
         </Tabs.Content>
         <Tabs.Content value="review">
-          <p className="m-0 text-sm leading-[1.65] text-muted">等待管理员审核。</p>
+          <p className="m-0 text-sm leading-[1.65] text-muted">
+            等待管理员审核。
+          </p>
         </Tabs.Content>
         <Tabs.Content value="published">
-          <p className="m-0 text-sm leading-[1.65] text-muted">所有拥有链接的人都可以访问。</p>
+          <p className="m-0 text-sm leading-[1.65] text-muted">
+            所有拥有链接的人都可以访问。
+          </p>
         </Tabs.Content>
       </Tabs>
       <ButtonRow>
@@ -116,13 +130,19 @@ function DisabledDemo() {
         <Tabs.Trigger value="c">也可用</Tabs.Trigger>
       </Tabs.List>
       <Tabs.Content value="a">
-        <p className="m-0 text-sm leading-[1.65] text-muted">方向键会跳过禁用项。</p>
+        <p className="m-0 text-sm leading-[1.65] text-muted">
+          方向键会跳过禁用项。
+        </p>
       </Tabs.Content>
       <Tabs.Content value="b">
-        <p className="m-0 text-sm leading-[1.65] text-muted">不会渲染到这里。</p>
+        <p className="m-0 text-sm leading-[1.65] text-muted">
+          不会渲染到这里。
+        </p>
       </Tabs.Content>
       <Tabs.Content value="c">
-        <p className="m-0 text-sm leading-[1.65] text-muted">Home / End 可以跳到首尾可用项。</p>
+        <p className="m-0 text-sm leading-[1.65] text-muted">
+          Home / End 可以跳到首尾可用项。
+        </p>
       </Tabs.Content>
     </Tabs>
   );
