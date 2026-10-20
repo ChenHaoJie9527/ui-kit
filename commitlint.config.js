@@ -22,6 +22,9 @@ module.exports = {
     // 由 cz-git 的提示给出常用选项。
     "scope-enum": [0],
     "subject-empty": [2, "never"],
+    // 中文优先：不校验 subject 的字母大小写。默认规则会把以英文开头的
+    // 标题（Hook 文档…）判定为 sentence-case 而拒绝。
+    "subject-case": [0],
     "subject-full-stop": [2, "never", "。"],
     "header-max-length": [2, "always", 120],
     "body-max-line-length": [2, "always", 200],

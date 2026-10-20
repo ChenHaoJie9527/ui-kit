@@ -10,6 +10,7 @@
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
+    "check:commitlint": "sh scripts/check-commitlint.sh",
     "dev": "pnpm --filter @chenhaojie9527/docs dev",
     "dev:docs": "pnpm --filter @chenhaojie9527/docs dev",
     "build:docs": "pnpm --filter @chenhaojie9527/docs build",
