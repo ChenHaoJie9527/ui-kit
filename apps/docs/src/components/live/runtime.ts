@@ -1,7 +1,7 @@
 import type { ComponentType } from "react";
 import * as React from "react";
-import * as hooks from "@chenhaojie9527/ui-kit-hooks";
-import * as ui from "@chenhaojie9527/ui-kit";
+import * as hooks from "@seam/hooks";
+import * as ui from "@seam/ui";
 import { compileDemoSource } from "./compile";
 
 /** React 自带、示例里不需要 import 的符号。 */

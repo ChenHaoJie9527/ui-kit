@@ -47,10 +47,10 @@ importers:
 
   apps/docs:
     dependencies:
-      '@chenhaojie9527/ui-kit':
+      '@seam/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@chenhaojie9527/ui-kit-hooks':
+      '@seam/hooks':
         specifier: workspace:*
         version: link:../../packages/hooks
       prism-react-renderer:
@@ -132,7 +132,7 @@ importers:
 
   packages/ui:
     dependencies:
-      '@chenhaojie9527/ui-kit-hooks':
+      '@seam/hooks':
         specifier: workspace:*
         version: link:../hooks
     devDependencies:

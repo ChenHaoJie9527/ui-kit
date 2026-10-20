@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useDropArea } from "@chenhaojie9527/ui-kit-hooks";
+import { useDropArea } from "@seam/hooks";
 
 export function Demo() {
   const [messages, setMessages] = useState(["等待拖入文件、链接或文本"]);

@@ -22,6 +22,11 @@ export const navGroups: NavGroup[] = [
         hint: "安装、特性与设计取向",
       },
       {
+        path: "usage",
+        label: "使用指南",
+        hint: "React 与 Next.js 安装、接入和注意事项",
+      },
+      {
         path: "customizing",
         label: "自定义样式",
         hint: "CSS 变量、组件级变量与定向覆盖",

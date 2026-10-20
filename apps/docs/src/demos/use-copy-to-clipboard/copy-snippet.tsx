@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Button, Input } from "@chenhaojie9527/ui-kit";
-import { useCopyToClipboard } from "@chenhaojie9527/ui-kit-hooks";
+import { Button, Input } from "@seam/ui";
+import { useCopyToClipboard } from "@seam/hooks";
 
 export function Demo() {
-  const [text, setText] = useState("pnpm add @chenhaojie9527/ui-kit-hooks");
+  const [text, setText] = useState("pnpm add jsr:@seam/hooks");
   const [state, copy] = useCopyToClipboard();
 
   return (

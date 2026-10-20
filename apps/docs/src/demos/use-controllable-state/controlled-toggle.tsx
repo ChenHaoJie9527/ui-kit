@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Switch } from "@chenhaojie9527/ui-kit";
-import { useControllableState } from "@chenhaojie9527/ui-kit-hooks";
+import { Switch } from "@seam/ui";
+import { useControllableState } from "@seam/hooks";
 
 export function Demo() {
   const [controlled, setControlled] = useState(true);

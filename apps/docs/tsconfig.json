@@ -5,8 +5,8 @@
     "noEmit": true,
     "types": ["react", "react-dom", "node"],
     "paths": {
-      "@chenhaojie9527/ui-kit-hooks": ["../../packages/hooks/src/index.ts"],
-      "@chenhaojie9527/ui-kit": ["../../packages/ui/src/index.ts"]
+      "@seam/hooks": ["../../packages/hooks/src/index.ts"],
+      "@seam/ui": ["../../packages/ui/src/index.ts"]
     }
   },
   "include": ["src", "vite.config.ts", "../../packages/ui/src/css.d.ts"]

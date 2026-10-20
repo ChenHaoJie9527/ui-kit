@@ -3,18 +3,14 @@ import {
   useId,
   useRef,
   useSyncExternalStore,
+  type ReactElement,
   type ReactNode,
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import {
-  useEventCallback,
-  useFocusTrap,
-  useLockBodyScroll,
-} from "@chenhaojie9527/ui-kit-hooks";
+import { useEventCallback, useFocusTrap, useLockBodyScroll } from "@seam/hooks";
 import { Button } from "./Button";
 import { cx } from "./utils/cx";
-import "./dialog.css";
 
 export interface DialogProps {
   /** 是否打开。由调用方控制，配合 onOpenChange 使用。 */
@@ -66,7 +62,7 @@ export function Dialog({
   returnFocusRef,
   className,
   "aria-label": ariaLabel,
-}: DialogProps) {
+}: DialogProps): ReactElement | null {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const openRef = useRef(open);

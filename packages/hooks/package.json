@@ -1,5 +1,5 @@
 {
-  "name": "@chenhaojie9527/ui-kit-hooks",
+  "name": "@seam/hooks",
   "version": "0.1.0",
   "description": "29 个生产级 React hooks：受控状态、虚拟滚动、异步竞态、焦点管理与浏览器能力封装",
   "keywords": [
@@ -35,10 +35,6 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json",

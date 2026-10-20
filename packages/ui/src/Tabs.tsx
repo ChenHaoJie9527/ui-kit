@@ -5,12 +5,14 @@ import {
   useId,
   useMemo,
   type ButtonHTMLAttributes,
+  type ForwardRefExoticComponent,
   type HTMLAttributes,
+  type ReactElement,
   type ReactNode,
+  type RefAttributes,
 } from "react";
-import { useControllableState } from "@chenhaojie9527/ui-kit-hooks";
+import { useControllableState } from "@seam/hooks";
 import { cx } from "./utils/cx";
-import "./tabs.css";
 
 export type TabsOrientation = "horizontal" | "vertical";
 
@@ -61,7 +63,7 @@ function TabsRoot({
   orientation = "horizontal",
   className,
   children,
-}: TabsProps) {
+}: TabsProps): ReactElement {
   const baseId = useId();
   const [current, setValue] = useControllableState<string>({
     value,
@@ -87,7 +89,9 @@ export interface TabsListProps extends HTMLAttributes<HTMLDivElement> {
   children?: ReactNode;
 }
 
-const TabsList = forwardRef<HTMLDivElement, TabsListProps>(function TabsList(
+const TabsList: ForwardRefExoticComponent<
+  TabsListProps & RefAttributes<HTMLDivElement>
+> = forwardRef<HTMLDivElement, TabsListProps>(function TabsList(
   { className, onKeyDown, ...rest },
   ref,
 ) {
@@ -168,63 +172,66 @@ export interface TabsTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement
   children?: ReactNode;
 }
 
-const TabsTrigger = forwardRef<HTMLButtonElement, TabsTriggerProps>(
-  function TabsTrigger(
-    { value, type = "button", className, onClick, ...rest },
-    ref,
-  ) {
-    const context = useTabsContext("Tabs.Trigger");
-    const selected = context.value === value;
+const TabsTrigger: ForwardRefExoticComponent<
+  TabsTriggerProps & RefAttributes<HTMLButtonElement>
+> = forwardRef<HTMLButtonElement, TabsTriggerProps>(function TabsTrigger(
+  { value, type = "button", className, onClick, ...rest },
+  ref,
+) {
+  const context = useTabsContext("Tabs.Trigger");
+  const selected = context.value === value;
 
-    return (
-      <button
-        {...rest}
-        ref={ref}
-        type={type}
-        role="tab"
-        id={tabId(context.baseId, value)}
-        aria-selected={selected}
-        aria-controls={panelId(context.baseId, value)}
-        tabIndex={selected ? 0 : -1}
-        data-state={selected ? "active" : "inactive"}
-        className={cx("uk-tabs__trigger", className)}
-        onClick={(event) => {
-          onClick?.(event);
+  return (
+    <button
+      {...rest}
+      ref={ref}
+      type={type}
+      role="tab"
+      id={tabId(context.baseId, value)}
+      aria-selected={selected}
+      aria-controls={panelId(context.baseId, value)}
+      tabIndex={selected ? 0 : -1}
+      data-state={selected ? "active" : "inactive"}
+      className={cx("uk-tabs__trigger", className)}
+      onClick={(event) => {
+        onClick?.(event);
 
-          if (!event.defaultPrevented) {
-            context.setValue(value);
-          }
-        }}
-      />
-    );
-  },
-);
+        if (!event.defaultPrevented) {
+          context.setValue(value);
+        }
+      }}
+    />
+  );
+});
 
 export interface TabsContentProps extends HTMLAttributes<HTMLDivElement> {
   value: string;
   children?: ReactNode;
 }
 
-const TabsContent = forwardRef<HTMLDivElement, TabsContentProps>(
-  function TabsContent({ value, className, ...rest }, ref) {
-    const context = useTabsContext("Tabs.Content");
-    const selected = context.value === value;
+const TabsContent: ForwardRefExoticComponent<
+  TabsContentProps & RefAttributes<HTMLDivElement>
+> = forwardRef<HTMLDivElement, TabsContentProps>(function TabsContent(
+  { value, className, ...rest },
+  ref,
+) {
+  const context = useTabsContext("Tabs.Content");
+  const selected = context.value === value;
 
-    return (
-      <div
-        {...rest}
-        ref={ref}
-        role="tabpanel"
-        id={panelId(context.baseId, value)}
-        aria-labelledby={tabId(context.baseId, value)}
-        hidden={!selected}
-        tabIndex={0}
-        data-state={selected ? "active" : "inactive"}
-        className={cx("uk-tabs__panel", className)}
-      />
-    );
-  },
-);
+  return (
+    <div
+      {...rest}
+      ref={ref}
+      role="tabpanel"
+      id={panelId(context.baseId, value)}
+      aria-labelledby={tabId(context.baseId, value)}
+      hidden={!selected}
+      tabIndex={0}
+      data-state={selected ? "active" : "inactive"}
+      className={cx("uk-tabs__panel", className)}
+    />
+  );
+});
 
 /**
  * 标签页。
@@ -233,7 +240,14 @@ const TabsContent = forwardRef<HTMLDivElement, TabsContentProps>(
  * 实现 roving tabindex、方向键循环、Home/End 跳转，并自动生成
  * aria-controls / aria-labelledby 关联。
  */
-export const Tabs = Object.assign(TabsRoot, {
+export interface TabsComponent {
+  (props: TabsProps): ReactElement;
+  List: typeof TabsList;
+  Trigger: typeof TabsTrigger;
+  Content: typeof TabsContent;
+}
+
+export const Tabs: TabsComponent = Object.assign(TabsRoot, {
   List: TabsList,
   Trigger: TabsTrigger,
   Content: TabsContent,

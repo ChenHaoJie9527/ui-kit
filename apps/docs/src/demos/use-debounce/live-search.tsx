@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button, Input } from "@chenhaojie9527/ui-kit";
-import { useDebounce } from "@chenhaojie9527/ui-kit-hooks";
+import { Button, Input } from "@seam/ui";
+import { useDebounce } from "@seam/hooks";
 
 export function Demo() {
   const [query, setQuery] = useState("");

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Button } from "@chenhaojie9527/ui-kit";
-import { useGetSet } from "@chenhaojie9527/ui-kit-hooks";
+import { Button } from "@seam/ui";
+import { useGetSet } from "@seam/hooks";
 
 export function Demo() {
   const [getCount, setCount] = useGetSet(0);

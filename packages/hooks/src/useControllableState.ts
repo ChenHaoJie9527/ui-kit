@@ -19,7 +19,10 @@ export function useControllableState<T>({
   value,
   defaultValue,
   onChange,
-}: UseControllableStateOptions<T>) {
+}: UseControllableStateOptions<T>): readonly [
+  T,
+  (next: T | ((prev: T) => T)) => T,
+] {
   const isControlled = value !== undefined;
   const [internalValue, setInternalValue] = useState<T>(defaultValue);
 

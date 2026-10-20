@@ -1,4 +1,4 @@
-import { useDrop } from "@chenhaojie9527/ui-kit-hooks";
+import { useDrop } from "@seam/hooks";
 
 export function Demo() {
   const { over, files, uris, text, bind } = useDrop();

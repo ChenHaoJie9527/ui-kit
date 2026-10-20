@@ -7,18 +7,13 @@ export default defineConfig({
     sourcemap: true,
     emptyOutDir: true,
     lib: {
-      entry: fileURLToPath(new URL("./src/index.ts", import.meta.url)),
+      entry: fileURLToPath(new URL("./src/build-entry.ts", import.meta.url)),
       formats: ["es", "cjs"],
       fileName: (format) => (format === "es" ? "index.js" : "index.cjs"),
       cssFileName: "styles",
     },
     rollupOptions: {
-      external: [
-        "react",
-        "react-dom",
-        "react/jsx-runtime",
-        "@chenhaojie9527/ui-kit-hooks",
-      ],
+      external: ["react", "react-dom", "react/jsx-runtime", "@seam/hooks"],
     },
   },
 });

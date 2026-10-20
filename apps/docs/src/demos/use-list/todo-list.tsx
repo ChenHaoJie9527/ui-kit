@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button, Input } from "@chenhaojie9527/ui-kit";
-import { useList } from "@chenhaojie9527/ui-kit-hooks";
+import { Button, Input } from "@seam/ui";
+import { useList } from "@seam/hooks";
 
 const initialTodos = [
   { id: 1, text: "补齐 Hook API", done: false },

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button } from "@chenhaojie9527/ui-kit";
-import { useLockBodyScroll } from "@chenhaojie9527/ui-kit-hooks";
+import { Button } from "@seam/ui";
+import { useLockBodyScroll } from "@seam/hooks";
 
 export function Demo() {
   const [open, setOpen] = useState(false);

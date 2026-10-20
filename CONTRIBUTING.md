@@ -43,7 +43,8 @@ echo "feat(ui): 新增 Badge 组件" | pnpm exec commitlint
 
 1. 对 `packages/*` 有用户可见改动时，运行 `pnpm changeset`，选择包与升级类型（patch / minor / major），写一句说明；
 2. 提交并合并到 `main` 后，`release` 工作流会自动创建一个 “Version Packages” PR（含版本号与 CHANGELOG）；
-3. 合并该 PR 时，工作流自动构建并按 `ui-kit-hooks` → `ui-kit` 的顺序发布到 GitHub Packages。
+3. 合并该 PR 时，工作流通过 GitHub Actions OIDC 按 `@seam/hooks` →
+   `@seam/ui` 的顺序发布到 JSR。
 
 本地预演：
 

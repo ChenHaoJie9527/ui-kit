@@ -1,12 +1,13 @@
 import {
   forwardRef,
   useId,
+  type ForwardRefExoticComponent,
   type InputHTMLAttributes,
   type ReactNode,
+  type RefAttributes,
 } from "react";
-import { useControllableState } from "@chenhaojie9527/ui-kit-hooks";
+import { useControllableState } from "@seam/hooks";
 import { cx } from "./utils/cx";
-import "./switch.css";
 
 export interface SwitchProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
@@ -28,7 +29,9 @@ export interface SwitchProps extends Omit<
  * 底层是原生 checkbox（role="switch"），所以表单提交、键盘操作和
  * 屏幕阅读器语义都是免费的；视觉部分由 track / thumb 两个 span 承担。
  */
-export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
+export const Switch: ForwardRefExoticComponent<
+  SwitchProps & RefAttributes<HTMLInputElement>
+> = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
   {
     checked,
     defaultChecked,

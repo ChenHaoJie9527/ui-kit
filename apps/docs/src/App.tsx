@@ -6,12 +6,8 @@ import {
   ScrollRestoration,
   useLocation,
 } from "react-router";
-import {
-  useFocusTrap,
-  useLockBodyScroll,
-  useMedia,
-} from "@chenhaojie9527/ui-kit-hooks";
-import { Button } from "@chenhaojie9527/ui-kit";
+import { useFocusTrap, useLockBodyScroll, useMedia } from "@seam/hooks";
+import { Button } from "@seam/ui";
 import {
   navGroups,
   navItems,

@@ -8,10 +8,10 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type ReactElement,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import "./toast.css";
 
 export type ToastVariant = "info" | "success" | "warning" | "danger";
 
@@ -135,7 +135,7 @@ export function ToastProvider({
   maxToasts = 4,
   label = "Notifications",
   closeLabel = "Close",
-}: ToastProviderProps) {
+}: ToastProviderProps): ReactElement {
   const [records, setRecords] = useState<ToastRecord[]>([]);
   const recordsRef = useRef<ToastRecord[]>([]);
   const durationsRef = useRef(new Map<string, number>());

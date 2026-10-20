@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button } from "@chenhaojie9527/ui-kit";
-import { useAsync } from "@chenhaojie9527/ui-kit-hooks";
+import { Button } from "@seam/ui";
+import { useAsync } from "@seam/hooks";
 
 const USERS = [
   null,

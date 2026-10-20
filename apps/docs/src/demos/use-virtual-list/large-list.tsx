@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useVirtualList } from "@chenhaojie9527/ui-kit-hooks";
+import { useVirtualList } from "@seam/hooks";
 
 const ITEM_HEIGHT = 34;
 const VIEWPORT_HEIGHT = 272;

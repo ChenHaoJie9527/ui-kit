@@ -1,4 +1,4 @@
-import { useMedia } from "@chenhaojie9527/ui-kit-hooks";
+import { useMedia } from "@seam/hooks";
 
 const row = {
   display: "flex",

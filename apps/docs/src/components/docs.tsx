@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useCopyToClipboard } from "@chenhaojie9527/ui-kit-hooks";
+import { useCopyToClipboard } from "@seam/hooks";
 import { CodeHighlight } from "./live/highlight";
 import { TableOfContents } from "./table-of-contents";
 
@@ -174,6 +174,8 @@ export interface CodeBlockProps {
   label?: string;
   /** 嵌在 Demo 里时只保留顶部分隔线，不再叠一层外框。 */
   flush?: boolean;
+  /** 用包管理器选择器等控件替代左侧的普通语言标签。 */
+  headerStart?: ReactNode;
 }
 
 /** 代码块标签到 Prism 语言的映射；`path` 这类只是文件路径标签，按 tsx 注释处理。 */
@@ -197,6 +199,7 @@ export function CodeBlock({
   code,
   label = "tsx",
   flush = false,
+  headerStart,
 }: CodeBlockProps) {
   const [state, copy] = useCopyToClipboard();
   const copied = state.copied && state.value === code;
@@ -208,9 +211,11 @@ export function CodeBlock({
   return (
     <div className={shell}>
       <div className="flex h-[38px] items-center justify-between border-b border-white/[0.07] bg-white/[0.025] pr-3 pl-4">
-        <span className="font-mono text-[10.5px] tracking-[0.08em] text-code-muted uppercase">
-          {label}
-        </span>
+        {headerStart ?? (
+          <span className="font-mono text-[10.5px] tracking-[0.08em] text-code-muted uppercase">
+            {label}
+          </span>
+        )}
         <button
           type="button"
           className="cursor-pointer rounded-md border border-white/[0.14] bg-transparent px-[9px] py-[3px] font-mono text-[11px] text-code-ink transition-colors hover:bg-white/[0.08] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"

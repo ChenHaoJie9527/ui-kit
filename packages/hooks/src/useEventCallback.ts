@@ -8,7 +8,7 @@ import { useCallback, useLayoutEffect, useRef } from "react";
  */
 export function useEventCallback<Args extends unknown[], Result>(
   fn: (...args: Args) => Result,
-) {
+): (...args: Args) => Result {
   const fnRef = useRef(fn);
 
   // 用 layout effect 保证在浏览器绘制前更新，避免事件里读到旧闭包。

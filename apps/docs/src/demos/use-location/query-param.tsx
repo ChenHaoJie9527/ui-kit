@@ -1,5 +1,5 @@
-import { Button } from "@chenhaojie9527/ui-kit";
-import { useLocation } from "@chenhaojie9527/ui-kit-hooks";
+import { Button } from "@seam/ui";
+import { useLocation } from "@seam/hooks";
 
 function writeParam() {
   const url = new URL(window.location.href);

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Button } from "@chenhaojie9527/ui-kit";
-import { useEventCallback } from "@chenhaojie9527/ui-kit-hooks";
+import { Button } from "@seam/ui";
+import { useEventCallback } from "@seam/hooks";
 
 export function Demo() {
   const [value, setValue] = useState(0);

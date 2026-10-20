@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { Button } from "@chenhaojie9527/ui-kit";
-import { useVideo } from "@chenhaojie9527/ui-kit-hooks";
+import { Button } from "@seam/ui";
+import { useVideo } from "@seam/hooks";
 
 const SRC =
   "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";

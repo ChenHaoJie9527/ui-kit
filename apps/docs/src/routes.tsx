@@ -12,6 +12,7 @@ import { OverviewPage } from "./pages/overview";
 import { SwitchPage } from "./pages/switch";
 import { TabsPage } from "./pages/tabs";
 import { ToastPage } from "./pages/toast";
+import { UsagePage } from "./pages/usage";
 
 const componentPages: Record<string, ComponentType> = {
   button: ButtonPage,
@@ -53,6 +54,7 @@ export const router = createHashRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <OverviewRoute /> },
+      { path: "usage", element: <UsagePage /> },
       { path: "customizing", element: <CustomizingPage /> },
       { path: "components/:slug", element: <ComponentRoute /> },
       { path: "hooks/:slug", element: <HookRoute /> },

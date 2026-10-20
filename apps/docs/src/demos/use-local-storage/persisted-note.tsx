@@ -1,4 +1,4 @@
-import { useLocalStorage } from "@chenhaojie9527/ui-kit-hooks";
+import { useLocalStorage } from "@seam/hooks";
 
 export function Demo() {
   const [note, setNote, remove] = useLocalStorage(

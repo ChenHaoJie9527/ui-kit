@@ -16,8 +16,8 @@ export default defineConfig({
   resolve: {
     // 直接指向源码，开发时改 hooks / 组件会立刻热更新，无需先构建 dist。
     alias: {
-      "@chenhaojie9527/ui-kit-hooks": hooksEntry,
-      "@chenhaojie9527/ui-kit": uiEntry,
+      "@seam/hooks": hooksEntry,
+      "@seam/ui": uiEntry,
     },
   },
   server: {

@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { useCopyToClipboard } from "@chenhaojie9527/ui-kit-hooks";
+import { useCopyToClipboard } from "@seam/hooks";
 import { componentMetas } from "../content/components";
 import { hookGroups } from "../content/hooks";
 
@@ -37,7 +37,7 @@ const HOOK_GROUP_TITLE =
 
 export function OverviewPage() {
   const [state, copy] = useCopyToClipboard();
-  const command = "pnpm add @chenhaojie9527/ui-kit";
+  const command = "pnpm add jsr:@seam/ui";
   const copied = state.copied && state.value === command;
 
   return (
@@ -95,7 +95,7 @@ export function OverviewPage() {
         <div>
           <dt className="text-xs text-muted">测试</dt>
           <dd className="mt-[3px] text-[26px] leading-[1.2] font-bold tracking-[-0.03em]">
-            132
+            139
           </dd>
         </div>
         <div>

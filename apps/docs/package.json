@@ -10,8 +10,8 @@
     "check:live": "node --experimental-strip-types scripts/check-live-compiler.ts"
   },
   "dependencies": {
-    "@chenhaojie9527/ui-kit": "workspace:*",
-    "@chenhaojie9527/ui-kit-hooks": "workspace:*",
+    "@seam/hooks": "workspace:*",
+    "@seam/ui": "workspace:*",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

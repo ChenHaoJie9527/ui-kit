@@ -1,12 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import {
-  Button,
-  Dialog,
-  Input,
-  Switch,
-  Tabs,
-  useToast,
-} from "@chenhaojie9527/ui-kit";
+import { Button, Dialog, Input, Switch, Tabs, useToast } from "@seam/ui";
 import {
   BulletList,
   ButtonRow,
@@ -363,10 +356,10 @@ export function CustomizingPage() {
           <BrandThemeDemo />
         </Demo>
 
-        <Callout title="放在库的样式之后">
-          用{" "}
-          <InlineCode>@import "@chenhaojie9527/ui-kit/styles.css"</InlineCode>{" "}
-          或打包器引入后， 在同一个入口文件里追加自己的覆盖规则即可。
+        <Callout title="放在 SeamStyles 可感知的位置">
+          在应用根部渲染 <InlineCode>&lt;SeamStyles /&gt;</InlineCode>
+          ，然后追加未包在 <InlineCode>uk.*</InlineCode> layer 里的应用 CSS。
+          需要严格控制顺序时，可以把自定义 theme 的 style 节点放在它后面。
         </Callout>
 
         <p className="mt-3.5 max-w-[72ch] text-sm leading-[1.7] text-muted">
@@ -582,7 +575,7 @@ export function CustomizingPage() {
         description="如果视觉和交互都要重写，不必和组件较劲。组件内部用的就是公开的 hooks，直接拿这套逻辑写自己的结构。"
       >
         <CodeBlock
-          code={`import { useControllableState } from "@chenhaojie9527/ui-kit-hooks";
+          code={`import { useControllableState } from "@seam/hooks";
 
 function MySwitch({ value, defaultValue, onChange }) {
   const [on, setOn] = useControllableState({

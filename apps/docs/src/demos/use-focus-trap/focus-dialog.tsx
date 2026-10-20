@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { Button, Input } from "@chenhaojie9527/ui-kit";
-import { useFocusTrap } from "@chenhaojie9527/ui-kit-hooks";
+import { Button, Input } from "@seam/ui";
+import { useFocusTrap } from "@seam/hooks";
 
 export function Demo() {
   const dialogRef = useRef(document.createElement("dialog"));

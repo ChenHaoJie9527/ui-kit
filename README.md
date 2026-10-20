@@ -4,7 +4,7 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-7-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=black)](https://react.dev/)
-[![Tests](https://img.shields.io/badge/tests-120%20passed-22c55e)](#)
+[![Tests](https://img.shields.io/badge/tests-139%20passed-22c55e)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 [![Docs](https://img.shields.io/badge/docs-online-4f46e5)](https://chenhaojie9527.github.io/ui-kit/)
 
@@ -26,7 +26,7 @@
 - **高频输入控制**：`useDebouncedValue` 支持可配置延迟与同步退化。
 - **可发布**：ESM + CJS 双产物、类型声明、`sideEffects: false`、tree-shaking 友好。
 - **可访问的组件**：原生语义优先，Tabs / Dialog / Toast 自带键盘导航与 ARIA 关联。
-- **可验证**：Vitest + Testing Library，120 个用例覆盖状态切换、定时器、异步竞态、焦点与边界索引。
+- **可验证**：Vitest + Testing Library，139 个用例覆盖状态切换、定时器、异步竞态、焦点与边界索引。
 
 ## Hooks 一览
 
@@ -78,27 +78,22 @@
 - `Dialog`：基于原生 `<dialog>`，焦点陷阱（双向循环 / 外部聚焦回收 / 焦点恢复）、Esc、遮罩与 body 滚动锁定开箱即用。
 - `Toast`：`ToastProvider` + `useToast()`，带队列、自动关闭、悬停暂停与 `aria-live` 区域。
 
-样式通过 `@chenhaojie9527/ui-kit/styles.css` 引入；所有颜色、间距、圆角与阴影都是 CSS 变量，支持 `light-dark()` 跟随系统主题。
+JSR 版本通过在应用根部渲染一次 `<SeamStyles />` 引入组件样式；所有颜色、间距、圆角与阴影都是 CSS 变量，支持 `light-dark()` 跟随系统主题。
 
 ## 安装
 
-包发布在 **GitHub Packages**。先让 npm 指向 GitHub 的 registry，并在 `~/.npmrc` 配置一个有 `read:packages` 权限的 GitHub Token：
-
-```ini
-@chenhaojie9527:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
-```
+包发布在 **JSR**，公共包安装不需要登录或访问令牌：
 
 ```bash
-pnpm add @chenhaojie9527/ui-kit
-# 或
-npm i @chenhaojie9527/ui-kit
+pnpm add jsr:@seam/ui
+# npm 项目可通过 JSR CLI 安装
+npx jsr add @seam/ui
 ```
 
-`@chenhaojie9527/ui-kit` 依赖 `@chenhaojie9527/ui-kit-hooks`，安装组件包即可同时使用全部 hooks。只想要无渲染逻辑时，也可以单独安装：
+`@seam/ui` 依赖 `@seam/hooks`，安装组件包即可同时使用全部 hooks。只想要无渲染逻辑时，也可以单独安装：
 
 ```bash
-pnpm add @chenhaojie9527/ui-kit-hooks
+pnpm add jsr:@seam/hooks
 ```
 
 ## 使用
@@ -106,7 +101,7 @@ pnpm add @chenhaojie9527/ui-kit-hooks
 ### 受控 / 非受控
 
 ```tsx
-import { useControllableState } from "@chenhaojie9527/ui-kit-hooks";
+import { useControllableState } from "@seam/hooks";
 
 function Input({ value, defaultValue = "", onChange }: Props) {
   const [current, setCurrent] = useControllableState({
@@ -122,7 +117,7 @@ function Input({ value, defaultValue = "", onChange }: Props) {
 ### 万级列表
 
 ```tsx
-import { useVirtualList } from "@chenhaojie9527/ui-kit-hooks";
+import { useVirtualList } from "@seam/hooks";
 
 const { start, end, totalHeight, offsetTop } = useVirtualList({
   count: 10_000,
@@ -143,29 +138,26 @@ const report = useEventCallback(() => {
 ### 组件
 
 ```tsx
-import {
-  Button,
-  Dialog,
-  Tabs,
-  ToastProvider,
-  useToast,
-} from "@chenhaojie9527/ui-kit";
-import "@chenhaojie9527/ui-kit/styles.css";
+import { Button, Dialog, Tabs, ToastProvider, useToast } from "@seam/ui";
+import { SeamStyles } from "@seam/ui/styles";
 
 function App() {
   return (
-    <ToastProvider>
-      <Tabs defaultValue="overview">
-        <Tabs.List aria-label="说明">
-          <Tabs.Trigger value="overview">概览</Tabs.Trigger>
-          <Tabs.Trigger value="api">API</Tabs.Trigger>
-        </Tabs.List>
-        <Tabs.Content value="overview">
-          <Button>保存</Button>
-        </Tabs.Content>
-        <Tabs.Content value="api">...</Tabs.Content>
-      </Tabs>
-    </ToastProvider>
+    <>
+      <SeamStyles />
+      <ToastProvider>
+        <Tabs defaultValue="overview">
+          <Tabs.List aria-label="说明">
+            <Tabs.Trigger value="overview">概览</Tabs.Trigger>
+            <Tabs.Trigger value="api">API</Tabs.Trigger>
+          </Tabs.List>
+          <Tabs.Content value="overview">
+            <Button>保存</Button>
+          </Tabs.Content>
+          <Tabs.Content value="api">...</Tabs.Content>
+        </Tabs>
+      </ToastProvider>
+    </>
   );
 }
 ```
@@ -175,8 +167,8 @@ function App() {
 ```
 ui-kit/
 ├─ packages/
-│  ├─ hooks/          @chenhaojie9527/ui-kit-hooks —— 无渲染逻辑
-│  └─ ui/             @chenhaojie9527/ui-kit —— 组件与样式
+│  ├─ hooks/          @seam/hooks —— 无渲染逻辑
+│  └─ ui/             @seam/ui —— 组件与样式
 ├─ apps/
 │  └─ docs/           文档与交互演示（构建为静态站点）
 └─ .github/workflows/ CI：发布包、构建并部署文档站
@@ -192,10 +184,10 @@ pnpm install
 pnpm dev
 
 # 单项校验
-pnpm --filter @chenhaojie9527/ui-kit-hooks test
-pnpm --filter @chenhaojie9527/ui-kit-hooks typecheck
-pnpm --filter @chenhaojie9527/ui-kit test
-pnpm --filter @chenhaojie9527/ui-kit typecheck
+pnpm --filter @seam/hooks test
+pnpm --filter @seam/hooks typecheck
+pnpm --filter @seam/ui test
+pnpm --filter @seam/ui typecheck
 
 # 提交前一次性跑完 format / lint / typecheck / test
 pnpm check
@@ -247,13 +239,13 @@ pnpm check         # format:check + lint + typecheck + test
 - [x] `packages/ui`：Button、Input、Switch、Tabs、Dialog、Toast 最小闭环
 - [ ] `packages/ui`：VirtualList、Menu、Select 等第二批组件
 - [ ] 文档站补充每个组件的 API 表格与边界用例
-- [ ] 用 Changesets 管理版本并发布 npm
+- [x] 用 Changesets 管理版本并发布到 JSR
 - [ ] 增加 1 万行列表的首屏渲染基准（全量 vs 虚拟滚动）
 
 ## 发布
 
-发布通过 GitHub Actions 完成：推送 `v*` 标签，或在 Actions 里手动触发 `publish` 工作流。
-工作流会先构建两个包，再按 `hooks` → `ui` 的顺序发布到 GitHub Packages。
+发布通过 GitHub Actions OIDC 完成：推送 `v*` 标签，或在 Actions 里手动触发
+`publish` 工作流。工作流会按 `hooks` → `ui` 的顺序发布到 JSR，无需保存 npm token。
 
 ## License
 

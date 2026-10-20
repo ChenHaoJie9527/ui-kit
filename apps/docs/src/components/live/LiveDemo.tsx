@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import Editor from "react-simple-code-editor";
-import { useCopyToClipboard } from "@chenhaojie9527/ui-kit-hooks";
+import { useCopyToClipboard } from "@seam/hooks";
 import { createDemoComponent } from "./runtime";
 import { CodeHighlight } from "./highlight";
 

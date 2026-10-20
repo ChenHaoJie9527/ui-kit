@@ -1,25 +1,31 @@
-# @chenhaojie9527/ui-kit
+# @seam/ui
 
-基于 `@chenhaojie9527/ui-kit-hooks` 的 React 组件库，内置可访问性与主题 token。
+基于 `@seam/hooks` 的 React 组件库，内置可访问性与主题 token。
 
 ## 安装
 
-包发布在 GitHub Packages，需要先在 `~/.npmrc` 配置：
-
-```ini
-@chenhaojie9527:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
-```
+包发布在 JSR，公共包安装不需要登录或访问令牌：
 
 ```bash
-pnpm add @chenhaojie9527/ui-kit
+pnpm add jsr:@seam/ui
+# npm 项目
+npx jsr add @seam/ui
 ```
 
 ## 使用
 
 ```tsx
-import { Button, Tabs, Dialog } from "@chenhaojie9527/ui-kit";
-import "@chenhaojie9527/ui-kit/styles.css";
+import { Button, Tabs, Dialog } from "@seam/ui";
+import { SeamStyles } from "@seam/ui/styles";
+
+export function Root() {
+  return (
+    <>
+      <SeamStyles />
+      <Button>保存</Button>
+    </>
+  );
+}
 ```
 
 组件包含：Button、Input、Switch、Tabs、Dialog、Toast。
