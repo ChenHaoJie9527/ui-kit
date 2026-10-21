@@ -29,6 +29,9 @@
     height: 1.5rem;
     border-radius: var(--uk-radius-full);
     background: var(--uk-switch-track, var(--uk-border-strong));
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
     transition: background-color var(--uk-transition);
   }
 
@@ -41,15 +44,10 @@
     border-radius: 50%;
     background: var(--uk-switch-thumb, #ffffff);
     box-shadow: var(--uk-shadow-sm);
-    transition: transform var(--uk-transition);
   }
 
   .uk-switch__input:checked + .uk-switch__track {
     background: var(--uk-switch-track-checked, var(--uk-primary-solid));
-  }
-
-  .uk-switch__input:checked + .uk-switch__track .uk-switch__thumb {
-    transform: translateX(1rem);
   }
 
   .uk-switch__input:focus-visible + .uk-switch__track {
@@ -60,5 +58,9 @@
   .uk-switch[data-disabled="true"] {
     cursor: not-allowed;
     opacity: 0.6;
+  }
+
+  .uk-switch[data-disabled="true"] .uk-switch__track {
+    cursor: not-allowed;
   }
 }

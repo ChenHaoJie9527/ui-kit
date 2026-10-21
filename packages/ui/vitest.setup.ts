@@ -1,3 +1,7 @@
+import { MotionGlobalConfig } from "motion/react";
+
+MotionGlobalConfig.skipAnimations = true;
+
 // jsdom implements <dialog> but not its modal methods yet, so provide the
 // minimal behavior the components rely on: open state plus the close event.
 function showModal(this: HTMLDialogElement) {
@@ -31,4 +35,24 @@ if (typeof HTMLDialogElement !== "undefined") {
   if (typeof proto.close !== "function") {
     proto.close = close;
   }
+}
+
+if (typeof window.PointerEvent === "undefined") {
+  class PointerEventPolyfill extends MouseEvent {
+    pointerId: number;
+    pointerType: string;
+    isPrimary: boolean;
+
+    constructor(type: string, init: PointerEventInit = {}) {
+      super(type, init);
+      this.pointerId = init.pointerId ?? 0;
+      this.pointerType = init.pointerType ?? "mouse";
+      this.isPrimary = init.isPrimary ?? true;
+    }
+  }
+
+  Object.defineProperty(window, "PointerEvent", {
+    configurable: true,
+    value: PointerEventPolyfill,
+  });
 }

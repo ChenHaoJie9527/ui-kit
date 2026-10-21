@@ -22,7 +22,15 @@ export default defineConfig({
       cssFileName: "styles",
     },
     rollupOptions: {
-      external: ["react", "react-dom", "react/jsx-runtime", "seam-hooks"],
+      external: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "seam-hooks",
+        "motion",
+        "motion/react",
+        "motion/react-m",
+      ],
     },
   },
 });

@@ -43,6 +43,13 @@ function BadConsumer() {
   return null;
 }
 
+async function flushMotion() {
+  await act(async () => {
+    vi.advanceTimersByTime(600);
+    await Promise.resolve();
+  });
+}
+
 beforeEach(() => {
   vi.useFakeTimers();
 });
@@ -72,7 +79,7 @@ describe("Toast", () => {
     expect(getToast().dataset.variant).toBe("success");
   });
 
-  it("auto dismisses after the duration and exit animation", () => {
+  it("auto dismisses after the duration and exit animation", async () => {
     render(
       <ToastProvider duration={3000}>
         <Harness options={{ title: "临时提示" }} />
@@ -94,6 +101,7 @@ describe("Toast", () => {
     act(() => {
       vi.advanceTimersByTime(200);
     });
+    await flushMotion();
     expect(screen.queryByText("临时提示")).toBeNull();
   });
 
@@ -113,7 +121,7 @@ describe("Toast", () => {
     expect(screen.getByText("常驻提示")).toBeTruthy();
   });
 
-  it("dismisses from the close button", () => {
+  it("dismisses from the close button", async () => {
     render(
       <ToastProvider>
         <Harness options={{ title: "可关闭" }} />
@@ -128,10 +136,11 @@ describe("Toast", () => {
     act(() => {
       vi.advanceTimersByTime(200);
     });
+    await flushMotion();
     expect(screen.queryByText("可关闭")).toBeNull();
   });
 
-  it("pauses auto dismiss while hovered", () => {
+  it("pauses auto dismiss while hovered", async () => {
     render(
       <ToastProvider duration={3000}>
         <Harness options={{ title: "悬停暂停" }} />
@@ -154,6 +163,7 @@ describe("Toast", () => {
       vi.advanceTimersByTime(3000);
       vi.advanceTimersByTime(200);
     });
+    await flushMotion();
     expect(screen.queryByText("悬停暂停")).toBeNull();
   });
 

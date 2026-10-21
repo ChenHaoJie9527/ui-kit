@@ -74,4 +74,39 @@ describe("Switch", () => {
     expect((control as HTMLInputElement).disabled).toBe(true);
     expect(onCheckedChange).not.toHaveBeenCalled();
   });
+
+  it("supports pointer dragging with a velocity-aware release", () => {
+    const onCheckedChange = vi.fn<(checked: boolean) => void>();
+
+    render(
+      <Switch checked={false} onCheckedChange={onCheckedChange}>
+        拖拽开关
+      </Switch>,
+    );
+
+    const track = document.querySelector(".uk-switch__track");
+
+    if (!(track instanceof HTMLElement)) {
+      throw new Error("switch track not rendered");
+    }
+
+    Object.defineProperty(track, "setPointerCapture", {
+      configurable: true,
+      value: vi.fn<() => void>(),
+    });
+    Object.defineProperty(track, "hasPointerCapture", {
+      configurable: true,
+      value: vi.fn<() => boolean>(() => true),
+    });
+    Object.defineProperty(track, "releasePointerCapture", {
+      configurable: true,
+      value: vi.fn<() => void>(),
+    });
+
+    fireEvent.pointerDown(track, { pointerId: 1, clientX: 0 });
+    fireEvent.pointerMove(track, { pointerId: 1, clientX: 20 });
+    fireEvent.pointerUp(track, { pointerId: 1, clientX: 20 });
+
+    expect(onCheckedChange).toHaveBeenCalledWith(true);
+  });
 });

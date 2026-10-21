@@ -32,9 +32,10 @@ export function Root() {
 
 组件包含：Button、Input、Switch、Tabs、Dialog、Toast。
 
-- Tabs 支持方向键切换与 ARIA 关联。
-- Dialog 自带焦点陷阱、Esc 关闭与滚动锁定。
-- Toast 支持自动消失与手动关闭。
+- Tabs 支持方向键切换、ARIA 关联与 fluid 指示器。
+- Switch 支持点击、键盘和拖拽 spring。
+- Dialog 使用 Motion 管理进出场，并自带焦点陷阱、Esc 关闭与滚动锁定。
+- Toast 使用可中断队列，支持自动消失、悬停暂停与手动关闭。
 
 完整文档：[chenhaojie9527.github.io/ui-kit](https://chenhaojie9527.github.io/ui-kit/)
 

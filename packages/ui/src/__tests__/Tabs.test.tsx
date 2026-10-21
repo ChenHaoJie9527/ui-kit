@@ -64,6 +64,19 @@ describe("Tabs", () => {
     expect(panel.getAttribute("aria-labelledby")).toBe(overview.id);
   });
 
+  it("renders one shared fluid indicator for the selected tab", () => {
+    render(<TabsExample />);
+
+    const indicators = document.querySelectorAll(".uk-tabs__indicator");
+
+    expect(indicators).toHaveLength(1);
+    expect(
+      screen
+        .getByRole("tab", { name: "概览" })
+        .querySelector(".uk-tabs__indicator"),
+    ).toBe(indicators[0]);
+  });
+
   it("switches panels on click", () => {
     const onValueChange = vi.fn<(value: string) => void>();
     render(<TabsExample onValueChange={onValueChange} />);

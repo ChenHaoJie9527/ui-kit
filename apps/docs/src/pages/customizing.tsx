@@ -336,7 +336,7 @@ export function CustomizingPage() {
 
       <Section
         title="1. 全局 token"
-        description="所有颜色、间距、圆角、字号、阴影都是 :root 上的 CSS 变量。覆盖它们就得到一套新主题，不需要碰任何选择器。"
+        description="颜色、间距、圆角、字号、阴影、时长和缓动都属于全局 token。覆盖它们就得到一套新主题，不需要碰任何选择器。"
       >
         <Demo
           code={`:root {
@@ -363,7 +363,7 @@ export function CustomizingPage() {
         </Callout>
 
         <p className="mt-3.5 max-w-[72ch] text-sm leading-[1.7] text-muted">
-          主要 token 分四组：颜色（<InlineCode>--uk-primary*</InlineCode>、
+          主要 token 分五组：颜色（<InlineCode>--uk-primary*</InlineCode>、
           <InlineCode>--uk-surface*</InlineCode>、
           <InlineCode>--uk-text*</InlineCode>、
           <InlineCode>--uk-border*</InlineCode>、
@@ -372,7 +372,10 @@ export function CustomizingPage() {
           <InlineCode>--uk-space-8</InlineCode>）、圆角（
           <InlineCode>--uk-radius-sm/md/lg/full</InlineCode>）、字号与阴影（
           <InlineCode>--uk-text-*</InlineCode>、
-          <InlineCode>--uk-shadow-*</InlineCode>）。
+          <InlineCode>--uk-shadow-*</InlineCode>）、动效（
+          <InlineCode>--uk-duration-*</InlineCode>、
+          <InlineCode>--uk-ease-*</InlineCode> 与{" "}
+          <InlineCode>--uk-scale-press</InlineCode>）。
         </p>
       </Section>
 
@@ -443,6 +446,25 @@ export function CustomizingPage() {
               type: "length",
               defaultValue: "22rem / var(--uk-radius-md)",
               description: "通知宽度与圆角。",
+            },
+            {
+              name: "--uk-duration-fast / -base / -control / -overlay",
+              type: "time",
+              defaultValue: "120ms / 160ms / 200ms / 240ms",
+              description: "Fluid 动效的语义时长。",
+            },
+            {
+              name: "--uk-ease-out / -in-out / -drawer",
+              type: "easing",
+              defaultValue:
+                "cubic-bezier(0.23, 1, 0.32, 1) / cubic-bezier(0.77, 0, 0.175, 1) / cubic-bezier(0.32, 0.72, 0, 1)",
+              description: "组件共享的缓动曲线。",
+            },
+            {
+              name: "--uk-scale-press",
+              type: "number",
+              defaultValue: "0.97",
+              description: "按钮按下时的缩放比例。",
             },
           ]}
         />

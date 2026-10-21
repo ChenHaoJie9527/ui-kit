@@ -288,7 +288,7 @@ toast({ title: "需要手动关闭", duration: 0 });`}
             "通知容器是 section + aria-live=polite，新通知会被读屏播报而不打断当前朗读。",
             "每条通知在鼠标悬停或键盘聚焦时暂停自动关闭，避免用户来不及阅读。",
             "关闭按钮是原生 button，带 aria-label。",
-            "动画在 prefers-reduced-motion 下自动关闭。",
+            "动画在 prefers-reduced-motion 下保留短暂淡出，并移除位移。",
           ]}
         />
         <Callout title="不要滥用" tone="warning">

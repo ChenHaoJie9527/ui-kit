@@ -67,14 +67,6 @@
     --uk-toast-accent: var(--uk-danger);
   }
 
-  .uk-toast[data-state="open"] {
-    animation: uk-toast-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-
-  .uk-toast[data-state="closed"] {
-    animation: uk-toast-out 180ms cubic-bezier(0.4, 0, 1, 1) forwards;
-  }
-
   .uk-toast__body {
     flex: 1;
     min-width: 0;
@@ -120,34 +112,7 @@
     outline-offset: 1px;
   }
 
-  @keyframes uk-toast-in {
-    from {
-      opacity: 0;
-      transform: translateY(-6px) scale(0.98);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  @keyframes uk-toast-out {
-    from {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-
-    to {
-      opacity: 0;
-      transform: translateY(-4px) scale(0.98);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .uk-toast[data-state="open"],
-    .uk-toast[data-state="closed"] {
-      animation: none;
-    }
+  .uk-toast[data-state="closed"] {
+    pointer-events: none;
   }
 }

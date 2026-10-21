@@ -123,8 +123,8 @@ export function ButtonPage() {
     <Page
       kind="组件"
       title="Button"
-      description="最常用的操作入口。五种视觉变体、三种尺寸，加载态自动禁用并设置 aria-busy，其余原生 button 属性全部透传。"
-      tags={["5 种变体", "3 种尺寸", "加载态", "原生属性透传"]}
+      description="最常用的操作入口。五种视觉变体、三种尺寸、fluid 按压反馈；加载态自动禁用并设置 aria-busy，其余原生 button 属性全部透传。"
+      tags={["5 种变体", "fluid 按压", "加载态", "原生属性透传"]}
     >
       <Section title="引入">
         <CodeBlock code={'import { Button } from "seam-react";'} />

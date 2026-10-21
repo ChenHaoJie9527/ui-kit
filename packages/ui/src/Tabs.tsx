@@ -11,7 +11,9 @@ import {
   type ReactNode,
   type RefAttributes,
 } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { useControllableState } from "seam-hooks";
+import { INDICATOR_SPRING } from "./motion";
 import { cx } from "./utils/cx";
 
 export type TabsOrientation = "horizontal" | "vertical";
@@ -21,6 +23,7 @@ interface TabsContextValue {
   value: string;
   setValue: (value: string) => void;
   orientation: TabsOrientation;
+  indicatorId: string;
 }
 
 const TabsContext = createContext<TabsContextValue | null>(null);
@@ -72,7 +75,13 @@ function TabsRoot({
   });
 
   const context = useMemo<TabsContextValue>(
-    () => ({ baseId, value: current, setValue, orientation }),
+    () => ({
+      baseId,
+      value: current,
+      setValue,
+      orientation,
+      indicatorId: `${baseId}-indicator`,
+    }),
     [baseId, current, orientation, setValue],
   );
 
@@ -175,11 +184,12 @@ export interface TabsTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement
 const TabsTrigger: ForwardRefExoticComponent<
   TabsTriggerProps & RefAttributes<HTMLButtonElement>
 > = forwardRef<HTMLButtonElement, TabsTriggerProps>(function TabsTrigger(
-  { value, type = "button", className, onClick, ...rest },
+  { value, type = "button", className, onClick, children, ...rest },
   ref,
 ) {
   const context = useTabsContext("Tabs.Trigger");
   const selected = context.value === value;
+  const reduceMotion = useReducedMotion() ?? false;
 
   return (
     <button
@@ -200,7 +210,17 @@ const TabsTrigger: ForwardRefExoticComponent<
           context.setValue(value);
         }
       }}
-    />
+    >
+      {children}
+      {selected ? (
+        <motion.span
+          className="uk-tabs__indicator"
+          layoutId={context.indicatorId}
+          aria-hidden="true"
+          transition={reduceMotion ? { duration: 0 } : INDICATOR_SPRING}
+        />
+      ) : null}
+    </button>
   );
 });
 

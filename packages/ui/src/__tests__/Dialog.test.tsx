@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { useRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { Dialog } from "../Dialog";
@@ -136,7 +142,50 @@ describe("Dialog", () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
-  it("closes the native dialog when the prop turns false without echoing", () => {
+  it("stays open when escape closing is disabled and Escape is pressed twice", () => {
+    const onOpenChange = vi.fn<(open: boolean) => void>();
+
+    render(
+      <Dialog
+        open
+        onOpenChange={onOpenChange}
+        closeOnEscape={false}
+        closeOnBackdropClick={false}
+        title="不可关闭"
+      >
+        内容
+      </Dialog>,
+    );
+
+    const dialog = getDialog();
+
+    for (let press = 0; press < 2; press += 1) {
+      act(() => {
+        const keyDown = new KeyboardEvent("keydown", {
+          key: "Escape",
+          bubbles: true,
+          cancelable: true,
+        });
+        const cancel = new Event("cancel", { cancelable: true });
+
+        dialog.dispatchEvent(keyDown);
+        dialog.dispatchEvent(cancel);
+
+        expect(keyDown.defaultPrevented).toBe(true);
+        expect(cancel.defaultPrevented).toBe(true);
+      });
+    }
+
+    // Some browsers can still complete the native close after repeated Esc.
+    act(() => {
+      dialog.close();
+    });
+
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(dialog.open).toBe(true);
+  });
+
+  it("removes the dialog when the prop turns false without echoing", async () => {
     const onOpenChange = vi.fn<(open: boolean) => void>();
     const { rerender } = render(
       <Dialog open onOpenChange={onOpenChange} title="确认发布">
@@ -152,11 +201,13 @@ describe("Dialog", () => {
       </Dialog>,
     );
 
-    expect(getDialog().hasAttribute("open")).toBe(false);
+    await waitFor(() => {
+      expect(document.querySelector("dialog")).toBeNull();
+    });
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
-  it("locks body scrolling while open", () => {
+  it("locks body scrolling while visible", async () => {
     const { rerender } = render(
       <Dialog open onOpenChange={() => {}} title="确认发布">
         内容
@@ -171,19 +222,23 @@ describe("Dialog", () => {
       </Dialog>,
     );
 
-    expect(document.body.style.overflow).toBe("");
+    await waitFor(() => {
+      expect(document.body.style.overflow).toBe("");
+    });
   });
 
-  it("supports fully controlled open state", () => {
+  it("supports fully controlled open state", async () => {
     render(<Harness />);
 
-    expect(getDialog().hasAttribute("open")).toBe(false);
+    expect(document.querySelector("dialog")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "打开" }));
     expect(getDialog().hasAttribute("open")).toBe(true);
 
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
-    expect(getDialog().hasAttribute("open")).toBe(false);
+    await waitFor(() => {
+      expect(document.querySelector("dialog")).toBeNull();
+    });
   });
 
   it("focuses initialFocusRef when opened", () => {
@@ -195,7 +250,7 @@ describe("Dialog", () => {
     );
   });
 
-  it("restores focus to the opener after closing", () => {
+  it("restores focus to the opener after closing", async () => {
     render(<Harness />);
 
     const trigger = screen.getByRole("button", { name: "打开" });
@@ -208,6 +263,8 @@ describe("Dialog", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
 
-    expect(document.activeElement).toBe(trigger);
+    await waitFor(() => {
+      expect(document.activeElement).toBe(trigger);
+    });
   });
 });
