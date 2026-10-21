@@ -24,7 +24,7 @@ const manifests = await Promise.all(
   }),
 );
 
-for (const { name, directory, manifest } of manifests) {
+for (const [index, { name, directory, manifest }] of manifests.entries()) {
   const published = spawnSync(
     "npm",
     ["view", `${name}@${manifest.version}`, "version"],
@@ -33,6 +33,20 @@ for (const { name, directory, manifest } of manifests) {
 
   if (published.status === 0) {
     console.log(`${name}@${manifest.version} 已存在，跳过`);
+
+    // A skipped workspace package can still be a local build dependency of a
+    // later package. Build it so the clean CI checkout has its dist artifacts.
+    if (index < manifests.length - 1) {
+      const build = spawnSync(command, ["build"], {
+        cwd: fileURLToPath(directory),
+        stdio: "inherit",
+      });
+
+      if (build.status !== 0) {
+        process.exit(build.status ?? 1);
+      }
+    }
+
     continue;
   }
 
