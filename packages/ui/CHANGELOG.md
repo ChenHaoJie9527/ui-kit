@@ -1,5 +1,11 @@
 # seam-react
 
+## 0.4.0
+
+### Minor Changes
+
+- c546af2: Add an accessible grouped Sidebar with native link semantics, independent active and mouse-preview indicators that move continuously between items, coarse-pointer hit areas, and reduced-motion support.
+
 ## 0.3.0
 
 ### Minor Changes
