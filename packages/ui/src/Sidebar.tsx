@@ -3,9 +3,12 @@ import {
   createContext,
   isValidElement,
   useContext,
+  useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
+  type CSSProperties,
   type HTMLAttributes,
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
@@ -17,7 +20,8 @@ import {
   motion,
   useReducedMotion,
 } from "motion/react";
-import { INDICATOR_SPRING } from "./motion";
+import { useControllableState } from "seam-hooks";
+import { DISCLOSURE_TRANSITION, INDICATOR_SPRING } from "./motion";
 import { cx } from "./utils/cx";
 
 interface SidebarContextValue {
@@ -25,6 +29,7 @@ interface SidebarContextValue {
   setHoveredId: (id: string | null) => void;
   indicatorBaseId: string;
   hoverPreview: boolean;
+  hoverIndicator: SidebarHoverIndicator;
 }
 
 const SidebarContext = createContext<SidebarContextValue | null>(null);
@@ -55,30 +60,65 @@ function composeHandler<T extends { defaultPrevented: boolean }>(
 export interface SidebarProps extends HTMLAttributes<HTMLElement> {
   children?: ReactNode;
   /**
-   * 鼠标悬停时是否显示与当前项并列的预览指示器。
+   * 鼠标悬停时是否显示会跟随指针移动的背景预览。
    *
    * @default true
    */
   hoverPreview?: boolean;
+  /**
+   * 鼠标预览的互斥呈现方式：轨道游标或整行背景。
+   *
+   * @default "rail"
+   */
+  hoverIndicator?: SidebarHoverIndicator;
+  /**
+   * 分组之间的垂直间距。数字按 px 处理，也可传入 CSS 长度字符串。
+   *
+   * @default "1.5rem"
+   */
+  groupGap?: number | string;
 }
+
+export type SidebarHoverIndicator = "rail" | "background";
 
 function SidebarRoot({
   children,
   className,
   hoverPreview = true,
+  hoverIndicator = "rail",
+  groupGap,
+  style,
   ...rest
 }: SidebarProps): ReactElement {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const indicatorBaseId = useId().replace(/:/g, "");
   const context = useMemo<SidebarContextValue>(
-    () => ({ hoveredId, setHoveredId, indicatorBaseId, hoverPreview }),
-    [hoveredId, indicatorBaseId, hoverPreview],
+    () => ({
+      hoveredId,
+      setHoveredId,
+      indicatorBaseId,
+      hoverPreview,
+      hoverIndicator,
+    }),
+    [hoveredId, indicatorBaseId, hoverPreview, hoverIndicator],
   );
+  const groupGapValue =
+    typeof groupGap === "number" ? `${groupGap}px` : groupGap;
+  const rootStyle = {
+    ...style,
+    ...(groupGapValue === undefined
+      ? {}
+      : { "--uk-sidebar-group-gap": groupGapValue }),
+  } as CSSProperties;
 
   return (
     <SidebarContext.Provider value={context}>
       <LayoutGroup id={`sidebar-${indicatorBaseId}`}>
-        <nav {...rest} className={cx("uk-sidebar", className)}>
+        <nav
+          {...rest}
+          className={cx("uk-sidebar", className)}
+          style={rootStyle}
+        >
           {children}
         </nav>
       </LayoutGroup>
@@ -94,35 +134,161 @@ export interface SidebarGroupProps extends Omit<
   title: ReactNode;
   /** 分类标题前的视觉图标，不作为额外可访问名称。 */
   icon?: ReactNode;
+  /** 是否允许用户展开和收起该分组。默认保持展开且不显示触发器。 */
+  collapsible?: boolean;
+  /** 受控展开状态。 */
+  open?: boolean;
+  /** 非受控模式下是否默认展开。 */
+  defaultOpen?: boolean;
+  /** 展开状态变化时触发。 */
+  onOpenChange?: (open: boolean) => void;
   children?: ReactNode;
 }
 
 function SidebarGroup({
   title,
   icon,
+  collapsible = false,
+  open,
+  defaultOpen = true,
+  onOpenChange,
   children,
   className,
   ...rest
 }: SidebarGroupProps): ReactElement {
   const titleId = useId();
+  const contentId = useId();
+  const triggerId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const context = useSidebarContext("Sidebar.Group");
   const hasIcon = icon !== undefined && icon !== null;
+  const reduceMotion = useReducedMotion() ?? false;
+  const [expanded, setExpanded] = useControllableState<boolean>({
+    value: open,
+    defaultValue: defaultOpen,
+    onChange: onOpenChange,
+  });
+  const isOpen = collapsible ? expanded : true;
+  const triggerHovered = context.hoveredId === triggerId;
+
+  useEffect(() => {
+    if (!collapsible || isOpen) {
+      return;
+    }
+
+    if (contentRef.current?.contains(document.activeElement)) {
+      triggerRef.current?.focus();
+    }
+  }, [collapsible, isOpen]);
+
+  const titleContent = (
+    <>
+      {hasIcon ? (
+        <span className="uk-sidebar__group-icon" aria-hidden="true">
+          {icon}
+        </span>
+      ) : null}
+      <span className="uk-sidebar__group-label">{title}</span>
+      {collapsible ? (
+        <span className="uk-sidebar__chevron" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none">
+            <path
+              d="m6 3.8 4.2 4.2L6 12.2"
+              stroke="currentColor"
+              strokeWidth="1.35"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+      ) : null}
+    </>
+  );
 
   return (
     <section
       {...rest}
       className={cx("uk-sidebar__group", className)}
       aria-labelledby={rest["aria-labelledby"] ?? titleId}
+      data-collapsible={collapsible ? "true" : "false"}
       data-has-icon={hasIcon ? "true" : "false"}
+      data-state={isOpen ? "open" : "closed"}
     >
-      <p className="uk-sidebar__group-title" id={titleId}>
-        {hasIcon ? (
-          <span className="uk-sidebar__group-icon" aria-hidden="true">
-            {icon}
-          </span>
-        ) : null}
-        <span>{title}</span>
-      </p>
-      <ul className="uk-sidebar__list">{children}</ul>
+      {collapsible ? (
+        <button
+          ref={triggerRef}
+          type="button"
+          className="uk-sidebar__group-title uk-sidebar__group-trigger"
+          id={titleId}
+          aria-controls={contentId}
+          aria-expanded={isOpen}
+          data-preview={
+            context.hoverIndicator === "background" && triggerHovered
+              ? "true"
+              : undefined
+          }
+          onClick={() => setExpanded((value) => !value)}
+          onPointerEnter={(event) => {
+            if (
+              context.hoverPreview &&
+              context.hoverIndicator === "background" &&
+              event.pointerType === "mouse"
+            ) {
+              context.setHoveredId(triggerId);
+            }
+          }}
+          onPointerLeave={() => {
+            if (context.hoveredId === triggerId) {
+              context.setHoveredId(null);
+            }
+          }}
+          onPointerCancel={() => {
+            if (context.hoveredId === triggerId) {
+              context.setHoveredId(null);
+            }
+          }}
+        >
+          <AnimatePresence initial={false}>
+            {context.hoverPreview &&
+            context.hoverIndicator === "background" &&
+            triggerHovered ? (
+              <motion.span
+                className="uk-sidebar__group-surface"
+                data-kind="hover"
+                data-slot="sidebar-hover-highlight"
+                layoutId={`${context.indicatorBaseId}-hover`}
+                aria-hidden="true"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={reduceMotion ? { duration: 0 } : INDICATOR_SPRING}
+              />
+            ) : null}
+          </AnimatePresence>
+          {titleContent}
+        </button>
+      ) : (
+        <div className="uk-sidebar__group-title" id={titleId}>
+          {titleContent}
+        </div>
+      )}
+      <motion.div
+        ref={contentRef}
+        className="uk-sidebar__content"
+        id={contentId}
+        data-state={isOpen ? "open" : "closed"}
+        initial={false}
+        animate={{
+          height: isOpen ? "auto" : 0,
+          opacity: isOpen ? 1 : 0,
+        }}
+        transition={reduceMotion ? { duration: 0 } : DISCLOSURE_TRANSITION}
+        inert={collapsible && !isOpen}
+        aria-hidden={collapsible && !isOpen ? true : undefined}
+      >
+        <ul className="uk-sidebar__list">{children}</ul>
+      </motion.div>
     </section>
   );
 }
@@ -184,11 +350,45 @@ function SidebarItem({
     <>
       <span className="uk-sidebar__rail" aria-hidden="true" />
       <AnimatePresence initial={false}>
-        {context.hoverPreview && hovered ? (
+        {context.hoverPreview &&
+        context.hoverIndicator === "rail" &&
+        hovered ? (
           <motion.span
-            className="uk-sidebar__indicator"
+            className="uk-sidebar__rail-indicator"
             data-kind="hover"
-            data-slot="sidebar-hover-indicator"
+            data-slot="sidebar-hover-rail-indicator"
+            layoutId={`${context.indicatorBaseId}-hover-rail`}
+            aria-hidden="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={indicatorTransition}
+          />
+        ) : null}
+      </AnimatePresence>
+      <AnimatePresence initial={false}>
+        {context.hoverIndicator === "rail" && active ? (
+          <motion.span
+            className="uk-sidebar__rail-indicator"
+            data-kind="active"
+            data-slot="sidebar-active-rail-indicator"
+            layoutId={`${context.indicatorBaseId}-active-rail`}
+            aria-hidden="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={indicatorTransition}
+          />
+        ) : null}
+      </AnimatePresence>
+      <AnimatePresence initial={false}>
+        {context.hoverPreview &&
+        context.hoverIndicator === "background" &&
+        hovered ? (
+          <motion.span
+            className="uk-sidebar__surface"
+            data-kind="hover"
+            data-slot="sidebar-hover-highlight"
             layoutId={`${context.indicatorBaseId}-hover`}
             aria-hidden="true"
             initial={{ opacity: 0 }}
@@ -199,11 +399,11 @@ function SidebarItem({
         ) : null}
       </AnimatePresence>
       <AnimatePresence initial={false}>
-        {active ? (
+        {context.hoverIndicator === "background" && active ? (
           <motion.span
-            className="uk-sidebar__indicator"
+            className="uk-sidebar__surface"
             data-kind="active"
-            data-slot="sidebar-active-indicator"
+            data-slot="sidebar-active-highlight"
             layoutId={`${context.indicatorBaseId}-active`}
             aria-hidden="true"
             initial={{ opacity: 0 }}
@@ -258,8 +458,9 @@ function SidebarItem({
  * 分组文档导航。
  *
  * 根节点保持原生 `<nav>`，Group 生成带名称的分组，Item 包装单个链接。
- * 当前项和鼠标预览使用两个独立的共享布局指示器；链接的 Tab 顺序、焦点、
- * 原生事件和 aria-current 行为保持不变。
+ * hoverIndicator 在轨道游标与共享布局背景之间二选一，hover 和当前项使用
+ * 同一种反馈；Group 可按需展开和收起，同时保持链接的 Tab 顺序、焦点、
+ * 原生事件和 aria-current 行为。
  */
 export interface SidebarComponent {
   (props: SidebarProps): ReactElement;

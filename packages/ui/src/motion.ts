@@ -21,6 +21,11 @@ export const INDICATOR_SPRING: Transition = {
   duration: 0.34,
 };
 
+export const DISCLOSURE_TRANSITION: Transition = {
+  duration: 0.2,
+  ease: EASE_IN_OUT,
+};
+
 /** Frequent explanatory surface: near-immediate presence without spring settle. */
 export const TOOLTIP_TRANSITION: Transition = {
   duration: 0.12,
