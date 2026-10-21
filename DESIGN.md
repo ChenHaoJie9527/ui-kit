@@ -285,6 +285,23 @@ Before implementation, a new component must define:
 Prefer composition over a large prop surface. Prefer extending an existing
 primitive when the semantics and lifecycle are shared.
 
+### Composition boundary
+
+Components with several independently placed semantic regions expose composable
+parts. Keep state and accessibility behavior behind a shared Root and let visual
+regions remain ordinary, typed HTML layers.
+
+- Dialog exposes Root, Trigger, Content, Header, Title, Description, Body,
+  Footer, and Close.
+- Tabs exposes Root, List, Trigger, and Content.
+- Toast exposes Provider and a state API because its parts are generated rather
+  than authored inline.
+- Button, Input, and Switch remain atomic controls; adding subcomponents would
+  create pass-through interfaces without increasing semantic leverage.
+
+Legacy convenience APIs may wrap the same composition but must not duplicate
+state, focus, or presence logic.
+
 ## Existing component changes
 
 Before modifying an existing component:

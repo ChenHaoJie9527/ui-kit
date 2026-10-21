@@ -47,11 +47,27 @@
   }
 
   .uk-dialog__header {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: flex-start;
-    gap: var(--uk-space-4);
+    column-gap: var(--uk-space-4);
+    row-gap: 0;
     padding: var(--uk-space-5);
     border-bottom: 1px solid var(--uk-border);
+  }
+
+  .uk-dialog__header > .uk-dialog__title,
+  .uk-dialog__header > .uk-dialog__description {
+    grid-column: 1;
+  }
+
+  .uk-dialog__header > .uk-dialog__description {
+    grid-row: 2;
+  }
+
+  .uk-dialog__header > .uk-dialog__close {
+    grid-column: 2;
+    grid-row: 1 / span 2;
   }
 
   .uk-dialog__heading {

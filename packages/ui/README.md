@@ -34,7 +34,7 @@ export function Root() {
 
 - Tabs 支持方向键切换、ARIA 关联与 fluid 指示器。
 - Switch 支持点击、键盘和拖拽 spring。
-- Dialog 使用 Motion 管理进出场，并自带焦点陷阱、Esc 关闭与滚动锁定。
+- Dialog 提供 Root / Trigger / Content 与语义化内容层，自带 Motion 进出场、焦点陷阱、Esc 关闭与滚动锁定。
 - Toast 使用可中断队列，支持自动消失、悬停暂停与手动关闭。
 
 完整文档：[chenhaojie9527.github.io/ui-kit](https://chenhaojie9527.github.io/ui-kit/)

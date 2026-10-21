@@ -55,6 +55,33 @@ function FocusHarness() {
   );
 }
 
+function ComposableHarness() {
+  return (
+    <Dialog.Root defaultOpen>
+      <Dialog.Trigger>
+        <button type="button">打开组合对话框</button>
+      </Dialog.Trigger>
+      <Dialog.Content>
+        <Dialog.Header>
+          <Dialog.Title>组合标题</Dialog.Title>
+          <Dialog.Description>组合描述</Dialog.Description>
+          <Dialog.Close>
+            <button type="button" aria-label="关闭组合对话框">
+              ×
+            </button>
+          </Dialog.Close>
+        </Dialog.Header>
+        <Dialog.Body>组合正文</Dialog.Body>
+        <Dialog.Footer>
+          <Dialog.Close>
+            <button type="button">取消</button>
+          </Dialog.Close>
+        </Dialog.Footer>
+      </Dialog.Content>
+    </Dialog.Root>
+  );
+}
+
 describe("Dialog", () => {
   it("renders in a portal and opens with the open prop", () => {
     const { container } = render(
@@ -248,6 +275,54 @@ describe("Dialog", () => {
     expect(document.activeElement).toBe(
       screen.getByRole("textbox", { name: "名称" }),
     );
+  });
+
+  it("supports semantic composition with linked trigger and content", async () => {
+    render(<ComposableHarness />);
+
+    const trigger = screen.getByRole("button", { name: "打开组合对话框" });
+    const dialog = screen.getByRole("dialog", { name: "组合标题" });
+    const title = screen.getByRole("heading", { name: "组合标题" });
+    const description = screen.getByText("组合描述");
+
+    expect(trigger.getAttribute("aria-haspopup")).toBe("dialog");
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(trigger.getAttribute("aria-controls")).toBe(dialog.id);
+    expect(dialog.getAttribute("aria-labelledby")).toBe(title.id);
+    expect(dialog.getAttribute("aria-describedby")).toBe(description.id);
+    expect(dialog.querySelector("header")).toBeTruthy();
+    expect(dialog.querySelector("footer")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "取消" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("opens and closes composed dialogs without a controlled prop", async () => {
+    render(
+      <Dialog.Root>
+        <Dialog.Trigger>
+          <button type="button">打开非受控</button>
+        </Dialog.Trigger>
+        <Dialog.Content aria-label="非受控对话框">
+          <Dialog.Body>内容</Dialog.Body>
+        </Dialog.Content>
+      </Dialog.Root>,
+    );
+
+    const trigger = screen.getByRole("button", { name: "打开非受控" });
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.click(trigger);
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog", { name: "非受控对话框" })).toBeTruthy();
+    });
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
   });
 
   it("restores focus to the opener after closing", async () => {

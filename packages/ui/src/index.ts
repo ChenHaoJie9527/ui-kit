@@ -17,7 +17,19 @@ export type {
 } from "./Tabs";
 
 export { Dialog } from "./Dialog";
-export type { DialogProps } from "./Dialog";
+export type {
+  DialogBodyProps,
+  DialogCloseProps,
+  DialogComponent,
+  DialogContentProps,
+  DialogDescriptionProps,
+  DialogFooterProps,
+  DialogHeaderProps,
+  DialogProps,
+  DialogRootProps,
+  DialogTitleProps,
+  DialogTriggerProps,
+} from "./Dialog";
 
 export { ToastProvider, useToast } from "./Toast";
 export type {
