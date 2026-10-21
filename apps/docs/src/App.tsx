@@ -34,6 +34,9 @@ const NAV_GROUP_TITLE =
 const SIDEBAR_LINK =
   "block rounded-[7px] px-2.5 py-[5px] text-[13.5px] leading-[1.45] text-muted no-underline transition-colors hover:bg-surface-2 hover:text-ink aria-[current=page]:bg-accent-soft aria-[current=page]:font-semibold aria-[current=page]:text-accent-strong";
 
+const SIDEBAR_NEW_BADGE =
+  "ml-2 inline-block rounded-full bg-accent-soft px-1.5 py-px align-[1px] text-[9.5px] font-bold tracking-[0.06em] text-accent-strong uppercase";
+
 function MenuIcon() {
   return (
     <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
@@ -335,6 +338,14 @@ export function AppLayout() {
                         onClick={closeSidebar}
                       >
                         {item.label}
+                        {item.isNew ? (
+                          <span
+                            className={SIDEBAR_NEW_BADGE}
+                            aria-label="近期新增组件"
+                          >
+                            New
+                          </span>
+                        ) : null}
                       </NavLink>
                     </li>
                   ))}

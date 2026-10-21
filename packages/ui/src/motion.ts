@@ -21,6 +21,22 @@ export const INDICATOR_SPRING: Transition = {
   duration: 0.34,
 };
 
+/** Frequent explanatory surface: near-immediate presence without spring settle. */
+export const TOOLTIP_TRANSITION: Transition = {
+  duration: 0.12,
+  ease: EASE_OUT,
+};
+
+/**
+ * Grouped tooltips move between nearby triggers. The short layout spring keeps
+ * spatial continuity without delaying the content switch.
+ */
+export const TOOLTIP_GROUP_TRANSITION: Transition = {
+  layout: { type: "spring", bounce: 0, duration: 0.22 },
+  opacity: { duration: 0.12, ease: EASE_OUT },
+  scale: { duration: 0.12, ease: EASE_OUT },
+};
+
 export const REDUCED_MOTION_TRANSITION: Transition = {
   duration: 0.12,
   ease: EASE_OUT,

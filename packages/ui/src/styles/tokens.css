@@ -66,6 +66,7 @@
     --uk-scale-press: 0.97;
 
     --uk-z-dialog: 1000;
+    --uk-z-tooltip: 1100;
   }
 
   @media (prefers-reduced-motion: reduce) {
