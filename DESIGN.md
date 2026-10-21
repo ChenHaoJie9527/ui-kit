@@ -30,7 +30,7 @@ The design system should optimize for:
 Decision date: 2026-10-21.
 
 Fluid is the official motion language for `seam-react`. The first production
-migration covers Button, Input, Switch, Tabs, Dialog, and Toast.
+migration covers Button, Input, Switch, Tabs, and Dialog.
 
 Fluid means:
 
@@ -180,7 +180,6 @@ cross-fade. Do not preserve artificial waits.
 | Switch           | Direct, interruptible thumb spring with synchronized track color              |
 | Tabs             | Spring indicator plus fast out-in content replacement                         |
 | Dialog           | Centered spring entrance and exit; the panel remains stationary               |
-| Toast            | Same-edge spring entrance and interruptible presence and queue changes        |
 | Popover and menu | Trigger-origin opacity and scale                                              |
 | Drawer           | Same-edge transform, interruptible, optional drag spring                      |
 | Accordion        | Limited height or layout transition with content-aware performance validation |
@@ -207,7 +206,7 @@ Use `motion/react` for:
 
 - exit animations and presence state;
 - overlays that must remain in the DOM while leaving;
-- dynamic queues such as Toast;
+- dynamic queues and collections that require exit orchestration;
 - shared layout or measured origin;
 - springs, gestures, drag, and interruption.
 
@@ -294,8 +293,6 @@ regions remain ordinary, typed HTML layers.
 - Dialog exposes Root, Trigger, Content, Header, Title, Description, Body,
   Footer, and Close.
 - Tabs exposes Root, List, Trigger, and Content.
-- Toast exposes Provider and a state API because its parts are generated rather
-  than authored inline.
 - Button, Input, and Switch remain atomic controls; adding subcomponents would
   create pass-through interfaces without increasing semantic leverage.
 

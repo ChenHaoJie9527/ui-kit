@@ -10,6 +10,5 @@ describe("SeamStyles", () => {
     expect(markup).toContain("--uk-primary");
     expect(markup).toContain(".uk-button");
     expect(markup).toContain(".uk-dialog");
-    expect(markup).toContain(".uk-toast");
   });
 });

@@ -30,12 +30,3 @@ export type {
   DialogTitleProps,
   DialogTriggerProps,
 } from "./Dialog";
-
-export { ToastProvider, useToast } from "./Toast";
-export type {
-  ToastApi,
-  ToastOptions,
-  ToastPlacement,
-  ToastProviderProps,
-  ToastVariant,
-} from "./Toast";

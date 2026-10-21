@@ -4,7 +4,7 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-7-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=black)](https://react.dev/)
-[![Tests](https://img.shields.io/badge/tests-139%20passed-22c55e)](#)
+[![Tests](https://img.shields.io/badge/tests-137%20passed-22c55e)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 [![Docs](https://img.shields.io/badge/docs-online-4f46e5)](https://chenhaojie9527.github.io/ui-kit/)
 
@@ -25,8 +25,8 @@
 - **性能基础设施**：`useVirtualList` 把万级列表的渲染量压到可视区间。
 - **高频输入控制**：`useDebouncedValue` 支持可配置延迟与同步退化。
 - **可发布**：ESM + CJS 双产物、类型声明、`sideEffects: false`、tree-shaking 友好。
-- **可访问的组件**：原生语义优先，Tabs / Dialog / Toast 自带键盘导航与 ARIA 关联。
-- **可验证**：Vitest + Testing Library，139 个用例覆盖状态切换、定时器、异步竞态、焦点与边界索引。
+- **可访问的组件**：原生语义优先，Tabs / Dialog 自带键盘导航与 ARIA 关联。
+- **可验证**：Vitest + Testing Library，137 个用例覆盖状态切换、定时器、异步竞态、焦点与边界索引。
 
 ## Hooks 一览
 
@@ -76,7 +76,6 @@
 - `Switch`：基于原生 checkbox，受控与非受控写法一致，支持点击、键盘和拖拽 spring。
 - `Tabs`：组合式 API，roving tabindex、方向键循环、Home/End、完整 ARIA 关联与共享布局指示器。
 - `Dialog`：组合式 Root / Trigger / Content / Header / Title / Description / Body / Footer / Close 语义层，基于原生 `<dialog>` 并内置焦点、Esc、遮罩与滚动锁定。
-- `Toast`：`ToastProvider` + `useToast()`，AnimatePresence 管理可中断队列、自动关闭、悬停暂停与 `aria-live`。
 
 在应用根部渲染一次 `<SeamStyles />` 即可引入组件样式；颜色、间距、圆角、阴影、时长和缓动都是 CSS 变量，支持 `light-dark()` 与 reduced-motion。
 
@@ -145,25 +144,23 @@ const report = useEventCallback(() => {
 ### 组件
 
 ```tsx
-import { Button, Dialog, Tabs, ToastProvider, useToast } from "seam-react";
+import { Button, Dialog, Tabs } from "seam-react";
 import { SeamStyles } from "seam-react/styles";
 
 function App() {
   return (
     <>
       <SeamStyles />
-      <ToastProvider>
-        <Tabs defaultValue="overview">
-          <Tabs.List aria-label="说明">
-            <Tabs.Trigger value="overview">概览</Tabs.Trigger>
-            <Tabs.Trigger value="api">API</Tabs.Trigger>
-          </Tabs.List>
-          <Tabs.Content value="overview">
-            <Button>保存</Button>
-          </Tabs.Content>
-          <Tabs.Content value="api">...</Tabs.Content>
-        </Tabs>
-      </ToastProvider>
+      <Tabs defaultValue="overview">
+        <Tabs.List aria-label="说明">
+          <Tabs.Trigger value="overview">概览</Tabs.Trigger>
+          <Tabs.Trigger value="api">API</Tabs.Trigger>
+        </Tabs.List>
+        <Tabs.Content value="overview">
+          <Button>保存</Button>
+        </Tabs.Content>
+        <Tabs.Content value="api">...</Tabs.Content>
+      </Tabs>
     </>
   );
 }
@@ -243,7 +240,7 @@ pnpm check         # format:check + lint + typecheck + test
 
 ## Roadmap
 
-- [x] `packages/ui`：Button、Input、Switch、Tabs、Dialog、Toast 最小闭环
+- [x] `packages/ui`：Button、Input、Switch、Tabs、Dialog 最小闭环
 - [ ] `packages/ui`：VirtualList、Menu、Select 等第二批组件
 - [ ] 文档站补充每个组件的 API 表格与边界用例
 - [x] 用 Changesets 管理版本并发布到 npm 与 JSR

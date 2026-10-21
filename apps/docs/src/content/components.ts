@@ -36,12 +36,6 @@ export const componentMetas: ComponentMeta[] = [
     summary: "原生 dialog 承载模态语义，焦点陷阱与焦点恢复由 hooks 补齐。",
     tags: ["模态", "焦点"],
   },
-  {
-    path: "components/toast",
-    name: "Toast",
-    summary: "队列、自动关闭、悬停暂停与 aria-live 通知区域。",
-    tags: ["通知", "异步"],
-  },
 ];
 
 export const componentMetaByPath = new Map(

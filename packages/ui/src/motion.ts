@@ -21,12 +21,6 @@ export const INDICATOR_SPRING: Transition = {
   duration: 0.34,
 };
 
-export const TOAST_SPRING: Transition = {
-  type: "spring",
-  bounce: 0,
-  duration: 0.3,
-};
-
 export const REDUCED_MOTION_TRANSITION: Transition = {
   duration: 0.12,
   ease: EASE_OUT,

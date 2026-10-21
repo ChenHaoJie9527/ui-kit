@@ -55,7 +55,6 @@ npx skills@latest add emilkowalski/skills
 | `break-ui`                     | 用现实最坏数据压测 UI              | 组件质量检查                       |
 | `pick-ui-library`              | 从作者偏好列表选择库               | 与已经决定采用 Motion 的目标弱相关 |
 | `emil-design-eng`              | 综合设计工程哲学                   | 作为原则参考                       |
-| `ask-sonner`                   | Sonner 专用                        | 不适合直接用到自有 Toast           |
 | `animate-expo`                 | React Native / Expo                | 当前不适用                         |
 | `write-swift`                  | Swift                              | 不适用                             |
 
@@ -72,7 +71,7 @@ npx skills@latest add emilkowalski/skills
 
 - 每天 100 次以上或键盘触发：通常不动画。
 - 每天几十次：只做极轻或极短的反馈。
-- 偶发：Modal、Drawer、Toast 可使用标准动画。
+- 偶发：Modal、Drawer 可使用标准动画。
 - 罕见/首次：允许更多 delight。
 
 来源：
@@ -106,7 +105,7 @@ npx skills@latest add emilkowalski/skills
 这与“引入 Motion”并不冲突。正确落点是：
 
 - Button、Input、Switch、Tabs 等简单状态继续保持 CSS。
-- Dialog 的退出生命周期、Toast 的动态列表和后续手势组件使用 Motion。
+- Dialog 的退出生命周期和后续手势组件使用 Motion。
 - 不把所有 CSS 过渡重写成 Motion。
 
 ### 4. 动效必须有统一词汇
@@ -116,7 +115,6 @@ npx skills@latest add emilkowalski/skills
 - Button press：`scale(0.97)`，100–160ms，强 ease-out。
 - Modal：中心 origin，`scale(0.96)` + opacity，约 250ms ease-out。
 - Popover：从 trigger origin 出现，`scale(0.95)` + opacity，约 200ms。
-- Toast：从与退场相同的边缘进出；频繁排队时应可中断。
 
 来源：
 [animate RECIPES](https://github.com/emilkowalski/skills/blob/main/skills/animate/RECIPES.md)。
@@ -157,7 +155,7 @@ interaction demo，再决定哪些动效进入默认值，而不是先设计大�
 
 ### 2. 不把强偏好直接变成不可变 lint 规则
 
-例如“UI 动画必须低于 300ms”和仓库自身对 Modal 200–500ms、Toast 约 400ms 的
+例如“UI 动画必须低于 300ms”和仓库自身对 Modal 200–500ms 的
 配方存在适用范围差异；“永不动画键盘操作”也是产品策略，不是所有模态关闭都应
 立即跳变。它们是判断启发式，应结合频率和语义使用。
 
@@ -169,12 +167,7 @@ Motion 版本和真实浏览器 profiling 为准，不能只靠规则文字决�
 [animate RECIPES](https://github.com/emilkowalski/skills/blob/main/skills/animate/RECIPES.md)、
 [animation-performance](https://github.com/emilkowalski/skills/blob/main/skills/animation-performance/SKILL.md)。
 
-### 3. 不照搬 Sonner 的个性
-
-`ui-kit` 当前视觉偏克制、紧凑、工具化。Toast 可以学习 Sonner 的队列、暂停和
-空间一致性，但不应因为 Sonner 使用较慢的 `ease` 就默认给所有 Toast 400ms。
-
-### 4. 不把第三方 skill 当作稳定 API
+### 3. 不把第三方 skill 当作稳定 API
 
 仓库没有面向 npm 的语义化版本，skill 文本会继续演进。团队应固定采用的 commit
 或在自有 skill 中提炼规则，而不是假设未来内容不变。MIT 许可证允许再利用，但
@@ -188,9 +181,7 @@ Motion 版本和真实浏览器 profiling 为准，不能只靠规则文字决�
   [tokens.css](../packages/ui/src/styles/tokens.css:57)。
 - Dialog 从 `scale(0.98)` 进入，没有从 `scale(0)` 出现：
   [dialog.css](../packages/ui/src/dialog.css:83)。
-- Toast 也有进入和退出状态：
-  [toast.css](../packages/ui/src/toast.css:70)。
-- `prefers-reduced-motion` 已覆盖 token、Dialog 和 Toast。
+- `prefers-reduced-motion` 已覆盖 token 与 Dialog。
 
 但系统还没有真正形成：
 
@@ -199,14 +190,11 @@ Motion 版本和真实浏览器 profiling 为准，不能只靠规则文字决�
 - Button 的 `:active` 按压反馈。
 - 统一的 hover capability gating。
 - Motion 的时间、spring 与 reduced-motion 配置。
-- 统一的 overlay presence API；Toast 仍是 keyframes + 固定 200ms 删除计时器。
 
 关键位置：
 
 - [button.css](../packages/ui/src/button.css:16)
 - [dialog.css](../packages/ui/src/dialog.css:19)
-- [toast.css](../packages/ui/src/toast.css:70)
-- [Toast.tsx](../packages/ui/src/Toast.tsx:75)
 - [switch.css](../packages/ui/src/switch.css:25)
 - [tabs.css](../packages/ui/src/tabs.css:13)
 
@@ -272,7 +260,6 @@ export const springs = {
 | Control state | CSS           | Switch/checkbox 等短 transform + color             |
 | Overlay enter | Motion        | opacity + scale(0.96)，中心 origin                 |
 | Overlay exit  | Motion        | AnimatePresence + useIsPresent，退场迅速且不可交互 |
-| Toast         | Motion        | 队列条目使用 presence；进入/退出同方向，可中断     |
 | Disclosure    | CSS/Motion    | 高度或布局动画必须有限定范围，做性能验证           |
 | Gesture       | Motion spring | 从 current value 重定向，保留 velocity             |
 | Expressive    | Motion opt-in | Center Morph 等低频品牌场景                        |
@@ -307,7 +294,7 @@ export const springs = {
 3. 选一个方向，提炼 duration/easing/spring token 和 reduced-motion 策略。
 4. 用 Motion 实现 `center-morph` Dialog，作为第一个 presence 样板。
 5. 用 `review-animations` 审查实现，并按发现修正。
-6. 再把同一套模式迁移到 Toast、未来 Drawer/Popover。
+6. 再把同一套模式迁移到未来 Drawer/Popover。
 7. 高频、键盘驱动和纯信息场景默认无动画，避免为了统一而过度动画。
 
 ## 最终判断
