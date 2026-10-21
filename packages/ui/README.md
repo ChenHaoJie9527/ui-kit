@@ -30,11 +30,12 @@ export function Root() {
 }
 ```
 
-组件包含：Button、Input、Switch、Tabs、Dialog。
+组件包含：Button、Input、Switch、Tabs、Dialog、Tooltip。
 
 - Tabs 支持方向键切换、ARIA 关联与 fluid 指示器。
 - Switch 支持点击、键盘和拖拽 spring。
 - Dialog 提供 Root / Trigger / Content 与语义化内容层，自带 Motion 进出场、焦点陷阱、Esc 关闭与滚动锁定。
+- Tooltip 提供延迟显示、键盘与触屏访问、视口翻转/避让，以及可让相邻触发器共享并连续移动表面的 Group / Item 组合。
 
 完整文档：[chenhaojie9527.github.io/ui-kit](https://chenhaojie9527.github.io/ui-kit/)
 

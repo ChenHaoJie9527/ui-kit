@@ -1,0 +1,89 @@
+@layer uk.components {
+  .uk-tooltip {
+    position: fixed;
+    z-index: var(--uk-z-tooltip);
+    pointer-events: none;
+  }
+
+  .uk-tooltip__surface {
+    position: relative;
+    width: max-content;
+    max-width: min(
+      var(--uk-tooltip-max-width, 20rem),
+      calc(100vw - var(--uk-space-4))
+    );
+    padding: var(--uk-space-2) var(--uk-space-3);
+    border: 1px solid var(--uk-tooltip-border, var(--uk-border-strong));
+    border-radius: var(--uk-tooltip-radius, var(--uk-radius-sm));
+    background: var(--uk-tooltip-background, var(--uk-surface-raised));
+    color: var(--uk-tooltip-text, var(--uk-text));
+    box-shadow: var(--uk-shadow-md);
+    font-family: var(--uk-font-sans);
+    font-size: var(--uk-text-xs);
+    font-weight: 500;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .uk-tooltip--group {
+    position: fixed;
+  }
+
+  .uk-tooltip__content {
+    display: block;
+  }
+
+  .uk-tooltip__arrow {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--uk-tooltip-border, var(--uk-border-strong));
+    background: var(--uk-tooltip-background, var(--uk-surface-raised));
+    transform: rotate(45deg);
+    pointer-events: none;
+  }
+
+  .uk-tooltip[data-side="top"] .uk-tooltip__arrow {
+    bottom: -5px;
+    left: var(--uk-tooltip-arrow-offset);
+    border-top: 0;
+    border-left: 0;
+    translate: -50% 0;
+  }
+
+  .uk-tooltip[data-side="bottom"] .uk-tooltip__arrow {
+    top: -5px;
+    left: var(--uk-tooltip-arrow-offset);
+    border-right: 0;
+    border-bottom: 0;
+    translate: -50% 0;
+  }
+
+  .uk-tooltip[data-side="left"] .uk-tooltip__arrow {
+    top: var(--uk-tooltip-arrow-offset);
+    right: -5px;
+    border-bottom: 0;
+    border-left: 0;
+    translate: 0 -50%;
+  }
+
+  .uk-tooltip[data-side="right"] .uk-tooltip__arrow {
+    top: var(--uk-tooltip-arrow-offset);
+    left: -5px;
+    border-top: 0;
+    border-right: 0;
+    translate: 0 -50%;
+  }
+
+  @media (prefers-contrast: more) {
+    .uk-tooltip__surface {
+      border-color: currentColor;
+    }
+
+    .uk-tooltip__arrow {
+      border-color: currentColor;
+    }
+  }
+}

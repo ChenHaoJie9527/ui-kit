@@ -144,7 +144,7 @@ const report = useEventCallback(() => {
 ### 组件
 
 ```tsx
-import { Button, Dialog, Tabs } from "seam-react";
+import { Button, Tabs, Tooltip } from "seam-react";
 import { SeamStyles } from "seam-react/styles";
 
 function App() {
@@ -157,7 +157,12 @@ function App() {
           <Tabs.Trigger value="api">API</Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="overview">
-          <Button>保存</Button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <Button>保存</Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>保存当前草稿</Tooltip.Content>
+          </Tooltip.Root>
         </Tabs.Content>
         <Tabs.Content value="api">...</Tabs.Content>
       </Tabs>
@@ -240,7 +245,7 @@ pnpm check         # format:check + lint + typecheck + test
 
 ## Roadmap
 
-- [x] `packages/ui`：Button、Input、Switch、Tabs、Dialog 最小闭环
+- [x] `packages/ui`：Button、Input、Switch、Tabs、Dialog、Tooltip 最小闭环
 - [ ] `packages/ui`：VirtualList、Menu、Select 等第二批组件
 - [ ] 文档站补充每个组件的 API 表格与边界用例
 - [x] 用 Changesets 管理版本并发布到 npm 与 JSR
