@@ -30,3 +30,15 @@ export type {
   DialogTitleProps,
   DialogTriggerProps,
 } from "./Dialog";
+
+export { Tooltip } from "./Tooltip";
+export type {
+  TooltipAlign,
+  TooltipComponent,
+  TooltipContentProps,
+  TooltipGroupProps,
+  TooltipItemProps,
+  TooltipRootProps,
+  TooltipSide,
+  TooltipTriggerProps,
+} from "./Tooltip";

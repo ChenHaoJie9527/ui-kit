@@ -36,6 +36,13 @@ export const componentMetas: ComponentMeta[] = [
     summary: "原生 dialog 承载模态语义，焦点陷阱与焦点恢复由 hooks 补齐。",
     tags: ["模态", "焦点"],
   },
+  {
+    path: "components/tooltip",
+    name: "Tooltip",
+    summary:
+      "延迟 hover / focus 显示，支持触屏、视口翻转与 aria-describedby 关联。",
+    tags: ["浮层", "定位", "可访问性"],
+  },
 ];
 
 export const componentMetaByPath = new Map(

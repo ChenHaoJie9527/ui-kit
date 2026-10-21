@@ -11,6 +11,7 @@ import { NotFoundPage } from "./pages/not-found";
 import { OverviewPage } from "./pages/overview";
 import { SwitchPage } from "./pages/switch";
 import { TabsPage } from "./pages/tabs";
+import { TooltipPage } from "./pages/tooltip";
 import { UsagePage } from "./pages/usage";
 
 const componentPages: Record<string, ComponentType> = {
@@ -19,6 +20,7 @@ const componentPages: Record<string, ComponentType> = {
   switch: SwitchPage,
   tabs: TabsPage,
   dialog: DialogPage,
+  tooltip: TooltipPage,
 };
 
 function ComponentRoute() {
