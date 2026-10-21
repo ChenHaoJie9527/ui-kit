@@ -1,0 +1,22 @@
+{
+  "Button": {
+    "introducedIn": "0.1.1",
+    "releasedAt": "2025-01-01T00:00:00Z"
+  },
+  "Input": {
+    "introducedIn": "0.1.1",
+    "releasedAt": "2025-01-01T00:00:00Z"
+  },
+  "Switch": {
+    "introducedIn": "0.1.1",
+    "releasedAt": "2025-01-01T00:00:00Z"
+  },
+  "Tabs": {
+    "introducedIn": "0.1.1",
+    "releasedAt": "2025-01-01T00:00:00Z"
+  },
+  "Dialog": {
+    "introducedIn": "0.1.1",
+    "releasedAt": "2025-01-01T00:00:00Z"
+  }
+}

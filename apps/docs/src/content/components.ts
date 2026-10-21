@@ -1,4 +1,5 @@
 import uiPackage from "../../../../packages/ui/package.json";
+import componentReleases from "./component-releases.json";
 
 const NEW_BADGE_WINDOW_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -14,7 +15,9 @@ export interface ComponentMeta {
   releasedAt?: string;
 }
 
-export const componentMetas: ComponentMeta[] = [
+const componentDefinitions: Array<
+  Omit<ComponentMeta, "introducedIn" | "releasedAt">
+> = [
   {
     path: "components/button",
     name: "Button",
@@ -51,10 +54,21 @@ export const componentMetas: ComponentMeta[] = [
     summary:
       "延迟 hover / focus 显示，支持触屏、视口翻转与 aria-describedby 关联。",
     tags: ["浮层", "定位", "可访问性"],
-    introducedIn: "0.3.0",
-    releasedAt: "2026-10-21T00:00:00Z",
   },
 ];
+
+const releases = componentReleases as Record<
+  string,
+  Pick<ComponentMeta, "introducedIn" | "releasedAt">
+>;
+
+export const componentMetas: ComponentMeta[] = componentDefinitions.map(
+  (meta) => {
+    const release = releases[meta.name];
+
+    return release ? Object.assign({}, meta, release) : meta;
+  },
+);
 
 export const componentMetaByPath = new Map(
   componentMetas.map((meta) => [meta.path, meta]),
