@@ -9,6 +9,7 @@ import { HookPage } from "./pages/hook";
 import { InputPage } from "./pages/input";
 import { NotFoundPage } from "./pages/not-found";
 import { OverviewPage } from "./pages/overview";
+import { SidebarPage } from "./pages/sidebar";
 import { SwitchPage } from "./pages/switch";
 import { TabsPage } from "./pages/tabs";
 import { TooltipPage } from "./pages/tooltip";
@@ -18,6 +19,7 @@ const componentPages: Record<string, ComponentType> = {
   button: ButtonPage,
   input: InputPage,
   switch: SwitchPage,
+  sidebar: SidebarPage,
   tabs: TabsPage,
   dialog: DialogPage,
   tooltip: TooltipPage,

@@ -7,6 +7,14 @@ export type { InputProps, InputSize } from "./Input";
 export { Switch } from "./Switch";
 export type { SwitchProps } from "./Switch";
 
+export { Sidebar } from "./Sidebar";
+export type {
+  SidebarComponent,
+  SidebarGroupProps,
+  SidebarItemProps,
+  SidebarProps,
+} from "./Sidebar";
+
 export { Tabs } from "./Tabs";
 export type {
   TabsContentProps,
