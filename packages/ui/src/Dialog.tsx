@@ -1,15 +1,24 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useSyncExternalStore,
   type ReactElement,
   type ReactNode,
   type RefObject,
 } from "react";
+import {
+  AnimatePresence,
+  motion,
+  MotionConfig,
+  useIsPresent,
+  useReducedMotion,
+} from "motion/react";
 import { createPortal } from "react-dom";
 import { useEventCallback, useFocusTrap, useLockBodyScroll } from "seam-hooks";
 import { Button } from "./Button";
+import { OVERLAY_SPRING, REDUCED_MOTION_TRANSITION } from "./motion";
 import { cx } from "./utils/cx";
 
 export interface DialogProps {
@@ -40,16 +49,12 @@ const subscribeToNothing = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
-/**
- * 模态对话框。
- *
- * 基于原生 <dialog> + showModal()：Esc 关闭、遮罩和顶层渲染由浏览器
- * 负责；焦点陷阱由 useFocusTrap 补上反向循环、外部聚焦回收与焦点恢复，
- * 组件本身额外提供受控开关、关闭按钮、遮罩点击与 body 滚动锁定。
- */
-export function Dialog({
-  open,
-  onOpenChange,
+interface DialogLayerProps extends DialogProps {
+  requestClose: () => void;
+}
+
+function DialogLayer({
+  requestClose,
   title,
   description,
   footer,
@@ -62,61 +67,41 @@ export function Dialog({
   returnFocusRef,
   className,
   "aria-label": ariaLabel,
-}: DialogProps): ReactElement | null {
+}: DialogLayerProps): ReactElement {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
-  const openRef = useRef(open);
   const titleId = useId();
   const descriptionId = useId();
-  const isClient = useSyncExternalStore(
-    subscribeToNothing,
-    getClientSnapshot,
-    getServerSnapshot,
-  );
+  const isPresent = useIsPresent();
+  const reduceMotion = useReducedMotion() ?? false;
 
-  const requestClose = useEventCallback(() => {
-    if (openRef.current) {
-      onOpenChange(false);
-    }
-  });
+  useLockBodyScroll(true);
 
-  useLockBodyScroll(open);
-
-  useEffect(() => {
-    openRef.current = open;
-  }, [open]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     const dialog = dialogRef.current;
 
     if (!dialog) {
       return;
     }
 
-    if (open && !dialog.open) {
-      // 必须在 showModal() 之前记录，否则拿到的已经是对话框内部元素。
-      openerRef.current =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null;
+    openerRef.current ??=
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
 
-      if (typeof dialog.showModal === "function") {
-        dialog.showModal();
-      } else {
-        dialog.setAttribute("open", "");
-      }
-    } else if (!open && dialog.open) {
-      if (typeof dialog.close === "function") {
-        dialog.close();
-      } else {
-        dialog.removeAttribute("open");
-      }
+    if (dialog.open) {
+      return;
     }
-  }, [open]);
 
-  // 声明顺序很关键：上面的 effect 先调用 showModal()，本 hook 再接管焦点。
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute("open", "");
+    }
+  }, []);
+
   useFocusTrap({
-    active: open,
+    active: true,
     containerRef: dialogRef,
     initialFocusRef,
     returnFocusRef: returnFocusRef ?? openerRef,
@@ -129,11 +114,39 @@ export function Dialog({
       return;
     }
 
-    const onClose = () => requestClose();
-    const onCancel = (event: Event) => {
-      if (!closeOnEscape) {
-        event.preventDefault();
+    const reopen = () => {
+      if (dialog.open) {
+        return;
       }
+
+      if (typeof dialog.showModal === "function") {
+        dialog.showModal();
+      } else {
+        dialog.setAttribute("open", "");
+      }
+    };
+    const onClose = () => {
+      if (!closeOnEscape) {
+        reopen();
+        return;
+      }
+
+      requestClose();
+    };
+    const onCancel = (event: Event) => {
+      event.preventDefault();
+
+      if (closeOnEscape) {
+        requestClose();
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (closeOnEscape || event.key !== "Escape" || event.defaultPrevented) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
     };
     const onClick = (event: MouseEvent) => {
       if (closeOnBackdropClick && event.target === dialog) {
@@ -143,28 +156,55 @@ export function Dialog({
 
     dialog.addEventListener("close", onClose);
     dialog.addEventListener("cancel", onCancel);
+    dialog.addEventListener("keydown", onKeyDown, true);
     dialog.addEventListener("click", onClick);
 
     return () => {
       dialog.removeEventListener("close", onClose);
       dialog.removeEventListener("cancel", onCancel);
+      dialog.removeEventListener("keydown", onKeyDown, true);
       dialog.removeEventListener("click", onClick);
     };
   }, [closeOnBackdropClick, closeOnEscape, requestClose]);
 
-  if (!isClient) {
-    return null;
-  }
-
-  return createPortal(
+  return (
     <dialog
       ref={dialogRef}
       className={cx("uk-dialog", className)}
+      closedby={closeOnEscape || closeOnBackdropClick ? "any" : "none"}
+      data-state={isPresent ? "open" : "closed"}
+      inert={!isPresent}
       aria-label={ariaLabel}
       aria-labelledby={title ? titleId : undefined}
       aria-describedby={description ? descriptionId : undefined}
     >
-      <div className="uk-dialog__panel">
+      <motion.div
+        className="uk-dialog__panel"
+        initial={
+          reduceMotion
+            ? { opacity: 0 }
+            : {
+                opacity: 0,
+                transform: "translateY(10px) scale(0.96)",
+              }
+        }
+        animate={{
+          opacity: 1,
+          transform: "translateY(0px) scale(1)",
+          transition: reduceMotion
+            ? REDUCED_MOTION_TRANSITION
+            : { ...OVERLAY_SPRING, delay: 0.06 },
+        }}
+        exit={
+          reduceMotion
+            ? { opacity: 0, transition: REDUCED_MOTION_TRANSITION }
+            : {
+                opacity: 0,
+                transform: "translateY(6px) scale(0.98)",
+                transition: OVERLAY_SPRING,
+              }
+        }
+      >
         {title || description || showCloseButton ? (
           <header className="uk-dialog__header">
             <div className="uk-dialog__heading">
@@ -211,8 +251,42 @@ export function Dialog({
         {footer ? (
           <footer className="uk-dialog__footer">{footer}</footer>
         ) : null}
-      </div>
-    </dialog>,
+      </motion.div>
+    </dialog>
+  );
+}
+
+/**
+ * 模态对话框。
+ *
+ * 基于原生 <dialog> 保留模态语义和 top layer。Motion 的 AnimatePresence
+ * 负责退出阶段的 DOM 保留，MotionConfig 统一处理 reduced motion。
+ */
+export function Dialog(props: DialogProps): ReactElement | null {
+  const { open, onOpenChange } = props;
+  const requestClose = useEventCallback(() => {
+    if (open) {
+      onOpenChange(false);
+    }
+  });
+  const isClient = useSyncExternalStore(
+    subscribeToNothing,
+    getClientSnapshot,
+    getServerSnapshot,
+  );
+
+  if (!isClient) {
+    return null;
+  }
+
+  return createPortal(
+    <MotionConfig reducedMotion="user">
+      <AnimatePresence>
+        {open ? (
+          <DialogLayer key="uk-dialog" {...props} requestClose={requestClose} />
+        ) : null}
+      </AnimatePresence>
+    </MotionConfig>,
     document.body,
   );
 }

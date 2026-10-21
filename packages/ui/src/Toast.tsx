@@ -11,7 +11,15 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
+import {
+  AnimatePresence,
+  motion,
+  MotionConfig,
+  useIsPresent,
+  useReducedMotion,
+} from "motion/react";
 import { createPortal } from "react-dom";
+import { REDUCED_MOTION_TRANSITION, TOAST_SPRING } from "./motion";
 
 export type ToastVariant = "info" | "success" | "warning" | "danger";
 
@@ -47,7 +55,7 @@ export interface ToastProviderProps {
   duration?: number;
   /** 同屏最多保留的提示数量，默认 4。 */
   maxToasts?: number;
-  /** 提示区域的屏幕阅读器名称。 */
+  /** 提示区域的屏幕阅读器名称，默认 Notifications。 */
   label?: string;
   /** 关闭按钮的无障碍名称，默认 Close。 */
   closeLabel?: string;
@@ -59,11 +67,11 @@ interface ToastRecord {
   description?: ReactNode;
   variant: ToastVariant;
   duration: number;
-  leaving: boolean;
 }
 
 interface ToastViewProps {
   record: ToastRecord;
+  placement: ToastPlacement;
   closeLabel: string;
   onDismiss: (id: string) => void;
   onPause: (id: string) => void;
@@ -72,24 +80,44 @@ interface ToastViewProps {
 
 const ToastContext = createContext<ToastApi | null>(null);
 
-const EXIT_DURATION = 200;
-
 const subscribeToNothing = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
 function ToastView({
   record,
+  placement,
   closeLabel,
   onDismiss,
   onPause,
   onResume,
 }: ToastViewProps) {
+  const isPresent = useIsPresent();
+  const reduceMotion = useReducedMotion() ?? false;
+  const enterY = placement.startsWith("top") ? -10 : 10;
+
   return (
-    <div
+    <motion.div
       className="uk-toast"
       data-variant={record.variant}
-      data-state={record.leaving ? "closed" : "open"}
+      data-state={isPresent ? "open" : "closed"}
+      inert={!isPresent}
+      layout={!reduceMotion}
+      initial={
+        reduceMotion
+          ? { opacity: 0 }
+          : { opacity: 0, transform: `translateY(${enterY}px) scale(0.98)` }
+      }
+      animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
+      exit={
+        reduceMotion
+          ? { opacity: 0 }
+          : {
+              opacity: 0,
+              transform: `translateY(${enterY / 2}px) scale(0.98)`,
+            }
+      }
+      transition={reduceMotion ? REDUCED_MOTION_TRANSITION : TOAST_SPRING}
       onMouseEnter={() => onPause(record.id)}
       onMouseLeave={() => onResume(record.id)}
       onFocusCapture={() => onPause(record.id)}
@@ -118,15 +146,15 @@ function ToastView({
           />
         </svg>
       </button>
-    </div>
+    </motion.div>
   );
 }
 
 /**
  * Toast 上下文。
  *
- * 负责队列、自动关闭、悬停/聚焦暂停、退出动画和 portal 渲染。
- * 必须包在应用外层，子组件通过 useToast() 获取 toast()。
+ * 负责队列、自动关闭、悬停/聚焦暂停与 portal 渲染。退出阶段由
+ * AnimatePresence 保留，因此删除状态后仍能完成动画。
  */
 export function ToastProvider({
   children,
@@ -140,9 +168,6 @@ export function ToastProvider({
   const recordsRef = useRef<ToastRecord[]>([]);
   const durationsRef = useRef(new Map<string, number>());
   const autoTimersRef = useRef(
-    new Map<string, ReturnType<typeof setTimeout>>(),
-  );
-  const exitTimersRef = useRef(
     new Map<string, ReturnType<typeof setTimeout>>(),
   );
   const counterRef = useRef(0);
@@ -167,43 +192,16 @@ export function ToastProvider({
     }
   }, []);
 
-  const clearExitTimer = useCallback((id: string) => {
-    const timer = exitTimersRef.current.get(id);
-
-    if (timer !== undefined) {
-      clearTimeout(timer);
-      exitTimersRef.current.delete(id);
-    }
-  }, []);
-
   const dismiss = useCallback(
     (id: string) => {
       clearAutoTimer(id);
 
-      if (exitTimersRef.current.has(id)) {
+      if (!recordsRef.current.some((record) => record.id === id)) {
         return;
       }
 
-      const exists = recordsRef.current.some((record) => record.id === id);
-
-      if (!exists) {
-        return;
-      }
-
-      commit(
-        recordsRef.current.map((record) =>
-          record.id === id ? { ...record, leaving: true } : record,
-        ),
-      );
-
-      exitTimersRef.current.set(
-        id,
-        setTimeout(() => {
-          exitTimersRef.current.delete(id);
-          durationsRef.current.delete(id);
-          commit(recordsRef.current.filter((record) => record.id !== id));
-        }, EXIT_DURATION),
-      );
+      durationsRef.current.delete(id);
+      commit(recordsRef.current.filter((record) => record.id !== id));
     },
     [clearAutoTimer, commit],
   );
@@ -238,7 +236,6 @@ export function ToastProvider({
         description: options.description,
         variant: options.variant ?? "info",
         duration: options.duration ?? duration,
-        leaving: false,
       };
 
       const next = [...recordsRef.current, record];
@@ -247,7 +244,6 @@ export function ToastProvider({
 
       dropped.forEach((item) => {
         clearAutoTimer(item.id);
-        clearExitTimer(item.id);
         durationsRef.current.delete(item.id);
       });
 
@@ -259,15 +255,7 @@ export function ToastProvider({
 
       return id;
     },
-    [
-      baseId,
-      clearAutoTimer,
-      clearExitTimer,
-      commit,
-      duration,
-      maxToasts,
-      scheduleAutoDismiss,
-    ],
+    [baseId, clearAutoTimer, commit, duration, maxToasts, scheduleAutoDismiss],
   );
 
   const pause = useCallback(
@@ -289,8 +277,10 @@ export function ToastProvider({
   );
 
   const dismissAll = useCallback(() => {
-    recordsRef.current.forEach((record) => dismiss(record.id));
-  }, [dismiss]);
+    recordsRef.current.forEach((record) => clearAutoTimer(record.id));
+    durationsRef.current.clear();
+    commit([]);
+  }, [clearAutoTimer, commit]);
 
   const api = useMemo<ToastApi>(
     () => ({ toast, dismiss, dismissAll }),
@@ -299,13 +289,10 @@ export function ToastProvider({
 
   useEffect(() => {
     const autoTimers = autoTimersRef.current;
-    const exitTimers = exitTimersRef.current;
 
     return () => {
       autoTimers.forEach((timer) => clearTimeout(timer));
-      exitTimers.forEach((timer) => clearTimeout(timer));
       autoTimers.clear();
-      exitTimers.clear();
     };
   }, []);
 
@@ -314,24 +301,29 @@ export function ToastProvider({
       {children}
       {isClient
         ? createPortal(
-            <section
-              className="uk-toast-viewport"
-              data-placement={placement}
-              aria-label={label}
-              aria-live="polite"
-              aria-atomic="false"
-            >
-              {records.map((record) => (
-                <ToastView
-                  key={record.id}
-                  record={record}
-                  closeLabel={closeLabel}
-                  onDismiss={dismiss}
-                  onPause={pause}
-                  onResume={resume}
-                />
-              ))}
-            </section>,
+            <MotionConfig reducedMotion="user">
+              <section
+                className="uk-toast-viewport"
+                data-placement={placement}
+                aria-label={label}
+                aria-live="polite"
+                aria-atomic="false"
+              >
+                <AnimatePresence initial={false}>
+                  {records.map((record) => (
+                    <ToastView
+                      key={record.id}
+                      record={record}
+                      placement={placement}
+                      closeLabel={closeLabel}
+                      onDismiss={dismiss}
+                      onPause={pause}
+                      onResume={resume}
+                    />
+                  ))}
+                </AnimatePresence>
+              </section>
+            </MotionConfig>,
             document.body,
           )
         : null}

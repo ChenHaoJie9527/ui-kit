@@ -137,8 +137,8 @@ export function DialogPage() {
     <Page
       kind="组件"
       title="Dialog"
-      description="模态对话框。基于原生 dialog 与 showModal()，Esc、遮罩和顶层渲染交给浏览器；焦点陷阱、初始焦点与关闭后的焦点恢复由 useFocusTrap 补齐。"
-      tags={["原生 dialog", "焦点陷阱", "焦点恢复", "body 滚动锁定"]}
+      description="模态对话框。原生 dialog 保留 top layer 与模态语义，Motion 负责 fluid 进出场，焦点陷阱、初始焦点与关闭后的焦点恢复由 useFocusTrap 补齐。"
+      tags={["原生 dialog", "fluid spring", "焦点陷阱", "焦点恢复"]}
     >
       <Section title="引入">
         <CodeBlock code={'import { Dialog } from "seam-react";'} />
@@ -296,7 +296,8 @@ export function DialogPage() {
         />
         <Callout title="为什么不用 focus-trap 库">
           原生 dialog 已经处理了大部分模态语义。缺少的只有反向循环与程序化聚焦，
-          这两点用约 150 行代码就能补齐，不值得为此引入运行时依赖。
+          这两点由现有 useFocusTrap 补齐；Motion
+          只负责进出场生命周期，不替代焦点管理。
         </Callout>
       </Section>
     </Page>

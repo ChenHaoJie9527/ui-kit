@@ -83,8 +83,8 @@ export function SwitchPage() {
     <Page
       kind="组件"
       title="Switch"
-      description="开关。底层是原生 checkbox 并加上 role=switch，因此表单提交、键盘操作和屏幕阅读器语义都是免费的。"
-      tags={["原生 checkbox", "受控 / 非受控", "role=switch"]}
+      description="开关。底层是原生 checkbox 并加上 role=switch，支持点击、键盘和拖拽 spring，同时保留表单与屏幕阅读器语义。"
+      tags={["原生 checkbox", "拖拽 spring", "受控 / 非受控", "role=switch"]}
     >
       <Section title="引入">
         <CodeBlock code={'import { Switch } from "seam-react";'} />

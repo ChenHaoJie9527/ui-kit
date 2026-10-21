@@ -1,10 +1,12 @@
 {
   "name": "seam-react",
   "version": "0.1.1",
-  "description": "基于 seam-hooks 的 React 组件库：Button、Input、Switch、Tabs、Dialog、Toast",
+  "description": "基于 seam-hooks 与 Motion 的 Fluid React 组件库",
   "keywords": [
     "component-library",
     "dialog",
+    "fluid",
+    "motion",
     "react",
     "tabs",
     "typescript",
@@ -52,6 +54,7 @@
     "prepublishOnly": "pnpm build && pnpm test"
   },
   "dependencies": {
+    "motion": "^14.4.0",
     "seam-hooks": "workspace:*"
   },
   "devDependencies": {
@@ -68,8 +71,8 @@
     "vitest": "^2.1.4"
   },
   "peerDependencies": {
-    "react": ">=18",
-    "react-dom": ">=18"
+    "react": ">=18.2",
+    "react-dom": ">=18.2"
   },
   "engines": {
     "node": ">=18"

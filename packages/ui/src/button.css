@@ -17,12 +17,17 @@
       background-color var(--uk-transition),
       border-color var(--uk-transition),
       color var(--uk-transition),
-      box-shadow var(--uk-transition);
+      box-shadow var(--uk-transition),
+      transform var(--uk-duration-fast) var(--uk-ease-out);
   }
 
   .uk-button:focus-visible {
     outline: 2px solid var(--uk-focus-ring);
     outline-offset: 2px;
+  }
+
+  .uk-button:active:not(:disabled) {
+    transform: scale(var(--uk-scale-press));
   }
 
   .uk-button:disabled,
@@ -59,18 +64,10 @@
     color: var(--uk-primary-contrast);
   }
 
-  .uk-button[data-variant="primary"]:hover:not(:disabled) {
-    background: var(--uk-primary-solid-hover);
-  }
-
   .uk-button[data-variant="secondary"] {
     background: var(--uk-surface);
     border-color: var(--uk-border);
     color: var(--uk-text);
-  }
-
-  .uk-button[data-variant="secondary"]:hover:not(:disabled) {
-    border-color: var(--uk-border-strong);
   }
 
   .uk-button[data-variant="outline"] {
@@ -79,17 +76,9 @@
     color: var(--uk-text);
   }
 
-  .uk-button[data-variant="outline"]:hover:not(:disabled) {
-    background: var(--uk-surface);
-  }
-
   .uk-button[data-variant="ghost"] {
     background: transparent;
     color: var(--uk-text);
-  }
-
-  .uk-button[data-variant="ghost"]:hover:not(:disabled) {
-    background: var(--uk-surface);
   }
 
   .uk-button[data-variant="danger"] {
@@ -97,8 +86,26 @@
     color: var(--uk-danger-contrast);
   }
 
-  .uk-button[data-variant="danger"]:hover:not(:disabled) {
-    background: var(--uk-danger-solid-hover);
+  @media (hover: hover) and (pointer: fine) {
+    .uk-button[data-variant="primary"]:hover:not(:disabled) {
+      background: var(--uk-primary-solid-hover);
+    }
+
+    .uk-button[data-variant="secondary"]:hover:not(:disabled) {
+      border-color: var(--uk-border-strong);
+    }
+
+    .uk-button[data-variant="outline"]:hover:not(:disabled) {
+      background: var(--uk-surface);
+    }
+
+    .uk-button[data-variant="ghost"]:hover:not(:disabled) {
+      background: var(--uk-surface);
+    }
+
+    .uk-button[data-variant="danger"]:hover:not(:disabled) {
+      background: var(--uk-danger-solid-hover);
+    }
   }
 
   .uk-button__spinner {
@@ -118,6 +125,10 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .uk-button:active:not(:disabled) {
+      transform: none;
+    }
+
     .uk-button__spinner {
       animation-duration: 1.6s;
     }

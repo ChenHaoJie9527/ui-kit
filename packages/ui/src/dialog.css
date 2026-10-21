@@ -14,10 +14,23 @@
   .uk-dialog::backdrop {
     background: var(--uk-overlay);
     backdrop-filter: blur(2px);
+    opacity: 1;
+    transition: opacity var(--uk-duration-exit) var(--uk-ease-out);
   }
 
-  .uk-dialog[open] {
-    animation: uk-dialog-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  .uk-dialog[data-state="closed"]::backdrop {
+    opacity: 0;
+    transition-delay: 220ms;
+  }
+
+  .uk-dialog[data-state="closed"] {
+    pointer-events: none;
+  }
+
+  @starting-style {
+    .uk-dialog[data-state="open"]::backdrop {
+      opacity: 0;
+    }
   }
 
   .uk-dialog__panel {
@@ -30,6 +43,7 @@
     box-shadow: var(--uk-shadow-lg);
     font-family: var(--uk-font-sans);
     overflow: hidden;
+    transform-origin: center;
   }
 
   .uk-dialog__header {
@@ -80,21 +94,17 @@
     background: var(--uk-surface);
   }
 
-  @keyframes uk-dialog-in {
-    from {
-      opacity: 0;
-      transform: translateY(8px) scale(0.98);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
+  @media (prefers-reduced-motion: reduce) {
+    .uk-dialog::backdrop {
+      transition-duration: var(--uk-duration-fast);
+      transition-timing-function: ease;
+      transition-delay: 0ms;
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .uk-dialog[open] {
-      animation: none;
+  @media (prefers-reduced-transparency: reduce) {
+    .uk-dialog::backdrop {
+      backdrop-filter: none;
     }
   }
 }

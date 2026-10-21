@@ -71,14 +71,14 @@
 
 ## 组件一览
 
-- `Button`：primary / secondary / outline / ghost / danger 五种变体，三种尺寸，loading 自动禁用。
-- `Input`：透传原生输入属性，`invalid` 映射到 `aria-invalid`。
-- `Switch`：基于原生 checkbox，受控与非受控写法一致。
-- `Tabs`：组合式 API，roving tabindex、方向键循环、Home/End 与完整 ARIA 关联。
-- `Dialog`：基于原生 `<dialog>`，焦点陷阱（双向循环 / 外部聚焦回收 / 焦点恢复）、Esc、遮罩与 body 滚动锁定开箱即用。
-- `Toast`：`ToastProvider` + `useToast()`，带队列、自动关闭、悬停暂停与 `aria-live` 区域。
+- `Button`：primary / secondary / outline / ghost / danger 五种变体，三种尺寸，fluid 按压反馈，loading 自动禁用。
+- `Input`：透传原生输入属性，`invalid` 映射到 `aria-invalid`，焦点状态使用共享动效 token。
+- `Switch`：基于原生 checkbox，受控与非受控写法一致，支持点击、键盘和拖拽 spring。
+- `Tabs`：组合式 API，roving tabindex、方向键循环、Home/End、完整 ARIA 关联与共享布局指示器。
+- `Dialog`：基于原生 `<dialog>`，Motion 管理 fluid 进出场，焦点陷阱、Esc、遮罩与滚动锁定开箱即用。
+- `Toast`：`ToastProvider` + `useToast()`，AnimatePresence 管理可中断队列、自动关闭、悬停暂停与 `aria-live`。
 
-在应用根部渲染一次 `<SeamStyles />` 即可引入组件样式；所有颜色、间距、圆角与阴影都是 CSS 变量，支持 `light-dark()` 跟随系统主题。
+在应用根部渲染一次 `<SeamStyles />` 即可引入组件样式；颜色、间距、圆角、阴影、时长和缓动都是 CSS 变量，支持 `light-dark()` 与 reduced-motion。
 
 ## 安装
 
@@ -90,7 +90,7 @@ pnpm add seam-react
 npm install seam-react
 ```
 
-`seam-react` 依赖 `seam-hooks`，安装组件包即可同时使用全部 hooks。只想要无渲染逻辑时，也可以单独安装：
+`seam-react` 依赖 `seam-hooks` 与 Motion，安装组件包即可同时使用全部 hooks 和流体动效。只想要无渲染逻辑时，也可以单独安装：
 
 ```bash
 pnpm add seam-hooks
@@ -236,7 +236,7 @@ pnpm check         # format:check + lint + typecheck + test
 
 | 决策     | 选择                       | 原因                                       |
 | -------- | -------------------------- | ------------------------------------------ |
-| 状态管理 | `useState` + `ref`         | 不引入外部状态库，保持零依赖               |
+| 状态管理 | `useState` + `ref`         | 不引入外部状态库                           |
 | 虚拟滚动 | 固定行高                   | 区间计算是 O(1)，可单测；动态高度另开 hook |
 | 回调稳定 | `useLayoutEffect` 更新 ref | 绘制前同步，避免事件读到旧闭包             |
 | 产物格式 | ESM + CJS                  | 兼容现代构建工具与 Node 环境               |

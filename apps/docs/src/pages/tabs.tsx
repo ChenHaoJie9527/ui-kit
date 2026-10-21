@@ -153,8 +153,8 @@ export function TabsPage() {
     <Page
       kind="组件"
       title="Tabs"
-      description="标签页。组合式 API，内置 roving tabindex、方向键循环、Home/End 跳转和完整的 ARIA 关联。"
-      tags={["键盘导航", "roving tabindex", "受控 / 非受控", "横向 / 纵向"]}
+      description="标签页。组合式 API，内置 roving tabindex、方向键循环、Home/End 跳转、完整 ARIA 关联和共享布局指示器。"
+      tags={["键盘导航", "fluid 指示器", "受控 / 非受控", "横向 / 纵向"]}
     >
       <Section title="引入">
         <CodeBlock code={'import { Tabs } from "seam-react";'} />

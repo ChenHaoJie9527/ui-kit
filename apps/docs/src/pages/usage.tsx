@@ -264,12 +264,12 @@ export function UsagePage() {
     <Page
       kind="指南"
       title="使用指南"
-      description="从安装到渲染，用一份最短路径把 ui-kit 接入 React 或 Next.js 应用。下面的示例适用于 React 18+，并包含 Next.js App Router 的客户端边界与全局样式配置。"
-      tags={["React 18+", "Next.js App Router", "TypeScript", "npm", "JSR"]}
+      description="从安装到渲染，用一份最短路径把 ui-kit 接入 React 或 Next.js 应用。下面的示例适用于 React 18.2+，并包含 Next.js App Router 的客户端边界与全局样式配置。"
+      tags={["React 18.2+", "Next.js App Router", "TypeScript", "npm", "JSR"]}
     >
       <Section
         title="开始之前"
-        description="组件包依赖 React 和 ReactDOM。组件发布为 seam-react，Hooks 发布为 seam-hooks；也可以从 JSR 使用 @seam/ui 与 @seam/hooks。"
+        description="组件包依赖 React、ReactDOM 与 Motion。组件发布为 seam-react，Hooks 发布为 seam-hooks；也可以从 JSR 使用 @seam/ui 与 @seam/hooks。"
       >
         <Requirements />
 
