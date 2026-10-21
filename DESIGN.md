@@ -179,7 +179,7 @@ cross-fade. Do not preserve artificial waits.
 | Input            | Border, shadow, and color feedback with a continuous focus cue                |
 | Switch           | Direct, interruptible thumb spring with synchronized track color              |
 | Tabs             | Spring indicator plus fast out-in content replacement                         |
-| Dialog           | Centered material and spring; drag where the surface model supports dismissal |
+| Dialog           | Centered spring entrance and exit; the panel remains stationary               |
 | Toast            | Same-edge spring entrance and interruptible presence and queue changes        |
 | Popover and menu | Trigger-origin opacity and scale                                              |
 | Drawer           | Same-edge transform, interruptible, optional drag spring                      |
@@ -239,6 +239,8 @@ AnimatePresence is the default orchestration mechanism for Dialog exits:
 - keep AnimatePresence mounted outside the conditional Dialog layer;
 - use a stable child key;
 - keep the native dialog open until the exit phase completes;
+- keep the Dialog stationary during interaction; dismissal uses explicit
+  controls, Escape, or the backdrop;
 - route Escape, backdrop, and close-button actions through one close request;
 - use presence state to make the exiting layer inert;
 - keep focus trapping and body-scroll locking alive for the complete visible
