@@ -9,11 +9,12 @@
   .uk-sidebar__group {
     display: flex;
     flex-direction: column;
-    margin-bottom: var(--uk-space-6);
+    margin-bottom: var(--uk-sidebar-group-gap, var(--uk-space-6));
   }
 
   .uk-sidebar__group-title {
     display: flex;
+    width: 100%;
     align-items: center;
     gap: var(--uk-space-2);
     margin: 0 0 var(--uk-space-2);
@@ -22,6 +23,49 @@
     font-size: var(--uk-text-xs);
     font-weight: 500;
     line-height: 1.4;
+  }
+
+  .uk-sidebar__group-trigger {
+    position: relative;
+    min-height: 2rem;
+    border: 0;
+    border-radius: var(--uk-radius-sm);
+    background: transparent;
+    cursor: pointer;
+    text-align: start;
+    transition:
+      color var(--uk-transition),
+      background-color var(--uk-transition);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .uk-sidebar__group-trigger:hover {
+      color: var(--uk-text);
+    }
+  }
+
+  .uk-sidebar__group-trigger:focus-visible {
+    outline: 2px solid var(--uk-focus-ring);
+    outline-offset: -1px;
+  }
+
+  .uk-sidebar__group-trigger[aria-expanded="true"] {
+    color: var(--uk-text);
+  }
+
+  .uk-sidebar__group-trigger > :not(.uk-sidebar__group-surface) {
+    position: relative;
+    z-index: 2;
+  }
+
+  .uk-sidebar__group-surface {
+    position: absolute;
+    inset: 1px 0;
+    z-index: 0;
+    border-radius: var(--uk-radius-sm);
+    background: color-mix(in srgb, var(--uk-primary) 8%, var(--uk-surface));
+    box-shadow: var(--uk-shadow-sm);
+    pointer-events: none;
   }
 
   .uk-sidebar__group-icon {
@@ -47,12 +91,42 @@
     content: "";
   }
 
+  /* The collapsible trigger centers a 20px icon in a 32px row; bridge the
+   * remaining 6px before the list's 8px spacing so the rail is continuous. */
+  .uk-sidebar__group-trigger .uk-sidebar__group-icon::after {
+    height: calc(var(--uk-space-2) + 0.375rem);
+  }
+
+  .uk-sidebar__group[data-state="closed"]
+    .uk-sidebar__group-trigger
+    .uk-sidebar__group-icon::after {
+    display: none;
+  }
+
   .uk-sidebar__list {
     display: flex;
     flex-direction: column;
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+
+  .uk-sidebar__content {
+    overflow: hidden;
+  }
+
+  .uk-sidebar__chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-inline-start: auto;
+    color: var(--uk-text-muted);
+    transform: rotate(0deg);
+    transition: transform var(--uk-duration-control) var(--uk-ease-in-out);
+  }
+
+  .uk-sidebar__group-trigger[aria-expanded="true"] .uk-sidebar__chevron {
+    transform: rotate(90deg);
   }
 
   .uk-sidebar__item {
@@ -89,32 +163,54 @@
     position: absolute;
     inset-block: 0;
     left: 9px;
+    z-index: 2;
     width: 1px;
     background: var(--uk-border);
     pointer-events: none;
   }
 
-  .uk-sidebar__indicator {
+  .uk-sidebar__rail-indicator {
     position: absolute;
     top: 22%;
     left: 8px;
+    z-index: 10;
     width: 3px;
     height: 56%;
     border-radius: var(--uk-radius-full);
     pointer-events: none;
   }
 
-  .uk-sidebar__indicator[data-kind="hover"] {
-    z-index: 10;
+  .uk-sidebar__rail-indicator[data-kind="hover"] {
     background: var(--uk-border-strong);
   }
 
-  .uk-sidebar__indicator[data-kind="active"] {
+  .uk-sidebar__rail-indicator[data-kind="active"] {
     z-index: 11;
     background: var(--uk-text);
   }
 
+  .uk-sidebar__surface {
+    position: absolute;
+    inset: 1px 0 1px var(--uk-space-4);
+    z-index: 0;
+    border-radius: var(--uk-radius-sm);
+    pointer-events: none;
+  }
+
+  .uk-sidebar__surface[data-kind="hover"] {
+    background: color-mix(in srgb, var(--uk-primary) 8%, var(--uk-surface));
+    box-shadow: var(--uk-shadow-sm);
+  }
+
+  .uk-sidebar__surface[data-kind="active"] {
+    z-index: 1;
+    background: color-mix(in srgb, var(--uk-primary) 14%, var(--uk-surface));
+    box-shadow: var(--uk-shadow-sm);
+  }
+
   .uk-sidebar__label {
+    position: relative;
+    z-index: 3;
     display: flex;
     width: 100%;
     min-width: 0;
@@ -125,15 +221,11 @@
     padding-inline-start: var(--uk-space-3);
     font-size: var(--uk-text-sm);
     line-height: 1.45;
-    transform: translateX(0);
-    transition:
-      color var(--uk-transition),
-      transform var(--uk-transition);
+    transition: color var(--uk-transition);
   }
 
   .uk-sidebar__link[data-preview="true"] .uk-sidebar__label {
     color: var(--uk-text);
-    transform: translateX(3px);
   }
 
   .uk-sidebar__link[data-active="true"] .uk-sidebar__label {

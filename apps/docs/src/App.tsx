@@ -412,7 +412,7 @@ export function AppLayout() {
           <Sidebar className="flex-1" aria-label="文档导航">
             {filteredGroups.map((group) => (
               <Sidebar.Group
-                className="mt-[18px] [&:first-of-type]:mt-1"
+                collapsible
                 icon={<SidebarGroupIcon title={group.title} />}
                 key={group.title}
                 title={group.title}

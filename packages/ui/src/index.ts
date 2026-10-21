@@ -11,6 +11,7 @@ export { Sidebar } from "./Sidebar";
 export type {
   SidebarComponent,
   SidebarGroupProps,
+  SidebarHoverIndicator,
   SidebarItemProps,
   SidebarProps,
 } from "./Sidebar";
