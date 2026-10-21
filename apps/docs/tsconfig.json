@@ -3,6 +3,7 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "noEmit": true,
+    "resolveJsonModule": true,
     "types": ["react", "react-dom", "node"],
     "paths": {
       "seam-hooks": ["../../packages/hooks/src/index.ts"],

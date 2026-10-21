@@ -1,10 +1,11 @@
-import { componentMetas } from "./content/components";
+import { componentMetas, isNewComponent } from "./content/components";
 import { hookGroups } from "./content/hooks";
 
 export interface NavItem {
   path: string;
   label: string;
   hint?: string;
+  isNew?: boolean;
 }
 
 export interface NavGroup {
@@ -39,6 +40,7 @@ export const navGroups: NavGroup[] = [
       path: meta.path,
       label: meta.name,
       hint: meta.summary,
+      isNew: isNewComponent(meta),
     })),
   },
   ...hookGroups.map((group) => ({
