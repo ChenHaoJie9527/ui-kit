@@ -43,6 +43,12 @@ const componentDefinitions: Array<
     tags: ["导航", "键盘"],
   },
   {
+    path: "components/sidebar",
+    name: "Sidebar",
+    summary: "分组文档导航，当前项与鼠标预览使用独立且连续的共享指示器。",
+    tags: ["导航", "分组", "共享游标"],
+  },
+  {
     path: "components/dialog",
     name: "Dialog",
     summary: "原生 dialog 承载模态语义，焦点陷阱与焦点恢复由 hooks 补齐。",

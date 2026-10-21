@@ -7,7 +7,8 @@ import {
   useLocation,
 } from "react-router";
 import { useFocusTrap, useLockBodyScroll, useMedia } from "seam-hooks";
-import { Button } from "seam-react";
+import { Button, Sidebar } from "seam-react";
+import uiPackage from "../../../packages/ui/package.json";
 import {
   navGroups,
   navItems,
@@ -28,14 +29,8 @@ const REPO_URL = "https://github.com/ChenHaoJie9527/ui-kit";
 const TOP_NAV_LINK =
   "rounded-lg px-[11px] py-1.5 text-[13.5px] text-muted no-underline transition-colors hover:bg-surface-2 hover:text-ink data-[active=true]:bg-accent-soft data-[active=true]:font-semibold data-[active=true]:text-accent-strong";
 
-const NAV_GROUP_TITLE =
-  "mb-[5px] px-2.5 text-[10.5px] font-[650] tracking-[0.09em] text-faint uppercase";
-
-const SIDEBAR_LINK =
-  "block rounded-[7px] px-2.5 py-[5px] text-[13.5px] leading-[1.45] text-muted no-underline transition-colors hover:bg-surface-2 hover:text-ink aria-[current=page]:bg-accent-soft aria-[current=page]:font-semibold aria-[current=page]:text-accent-strong";
-
 const SIDEBAR_NEW_BADGE =
-  "ml-2 inline-block rounded-full bg-accent-soft px-1.5 py-px align-[1px] text-[9.5px] font-bold tracking-[0.06em] text-accent-strong uppercase";
+  "inline-block flex-none rounded-full bg-accent-soft px-1.5 py-px align-[1px] text-[9.5px] font-bold tracking-[0.06em] text-accent-strong uppercase";
 
 function MenuIcon() {
   return (
@@ -45,6 +40,95 @@ function MenuIcon() {
         stroke="currentColor"
         strokeWidth="1.7"
         strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function SidebarGroupIcon({ title }: { title: string }) {
+  if (title === "开始") {
+    return (
+      <svg
+        viewBox="0 0 16 16"
+        width="12"
+        height="12"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M3.3 2.8h9.4v10.4H3.3zM5.5 5.5h4.9M5.5 8h4.9M5.5 10.5h3.1"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  if (title === "组件") {
+    return (
+      <svg
+        viewBox="0 0 16 16"
+        width="12"
+        height="12"
+        fill="none"
+        aria-hidden="true"
+      >
+        <rect
+          x="2.4"
+          y="2.4"
+          width="4.5"
+          height="4.5"
+          rx="1"
+          stroke="currentColor"
+          strokeWidth="1.2"
+        />
+        <rect
+          x="9.1"
+          y="2.4"
+          width="4.5"
+          height="4.5"
+          rx="1"
+          stroke="currentColor"
+          strokeWidth="1.2"
+        />
+        <rect
+          x="2.4"
+          y="9.1"
+          width="4.5"
+          height="4.5"
+          rx="1"
+          stroke="currentColor"
+          strokeWidth="1.2"
+        />
+        <rect
+          x="9.1"
+          y="9.1"
+          width="4.5"
+          height="4.5"
+          rx="1"
+          stroke="currentColor"
+          strokeWidth="1.2"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width="12"
+      height="12"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M5.1 3.6 2.5 8l2.6 4.4M10.9 3.6 13.5 8l-2.6 4.4M9.1 2.8 6.9 13.2"
+        stroke="currentColor"
+        strokeWidth="1.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -221,7 +305,7 @@ export function AppLayout() {
               ui-kit
             </span>
             <span className="rounded-full border border-line bg-surface-2 px-[7px] py-px font-mono text-[10.5px] text-muted max-phone:hidden">
-              0.1
+              {uiPackage.version}
             </span>
           </Link>
         </div>
@@ -325,32 +409,30 @@ export function AppLayout() {
             ) : null}
           </div>
 
-          <nav className="flex-1" aria-label="文档导航">
+          <Sidebar className="flex-1" aria-label="文档导航">
             {filteredGroups.map((group) => (
-              <div className="mt-[18px] [&:first-child]:mt-1" key={group.title}>
-                <p className={NAV_GROUP_TITLE}>{group.title}</p>
-                <ul className="m-0 flex list-none flex-col gap-px p-0">
-                  {group.items.map((item) => (
-                    <li key={item.path}>
-                      <NavLink
-                        className={SIDEBAR_LINK}
-                        to={toRoute(item.path)}
-                        onClick={closeSidebar}
-                      >
-                        {item.label}
-                        {item.isNew ? (
-                          <span
-                            className={SIDEBAR_NEW_BADGE}
-                            aria-label="近期新增组件"
-                          >
-                            New
-                          </span>
-                        ) : null}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <Sidebar.Group
+                className="mt-[18px] [&:first-of-type]:mt-1"
+                icon={<SidebarGroupIcon title={group.title} />}
+                key={group.title}
+                title={group.title}
+              >
+                {group.items.map((item) => (
+                  <Sidebar.Item active={routeKey === item.path} key={item.path}>
+                    <NavLink to={toRoute(item.path)} onClick={closeSidebar}>
+                      {item.label}
+                      {item.isNew ? (
+                        <span
+                          className={SIDEBAR_NEW_BADGE}
+                          aria-label="近期新增组件"
+                        >
+                          New
+                        </span>
+                      ) : null}
+                    </NavLink>
+                  </Sidebar.Item>
+                ))}
+              </Sidebar.Group>
             ))}
 
             {filteredGroups.length === 0 ? (
@@ -358,7 +440,7 @@ export function AppLayout() {
                 没有匹配的条目。
               </p>
             ) : null}
-          </nav>
+          </Sidebar>
 
           <div className="mt-5 flex justify-between gap-2 border-t border-line px-2.5 pt-3.5 text-[11.5px] text-faint [&_a]:text-muted [&_a]:no-underline [&_a:hover]:text-accent">
             <span>MIT License</span>
