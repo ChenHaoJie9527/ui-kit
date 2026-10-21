@@ -1,5 +1,11 @@
 # seam-react
 
+## 0.5.0
+
+### Minor Changes
+
+- 26b6a27: Add mutually exclusive rail and full-row hover states, apply the selected mode to both hover and active items, morph the shared background continuously from Group headers into child items, add a configurable Group gap, and add controlled or uncontrolled collapsible groups with accessible disclosure behavior.
+
 ## 0.4.0
 
 ### Minor Changes
