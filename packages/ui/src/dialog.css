@@ -1,5 +1,6 @@
 @layer uk.components {
   .uk-dialog {
+    --uk-dialog-drag-progress: 0;
     width: min(var(--uk-dialog-width, 32rem), calc(100vw - var(--uk-space-8)));
     max-width: none;
     max-height: none;
@@ -13,9 +14,13 @@
 
   .uk-dialog::backdrop {
     background: var(--uk-overlay);
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(8px) saturate(125%);
     opacity: 1;
     transition: opacity var(--uk-duration-exit) var(--uk-ease-out);
+  }
+
+  .uk-dialog[data-state="open"]::backdrop {
+    opacity: calc(1 - var(--uk-dialog-drag-progress) * 0.55);
   }
 
   .uk-dialog[data-state="closed"]::backdrop {
@@ -33,17 +38,42 @@
     }
   }
 
+  .uk-dialog__drag-surface {
+    width: 100%;
+  }
+
   .uk-dialog__panel {
     display: flex;
     flex-direction: column;
     max-height: min(85vh, 42rem);
-    border: 1px solid var(--uk-border);
+    border: 1px solid color-mix(in srgb, var(--uk-border) 70%, transparent);
     border-radius: var(--uk-dialog-radius, var(--uk-radius-lg));
-    background: var(--uk-surface-raised);
+    background: color-mix(in srgb, var(--uk-surface-raised) 88%, transparent);
     box-shadow: var(--uk-shadow-lg);
+    backdrop-filter: blur(24px) saturate(155%);
     font-family: var(--uk-font-sans);
     overflow: hidden;
     transform-origin: center;
+  }
+
+  .uk-dialog__drag-handle {
+    display: grid;
+    height: 24px;
+    place-items: center;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .uk-dialog__drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .uk-dialog__drag-handle span {
+    width: 34px;
+    height: 4px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--uk-text-muted) 42%, transparent);
   }
 
   .uk-dialog__header {
@@ -104,6 +134,20 @@
 
   @media (prefers-reduced-transparency: reduce) {
     .uk-dialog::backdrop {
+      backdrop-filter: none;
+    }
+
+    .uk-dialog__panel {
+      border-color: var(--uk-border);
+      background: var(--uk-surface-raised);
+      backdrop-filter: none;
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    .uk-dialog__panel {
+      border-color: var(--uk-text-muted);
+      background: var(--uk-surface-raised);
       backdrop-filter: none;
     }
   }

@@ -137,8 +137,8 @@ export function DialogPage() {
     <Page
       kind="组件"
       title="Dialog"
-      description="模态对话框。原生 dialog 保留 top layer 与模态语义，Motion 负责 fluid 进出场，焦点陷阱、初始焦点与关闭后的焦点恢复由 useFocusTrap 补齐。"
-      tags={["原生 dialog", "fluid spring", "焦点陷阱", "焦点恢复"]}
+      description="模态对话框。原生 dialog 保留 top layer 与模态语义，Motion 负责 fluid 材质、spring 进出场和拖动关闭，焦点管理由 useFocusTrap 补齐。"
+      tags={["原生 dialog", "拖动关闭", "fluid spring", "焦点恢复"]}
     >
       <Section title="引入">
         <CodeBlock code={'import { Dialog } from "seam-react";'} />
@@ -269,6 +269,12 @@ export function DialogPage() {
               type: "boolean",
               defaultValue: "true",
               description: "按 Esc 是否关闭。",
+            },
+            {
+              name: "dragToDismiss",
+              type: "boolean",
+              defaultValue: "closeOnEscape && closeOnBackdropClick",
+              description: "是否显示拖动把手并按位置与速度决定是否关闭。",
             },
             {
               name: "closeLabel",

@@ -75,7 +75,7 @@
 - `Input`：透传原生输入属性，`invalid` 映射到 `aria-invalid`，焦点状态使用共享动效 token。
 - `Switch`：基于原生 checkbox，受控与非受控写法一致，支持点击、键盘和拖拽 spring。
 - `Tabs`：组合式 API，roving tabindex、方向键循环、Home/End、完整 ARIA 关联与共享布局指示器。
-- `Dialog`：基于原生 `<dialog>`，Motion 管理 fluid 进出场，焦点陷阱、Esc、遮罩与滚动锁定开箱即用。
+- `Dialog`：基于原生 `<dialog>`，Motion 管理 fluid 材质、spring 进出场和拖动关闭，焦点陷阱、Esc、遮罩与滚动锁定开箱即用。
 - `Toast`：`ToastProvider` + `useToast()`，AnimatePresence 管理可中断队列、自动关闭、悬停暂停与 `aria-live`。
 
 在应用根部渲染一次 `<SeamStyles />` 即可引入组件样式；颜色、间距、圆角、阴影、时长和缓动都是 CSS 变量，支持 `light-dark()` 与 reduced-motion。

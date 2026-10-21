@@ -69,6 +69,7 @@ describe("Dialog", () => {
 
     expect(dialog.hasAttribute("open")).toBe(true);
     expect(screen.getByRole("heading", { name: "确认发布" })).toBeTruthy();
+    expect(dialog.querySelector(".uk-dialog__drag-handle")).toBeTruthy();
   });
 
   it("requests close from the close button", () => {
@@ -137,6 +138,7 @@ describe("Dialog", () => {
     });
 
     expect(cancel.defaultPrevented).toBe(true);
+    expect(getDialog().querySelector(".uk-dialog__drag-handle")).toBeNull();
 
     fireEvent.click(getDialog());
     expect(onOpenChange).not.toHaveBeenCalled();
