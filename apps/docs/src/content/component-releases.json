@@ -18,5 +18,9 @@
   "Dialog": {
     "introducedIn": "0.1.1",
     "releasedAt": "2025-01-01T00:00:00Z"
+  },
+  "Tooltip": {
+    "introducedIn": "0.3.0",
+    "releasedAt": "2026-10-21T07:35:29.219Z"
   }
 }

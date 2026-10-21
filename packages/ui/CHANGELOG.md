@@ -1,5 +1,11 @@
 # seam-react
 
+## 0.3.0
+
+### Minor Changes
+
+- 8071fbd: Add an accessible, composable Tooltip with delayed hover and focus behavior, viewport-aware positioning, touch support, reduced-motion-aware presence, and grouped Tooltip surfaces that move between related triggers.
+
 ## 0.2.0
 
 ### Minor Changes
