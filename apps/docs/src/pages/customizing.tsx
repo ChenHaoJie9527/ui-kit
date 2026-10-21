@@ -417,6 +417,13 @@ export function CustomizingPage() {
               description: "对话框宽度与圆角。",
             },
             {
+              name: "--uk-tooltip-background / -text / -border / -radius / -max-width",
+              type: "color / length",
+              defaultValue:
+                "surface-raised / text / border-strong / radius-sm / 20rem",
+              description: "Tooltip 表面、边框、文字与最大宽度。",
+            },
+            {
               name: "--uk-duration-fast / -base / -control / -overlay",
               type: "time",
               defaultValue: "120ms / 160ms / 200ms / 240ms",
