@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { Button, Dialog, Input, Switch, Tabs, useToast } from "seam-react";
+import { Button, Dialog, Input, Switch, Tabs } from "seam-react";
 import {
   BulletList,
   ButtonRow,
@@ -13,7 +13,7 @@ import {
 } from "../components/docs";
 
 /**
- * Portal 组件（Dialog / Toast）不在演示容器里渲染，
+ * Portal 组件（Dialog）不在演示容器里渲染，
  * 所以演示宽度的变量必须挂在 documentElement 上。
  */
 function useRootVariable(name: string, value: string, active: boolean) {
@@ -257,31 +257,6 @@ function InlineDemo() {
 
 /* ---------- 6. 完全自定义 ---------- */
 
-function ToastWidthDemo() {
-  const { toast } = useToast();
-  const [narrow, setNarrow] = useState(false);
-  useRootVariable("--uk-toast-width", "16rem", narrow);
-
-  return (
-    <ButtonRow>
-      <Switch checked={narrow} onCheckedChange={setNarrow}>
-        窄通知
-      </Switch>
-      <Button
-        variant="secondary"
-        onClick={() =>
-          toast({
-            title: "自定义通知",
-            description: "宽度由 --uk-toast-width 决定。",
-          })
-        }
-      >
-        弹一条通知
-      </Button>
-    </ButtonRow>
-  );
-}
-
 export function CustomizingPage() {
   return (
     <Page
@@ -442,12 +417,6 @@ export function CustomizingPage() {
               description: "对话框宽度与圆角。",
             },
             {
-              name: "--uk-toast-width / -radius",
-              type: "length",
-              defaultValue: "22rem / var(--uk-radius-md)",
-              description: "通知宽度与圆角。",
-            },
-            {
               name: "--uk-duration-fast / -base / -control / -overlay",
               type: "time",
               defaultValue: "120ms / 160ms / 200ms / 240ms",
@@ -503,9 +472,9 @@ export function CustomizingPage() {
         </Demo>
 
         <Callout tone="warning" title="Portal 组件不受作用域约束">
-          <InlineCode>Dialog</InlineCode> 与 <InlineCode>Toast</InlineCode>{" "}
-          渲染在 <InlineCode>document.body</InlineCode>{" "}
-          下，不在你的容器里。要让它们也换主题， 变量必须设在{" "}
+          <InlineCode>Dialog</InlineCode> 渲染在{" "}
+          <InlineCode>document.body</InlineCode>{" "}
+          下，不在你的容器里。要让它也换主题，变量必须设在{" "}
           <InlineCode>body</InlineCode> 或 <InlineCode>:root</InlineCode>{" "}
           上，或者用组件级变量。
         </Callout>
@@ -758,23 +727,15 @@ document.documentElement.style.colorScheme = "dark";
 
       <Section
         title="Portal 组件的宽度示例"
-        description="Toast 与 Dialog 都在 body 下渲染，演示时把变量挂在 documentElement 上，真实项目里也可以只设置一次。"
+        description="Dialog 在 body 下渲染，演示时把变量挂在 documentElement 上，真实项目里也可以只设置一次。"
       >
-        <div className="grid grid-cols-2 gap-3.5 max-phone:grid-cols-1">
-          <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4">
-            <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
-              Toast
-            </p>
-            <ToastWidthDemo />
-          </div>
-          <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4">
-            <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
-              Dialog
-            </p>
-            <p className="m-0 text-[12.5px] text-muted">
-              打开「只改对话框宽度」里的按钮即可看到 26rem 的窄弹窗。
-            </p>
-          </div>
+        <div className="flex flex-col gap-3 rounded-[10px] border border-dashed border-line-strong p-4">
+          <p className="m-0 font-mono text-[10.5px] tracking-[0.07em] text-faint uppercase">
+            Dialog
+          </p>
+          <p className="m-0 text-[12.5px] text-muted">
+            打开「只改对话框宽度」里的按钮即可看到 26rem 的窄弹窗。
+          </p>
         </div>
       </Section>
     </Page>

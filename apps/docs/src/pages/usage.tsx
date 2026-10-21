@@ -11,20 +11,11 @@ import {
 
 const NEXT_DIRECTIVES = `"use client";
 
-import { Button, useToast } from "seam-react";
+import { Button } from "seam-react";
 
 export function SaveButton() {
-  const { toast } = useToast();
-
   return (
-    <Button
-      onClick={() =>
-        toast({
-          title: "设置已保存",
-          variant: "success",
-        })
-      }
-    >
+    <Button type="submit">
       保存设置
     </Button>
   );
@@ -43,7 +34,6 @@ const INSTALL_COMMANDS: Record<PackageManager, string> = {
 
 const REACT_ENTRY = `import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { ToastProvider } from "seam-react";
 import { SeamStyles } from "seam-react/styles";
 
 import "./index.css";
@@ -52,58 +42,33 @@ import { App } from "./App";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <SeamStyles />
-    <ToastProvider>
-      <App />
-    </ToastProvider>
+    <App />
   </StrictMode>,
 );`;
 
 const REACT_APP = `import { useState } from "react";
-import {
-  Button,
-  Switch,
-  useToast,
-} from "seam-react";
+import { Button, Switch } from "seam-react";
 
 export function App() {
-  const { toast } = useToast();
-  const [notifications, setNotifications] = useState(true);
+  const [details, setDetails] = useState(true);
 
   return (
     <main>
       <Switch
-        checked={notifications}
-        onCheckedChange={setNotifications}
+        checked={details}
+        onCheckedChange={setDetails}
       >
-        接收通知
+        显示详细信息
       </Switch>
 
-      <Button
-        onClick={() =>
-          toast({
-            title: "设置已保存",
-            description: \`通知：\${notifications ? "开启" : "关闭"}\`,
-            variant: "success",
-          })
-        }
-      >
+      <Button disabled={!details}>
         保存设置
       </Button>
     </main>
   );
 }`;
 
-const NEXT_PROVIDER = `"use client";
-
-import type { ReactNode } from "react";
-import { ToastProvider } from "seam-react";
-
-export function Providers({ children }: { children: ReactNode }) {
-  return <ToastProvider>{children}</ToastProvider>;
-}`;
-
 const NEXT_LAYOUT = `import type { ReactNode } from "react";
-import { Providers } from "./providers";
 import { SeamStyles } from "seam-react/styles";
 
 import "./globals.css";
@@ -117,7 +82,7 @@ export default function RootLayout({
     <html lang="zh-CN">
       <body>
         <SeamStyles />
-        <Providers>{children}</Providers>
+        {children}
       </body>
     </html>
   );
@@ -171,8 +136,8 @@ const NOTES = [
   },
   {
     number: "03",
-    title: "Provider 靠近根节点",
-    body: "使用 Toast 时，在整个应用外层包一次 ToastProvider；任何调用 useToast() 的组件都必须位于它内部。",
+    title: "组件无需额外 Provider",
+    body: "当前组件不要求统一 Provider；在根节点渲染一次 SeamStyles，即可获得组件样式与动效 token。",
   },
   {
     number: "04",
@@ -293,7 +258,7 @@ export function UsagePage() {
           items={[
             <>
               <InlineCode>seam-react</InlineCode>：Button、Input、
-              Switch、Tabs、Dialog、Toast 与样式。
+              Switch、Tabs、Dialog 与样式。
             </>,
             <>
               只使用无渲染逻辑时，可以单独安装{" "}
@@ -306,7 +271,7 @@ export function UsagePage() {
 
       <Section
         title="React 应用"
-        description="在应用根部渲染 SeamStyles，并用 ToastProvider 包裹应用。应用自己的 CSS 放在入口之后，即可在不提高选择器权重的情况下覆盖主题 token。"
+        description="在应用根部渲染 SeamStyles。应用自己的 CSS 放在入口之后，即可在不提高选择器权重的情况下覆盖主题 token。"
       >
         <CodeBlock code={REACT_ENTRY} label="src/main.tsx" />
         <CodeBlock code={REACT_APP} label="src/App.tsx" />
@@ -314,7 +279,7 @@ export function UsagePage() {
         <Callout title="Vite 与 Create React App 都适用">
           <p>
             示例使用 Vite 的入口写法；其他 React
-            构建工具只需保留同样的导入顺序和 Provider 层级。组件库不要求配置
+            构建工具只需保留同样的导入顺序和根部样式层级。组件库不要求配置
             PostCSS 或 Tailwind。
           </p>
         </Callout>
@@ -322,10 +287,9 @@ export function UsagePage() {
 
       <Section
         title="Next.js 应用"
-        description="App Router 下，根布局渲染 SeamStyles 和 Provider，交互组件放在带“use client”的文件中。服务端组件仍可渲染客户端组件，但不能直接调用 React hooks。"
+        description="App Router 下，根布局渲染 SeamStyles，交互组件放在带“use client”的文件中。服务端组件仍可渲染客户端组件，但不能直接调用 React hooks。"
       >
         <CodeBlock code={NEXT_LAYOUT} label="app/layout.tsx" />
-        <CodeBlock code={NEXT_PROVIDER} label="app/providers.tsx" />
         <CodeBlock
           code={NEXT_DIRECTIVES}
           label="app/components/save-button.tsx"
@@ -388,7 +352,7 @@ pnpm tsc --noEmit`}
         <BulletList
           items={[
             "页面已出现组件库样式，而不是只有无样式 HTML。",
-            "点击 Toast 示例能出现提示，同时控制台没有 Provider 缺失错误。",
+            "打开 Dialog 示例能正常显示、关闭，并恢复触发按钮焦点。",
             "Next.js 构建没有 server/client component 边界错误。",
             "浅色和深色模式下文字、边框与焦点环仍然清晰可见。",
           ]}

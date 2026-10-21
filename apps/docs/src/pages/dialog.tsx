@@ -17,25 +17,37 @@ function BasicDemo() {
 
   return (
     <ButtonRow>
-      <Button onClick={() => setOpen(true)}>打开对话框</Button>
-      <Dialog
-        open={open}
-        onOpenChange={setOpen}
-        title="确认发布"
-        description="发布后文档站会立即更新，旧版本仍保留在历史记录里。"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setOpen(false)}>
-              取消
-            </Button>
-            <Button onClick={() => setOpen(false)}>确认发布</Button>
-          </>
-        }
-      >
-        <p className="m-0 text-sm leading-[1.65] text-muted">
-          按 Tab 在对话框内循环，按 Esc 或点击遮罩关闭。
-        </p>
-      </Dialog>
+      <Dialog.Root open={open} onOpenChange={setOpen}>
+        <Dialog.Trigger>
+          <Button>打开对话框</Button>
+        </Dialog.Trigger>
+        <Dialog.Content>
+          <Dialog.Header>
+            <Dialog.Title>确认发布</Dialog.Title>
+            <Dialog.Description>
+              发布后文档站会立即更新，旧版本仍保留在历史记录里。
+            </Dialog.Description>
+            <Dialog.Close>
+              <Button variant="ghost" size="sm" iconOnly aria-label="Close">
+                ×
+              </Button>
+            </Dialog.Close>
+          </Dialog.Header>
+          <Dialog.Body>
+            <p className="m-0 text-sm leading-[1.65] text-muted">
+              按 Tab 在对话框内循环，按 Esc 或点击遮罩关闭。
+            </p>
+          </Dialog.Body>
+          <Dialog.Footer>
+            <Dialog.Close>
+              <Button variant="ghost">取消</Button>
+            </Dialog.Close>
+            <Dialog.Close>
+              <Button>确认发布</Button>
+            </Dialog.Close>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog.Root>
     </ButtonRow>
   );
 }
@@ -137,7 +149,7 @@ export function DialogPage() {
     <Page
       kind="组件"
       title="Dialog"
-      description="模态对话框。原生 dialog 保留 top layer 与模态语义，Motion 负责 fluid 进出场，焦点陷阱、初始焦点与关闭后的焦点恢复由 useFocusTrap 补齐。"
+      description="模态对话框。原生 dialog 保留 top layer 与模态语义，Motion 负责 spring 进出场，焦点管理由 useFocusTrap 补齐。"
       tags={["原生 dialog", "fluid spring", "焦点陷阱", "焦点恢复"]}
     >
       <Section title="引入">
@@ -146,30 +158,76 @@ export function DialogPage() {
 
       <Section
         title="基础用法"
-        description="open 与 onOpenChange 是完全受控的；标题、描述和底部操作区都是可选插槽。"
+        description="Root 管理状态，Trigger 关联触发按钮，Content 承载原生 dialog 与生命周期；标题、正文、关闭和 footer 都使用独立语义层。"
       >
         <Demo
           code={`const [open, setOpen] = useState(false);
 
-<Dialog
-  open={open}
-  onOpenChange={setOpen}
-  title="确认发布"
-  description="发布后文档站会立即更新。"
-  footer={
-    <>
-      <Button variant="ghost" onClick={() => setOpen(false)}>
-        取消
-      </Button>
-      <Button onClick={() => setOpen(false)}>确认发布</Button>
-    </>
-  }
->
-  内容
-</Dialog>`}
+<Dialog.Root open={open} onOpenChange={setOpen}>
+  <Dialog.Trigger>
+    <Button>打开对话框</Button>
+  </Dialog.Trigger>
+  <Dialog.Content>
+    <Dialog.Header>
+      <Dialog.Title>确认发布</Dialog.Title>
+      <Dialog.Description>发布后文档站会立即更新。</Dialog.Description>
+      <Dialog.Close>
+        <Button variant="ghost" iconOnly aria-label="Close">×</Button>
+      </Dialog.Close>
+    </Dialog.Header>
+    <Dialog.Body>内容</Dialog.Body>
+    <Dialog.Footer>
+      <Dialog.Close><Button variant="ghost">取消</Button></Dialog.Close>
+      <Dialog.Close><Button>确认发布</Button></Dialog.Close>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>`}
         >
           <BasicDemo />
         </Demo>
+      </Section>
+
+      <Section
+        title="语义分层"
+        description="组合式 API 保持 DOM、ARIA 与关闭路径一致；旧版 title / description / footer slot 写法继续可用。"
+      >
+        <PropsTable
+          rows={[
+            {
+              name: "Dialog.Root",
+              type: "open / defaultOpen / onOpenChange",
+              description: "管理受控或非受控状态，并生成稳定的语义 ID。",
+            },
+            {
+              name: "Dialog.Trigger",
+              type: "ReactElement",
+              description:
+                "为触发元素注入打开行为与 aria-haspopup / expanded / controls。",
+            },
+            {
+              name: "Dialog.Content",
+              type: "ReactNode",
+              description:
+                "渲染 Portal、原生 dialog、焦点陷阱、滚动锁定与退出动画。",
+            },
+            {
+              name: "Dialog.Header / Title / Description",
+              type: "HTML 属性",
+              description:
+                "生成 header、标题和描述，并自动关联 aria-labelledby / describedby。",
+            },
+            {
+              name: "Dialog.Body / Footer",
+              type: "HTML 属性",
+              description: "定义可滚动正文和底部操作区域。",
+            },
+            {
+              name: "Dialog.Close",
+              type: "ReactElement",
+              description: "包装任意按钮并接入统一关闭请求。",
+            },
+          ]}
+        />
       </Section>
 
       <Section

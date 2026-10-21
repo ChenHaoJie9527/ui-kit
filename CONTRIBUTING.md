@@ -15,7 +15,7 @@ type(scope): subject
 ```
 feat(ui): 新增 Badge 组件
 fix(hooks): 修复 useFocusTrap 在嵌套弹层中的焦点回退
-docs: 补充 Toast 的无障碍说明
+docs: 补充 Dialog 的无障碍说明
 ci: 发布前自动校验提交信息
 ```
 

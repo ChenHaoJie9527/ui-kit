@@ -17,13 +17,16 @@ export type {
 } from "./Tabs";
 
 export { Dialog } from "./Dialog";
-export type { DialogProps } from "./Dialog";
-
-export { ToastProvider, useToast } from "./Toast";
 export type {
-  ToastApi,
-  ToastOptions,
-  ToastPlacement,
-  ToastProviderProps,
-  ToastVariant,
-} from "./Toast";
+  DialogBodyProps,
+  DialogCloseProps,
+  DialogComponent,
+  DialogContentProps,
+  DialogDescriptionProps,
+  DialogFooterProps,
+  DialogHeaderProps,
+  DialogProps,
+  DialogRootProps,
+  DialogTitleProps,
+  DialogTriggerProps,
+} from "./Dialog";

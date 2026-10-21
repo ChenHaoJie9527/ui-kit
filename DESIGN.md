@@ -30,7 +30,7 @@ The design system should optimize for:
 Decision date: 2026-10-21.
 
 Fluid is the official motion language for `seam-react`. The first production
-migration covers Button, Input, Switch, Tabs, Dialog, and Toast.
+migration covers Button, Input, Switch, Tabs, and Dialog.
 
 Fluid means:
 
@@ -179,8 +179,7 @@ cross-fade. Do not preserve artificial waits.
 | Input            | Border, shadow, and color feedback with a continuous focus cue                |
 | Switch           | Direct, interruptible thumb spring with synchronized track color              |
 | Tabs             | Spring indicator plus fast out-in content replacement                         |
-| Dialog           | Centered material and spring; drag where the surface model supports dismissal |
-| Toast            | Same-edge spring entrance and interruptible presence and queue changes        |
+| Dialog           | Centered spring entrance and exit; the panel remains stationary               |
 | Popover and menu | Trigger-origin opacity and scale                                              |
 | Drawer           | Same-edge transform, interruptible, optional drag spring                      |
 | Accordion        | Limited height or layout transition with content-aware performance validation |
@@ -207,7 +206,7 @@ Use `motion/react` for:
 
 - exit animations and presence state;
 - overlays that must remain in the DOM while leaving;
-- dynamic queues such as Toast;
+- dynamic queues and collections that require exit orchestration;
 - shared layout or measured origin;
 - springs, gestures, drag, and interruption.
 
@@ -239,6 +238,8 @@ AnimatePresence is the default orchestration mechanism for Dialog exits:
 - keep AnimatePresence mounted outside the conditional Dialog layer;
 - use a stable child key;
 - keep the native dialog open until the exit phase completes;
+- keep the Dialog stationary during interaction; dismissal uses explicit
+  controls, Escape, or the backdrop;
 - route Escape, backdrop, and close-button actions through one close request;
 - use presence state to make the exiting layer inert;
 - keep focus trapping and body-scroll locking alive for the complete visible
@@ -282,6 +283,21 @@ Before implementation, a new component must define:
 
 Prefer composition over a large prop surface. Prefer extending an existing
 primitive when the semantics and lifecycle are shared.
+
+### Composition boundary
+
+Components with several independently placed semantic regions expose composable
+parts. Keep state and accessibility behavior behind a shared Root and let visual
+regions remain ordinary, typed HTML layers.
+
+- Dialog exposes Root, Trigger, Content, Header, Title, Description, Body,
+  Footer, and Close.
+- Tabs exposes Root, List, Trigger, and Content.
+- Button, Input, and Switch remain atomic controls; adding subcomponents would
+  create pass-through interfaces without increasing semantic leverage.
+
+Legacy convenience APIs may wrap the same composition but must not duplicate
+state, focus, or presence logic.
 
 ## Existing component changes
 

@@ -13,7 +13,7 @@
 
   .uk-dialog::backdrop {
     background: var(--uk-overlay);
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(8px) saturate(125%);
     opacity: 1;
     transition: opacity var(--uk-duration-exit) var(--uk-ease-out);
   }
@@ -47,11 +47,27 @@
   }
 
   .uk-dialog__header {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: flex-start;
-    gap: var(--uk-space-4);
+    column-gap: var(--uk-space-4);
+    row-gap: 0;
     padding: var(--uk-space-5);
     border-bottom: 1px solid var(--uk-border);
+  }
+
+  .uk-dialog__header > .uk-dialog__title,
+  .uk-dialog__header > .uk-dialog__description {
+    grid-column: 1;
+  }
+
+  .uk-dialog__header > .uk-dialog__description {
+    grid-row: 2;
+  }
+
+  .uk-dialog__header > .uk-dialog__close {
+    grid-column: 2;
+    grid-row: 1 / span 2;
   }
 
   .uk-dialog__heading {
@@ -91,7 +107,7 @@
     gap: var(--uk-space-2);
     padding: var(--uk-space-4) var(--uk-space-5);
     border-top: 1px solid var(--uk-border);
-    background: var(--uk-surface);
+    background: transparent;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -104,6 +120,14 @@
 
   @media (prefers-reduced-transparency: reduce) {
     .uk-dialog::backdrop {
+      backdrop-filter: none;
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    .uk-dialog__panel {
+      border-color: var(--uk-text-muted);
+      background: var(--uk-surface-raised);
       backdrop-filter: none;
     }
   }
