@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  AnimatePresence,
-  motion,
-  usePresence,
-  useReducedMotion,
-} from "motion/react";
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   Link,
   NavLink,
@@ -12,12 +12,7 @@ import {
   useLocation,
   useOutlet,
 } from "react-router";
-import {
-  useFocusTrap,
-  useLockBodyScroll,
-  useMedia,
-  useWindowSize,
-} from "seam-hooks";
+import { useFocusTrap, useLockBodyScroll, useMedia } from "seam-hooks";
 import { Button, Sidebar } from "seam-react";
 import uiPackage from "../../../packages/ui/package.json";
 import { DocsSearch } from "./components/docs-search";
@@ -37,9 +32,6 @@ const THEME_LABELS: Record<ThemeMode, string> = {
 };
 
 const REPO_URL = "https://github.com/ChenHaoJie9527/ui-kit";
-/** main 紧接在顶栏下方，用它把卡片的初始上边缘对齐到视口底部。 */
-const PAGE_CARD_TARGET_TOP = 60;
-
 const TOP_NAV_LINK =
   "rounded-lg px-[11px] py-1.5 text-[13.5px] text-muted no-underline transition-colors hover:bg-surface-2 hover:text-ink data-[active=true]:bg-accent-soft data-[active=true]:font-semibold data-[active=true]:text-accent-strong";
 
@@ -190,51 +182,91 @@ function ThemeIcon({ mode }: { mode: ThemeMode }) {
 }
 
 interface PageCardProps {
+  active: boolean;
   children: ReactNode;
-  reduceMotion: boolean;
-  startY: number;
+  entering: boolean;
+  onEnterComplete?: () => void;
+  pageKind: "base" | "current";
+  routeKey: string;
 }
 
-function PageCard({ children, reduceMotion, startY }: PageCardProps) {
-  const [isPresent, safeToRemove] = usePresence();
-  const cardDuration = reduceMotion ? 0.12 : 0.42;
-
-  useEffect(() => {
-    if (isPresent) {
-      return;
-    }
-
-    const timeout = window.setTimeout(safeToRemove, cardDuration * 1000 + 40);
-
-    return () => window.clearTimeout(timeout);
-  }, [cardDuration, isPresent, safeToRemove]);
-
+function PageCard({
+  active,
+  children,
+  entering,
+  onEnterComplete,
+  pageKind,
+  routeKey,
+}: PageCardProps) {
   return (
-    <motion.div
-      className="mx-auto max-w-[1180px] bg-canvas px-12 pt-[46px] pb-[72px] max-tablet:px-8 max-tablet:pt-[38px] max-tablet:pb-16 max-phone:px-5 max-phone:pt-[30px] max-phone:pb-14"
+    <div
+      className="doc-page-card px-12 pt-[46px] pb-[72px] max-tablet:px-8 max-tablet:pt-[38px] max-tablet:pb-16 max-phone:px-5 max-phone:pt-[30px] max-phone:pb-14"
       style={{ gridArea: "page" }}
-      aria-hidden={!isPresent ? true : undefined}
-      inert={!isPresent}
-      initial={reduceMotion ? { opacity: 0 } : { y: startY }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={
-        reduceMotion
-          ? {
-              opacity: 0,
-              transition: { duration: cardDuration, ease: [0.23, 1, 0.32, 1] },
+      data-page-kind={pageKind}
+      data-page-route={routeKey}
+      data-transitioning={entering ? "true" : "false"}
+      aria-hidden={!active ? true : undefined}
+      inert={!active}
+      onAnimationEnd={
+        entering
+          ? (event) => {
+              if (event.target === event.currentTarget) {
+                onEnterComplete?.();
+              }
             }
-          : {
-              opacity: 1,
-              transition: { duration: cardDuration, ease: "linear" },
-            }
+          : undefined
       }
-      transition={{
-        duration: cardDuration,
-        ease: [0.23, 1, 0.32, 1],
-      }}
     >
       {children}
-    </motion.div>
+    </div>
+  );
+}
+
+interface PageContentsProps {
+  children: ReactNode;
+  routeKey: string;
+}
+
+function PageContents({ children, routeKey }: PageContentsProps) {
+  const activeIndex = navItems.findIndex((item) => item.path === routeKey);
+  const previous = activeIndex > 0 ? navItems[activeIndex - 1] : undefined;
+  const next =
+    activeIndex >= 0 && activeIndex < navItems.length - 1
+      ? navItems[activeIndex + 1]
+      : undefined;
+
+  return (
+    <>
+      {children}
+
+      {previous || next ? (
+        <div className="doc-bottom-column">
+          <nav
+            className="mt-16 grid grid-cols-2 gap-3 border-t border-line pt-6 max-phone:grid-cols-1"
+            aria-label="上一页与下一页"
+          >
+            {previous ? (
+              <Link
+                className="flex flex-col gap-[3px] rounded-[11px] border border-line bg-surface px-4 py-[13px] text-ink no-underline transition-colors hover:border-accent hover:no-underline [&_span]:text-[11.5px] [&_span]:text-muted [&_strong]:text-sm [&_strong]:font-semibold"
+                to={toRoute(previous.path)}
+              >
+                <span>上一页</span>
+                <strong>{previous.label}</strong>
+              </Link>
+            ) : null}
+            {next ? (
+              <Link
+                className="col-start-2 flex flex-col gap-[3px] rounded-[11px] border border-line bg-surface px-4 py-[13px] text-end text-ink no-underline transition-colors hover:border-accent hover:no-underline max-phone:col-start-1 [&_span]:text-[11.5px] [&_span]:text-muted [&_strong]:text-sm [&_strong]:font-semibold"
+                to={toRoute(next.path)}
+              >
+                <span>下一页</span>
+                <strong>{next.label}</strong>
+              </Link>
+            ) : null}
+          </nav>
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -247,10 +279,15 @@ export function AppLayout() {
   const location = useLocation();
   const outlet = useOutlet();
   const routeKey = routeKeyFromPathname(location.pathname);
+  const [settledPage, setSettledPage] = useState(() => ({
+    locationKey: location.key,
+    routeKey,
+    outlet,
+  }));
+  const pageTransitioning = settledPage.locationKey !== location.key;
+  const currentLocationKeyRef = useRef(location.key);
   const activeItem = navItemByPath.get(routeKey);
   const { mode, setMode } = useTheme();
-  const reduceMotion = useReducedMotion() ?? false;
-  const { height: viewportHeight } = useWindowSize();
   // 抽屉记录「在哪个路由下打开的」。路由一变，表达式自然为 false，
   // 不需要在 effect 里 setState 去同步。
   const [drawerPath, setDrawerPath] = useState<string | null>(null);
@@ -259,6 +296,10 @@ export function AppLayout() {
   const sidebarRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const mainRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    currentLocationKeyRef.current = location.key;
+  }, [location.key]);
 
   useLockBodyScroll(sidebarOpen && isMobile);
 
@@ -289,13 +330,6 @@ export function AppLayout() {
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [sidebarOpen]);
-
-  const activeIndex = navItems.findIndex((item) => item.path === routeKey);
-  const previous = activeIndex > 0 ? navItems[activeIndex - 1] : undefined;
-  const next =
-    activeIndex >= 0 && activeIndex < navItems.length - 1
-      ? navItems[activeIndex + 1]
-      : undefined;
 
   const closeSidebar = () => setDrawerPath(null);
 
@@ -464,47 +498,44 @@ export function AppLayout() {
         tabIndex={-1}
       >
         {/*
-         * 页面切换是低频的空间事件。新页面从视口底边上升并在目标区域停住，
-         * 旧页面保持原位直到被完全覆盖，避免先退场造成闪白。
+         * 页面切换是低频的空间事件。最后稳定的页面留在底层，最新目标页
+         * 从视口底边上升。快速连点时只重新挂载前景卡，尚未完成的中间页
+         * 会立即退场，避免两张卡片同时移动、交错露出内容。
          */}
-        <div className="grid" style={{ gridTemplateAreas: '"page"' }}>
-          <AnimatePresence initial={false} mode="sync">
+        <div
+          className="isolate grid grid-cols-[minmax(0,1fr)]"
+          style={{ gridTemplateAreas: '"page"' }}
+        >
+          {pageTransitioning ? (
             <PageCard
-              key={location.pathname}
-              reduceMotion={reduceMotion}
-              startY={Math.max(viewportHeight - PAGE_CARD_TARGET_TOP, 320)}
+              key={`base-${settledPage.locationKey}`}
+              active={false}
+              entering={false}
+              pageKind="base"
+              routeKey={settledPage.routeKey}
             >
-              {outlet}
-
-              {previous || next ? (
-                <div className="doc-bottom-column">
-                  <nav
-                    className="mt-16 grid grid-cols-2 gap-3 border-t border-line pt-6 max-phone:grid-cols-1"
-                    aria-label="上一页与下一页"
-                  >
-                    {previous ? (
-                      <Link
-                        className="flex flex-col gap-[3px] rounded-[11px] border border-line bg-surface px-4 py-[13px] text-ink no-underline transition-colors hover:border-accent hover:no-underline [&_span]:text-[11.5px] [&_span]:text-muted [&_strong]:text-sm [&_strong]:font-semibold"
-                        to={toRoute(previous.path)}
-                      >
-                        <span>上一页</span>
-                        <strong>{previous.label}</strong>
-                      </Link>
-                    ) : null}
-                    {next ? (
-                      <Link
-                        className="col-start-2 flex flex-col gap-[3px] rounded-[11px] border border-line bg-surface px-4 py-[13px] text-end text-ink no-underline transition-colors hover:border-accent hover:no-underline max-phone:col-start-1 [&_span]:text-[11.5px] [&_span]:text-muted [&_strong]:text-sm [&_strong]:font-semibold"
-                        to={toRoute(next.path)}
-                      >
-                        <span>下一页</span>
-                        <strong>{next.label}</strong>
-                      </Link>
-                    ) : null}
-                  </nav>
-                </div>
-              ) : null}
+              <PageContents routeKey={settledPage.routeKey}>
+                {settledPage.outlet}
+              </PageContents>
             </PageCard>
-          </AnimatePresence>
+          ) : null}
+
+          <PageCard
+            key={`current-${routeKey}-${location.key}`}
+            active
+            entering={pageTransitioning}
+            onEnterComplete={() => {
+              if (currentLocationKeyRef.current !== location.key) {
+                return;
+              }
+
+              setSettledPage({ locationKey: location.key, routeKey, outlet });
+            }}
+            pageKind="current"
+            routeKey={routeKey}
+          >
+            <PageContents routeKey={routeKey}>{outlet}</PageContents>
+          </PageCard>
         </div>
 
         <div className="mx-auto max-w-[1180px] px-12 max-tablet:px-8 max-phone:px-5">

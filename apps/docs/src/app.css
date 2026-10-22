@@ -219,6 +219,58 @@
 
 @layer components {
   /*
+   * 页面切换是低频的空间事件。稳定页留在底层，当前页从视口底边上升并
+   * 完全覆盖它。固定单列网格与横向裁切让不同长度的 Hook / 组件正文采用
+   * 同一覆盖区域，不能反过来撑宽页面栈。
+   */
+  .doc-page-card {
+    z-index: 1;
+    width: 100%;
+    min-width: 0;
+    max-width: 1180px;
+    min-height: calc(100dvh - var(--doc-topbar-height));
+    margin-inline: auto;
+    overflow-x: clip;
+    background: var(--doc-bg);
+  }
+
+  .doc-page-card[data-page-kind="current"] {
+    z-index: 2;
+  }
+
+  .doc-page-card[data-transitioning="true"] {
+    animation: doc-page-enter 420ms var(--uk-ease-out) both;
+    will-change: transform;
+  }
+
+  @keyframes doc-page-enter {
+    from {
+      transform: translateY(calc(100dvh - var(--doc-topbar-height)));
+    }
+
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .doc-page-card[data-transitioning="true"] {
+      animation: doc-page-fade var(--uk-duration-fast) ease-out both;
+      will-change: auto;
+    }
+
+    @keyframes doc-page-fade {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+  }
+
+  /*
    * 上一页/下一页与页脚跟随正文列，而不是横跨“正文 + 本页目录”的整块区域。
    * 没有本页目录的页面仍使用完整内容宽度。
    */
