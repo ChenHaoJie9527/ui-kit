@@ -47,6 +47,9 @@ importers:
 
   apps/docs:
     dependencies:
+      motion:
+        specifier: ^14.4.0
+        version: 14.4.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       prism-react-renderer:
         specifier: ^2.4.1
         version: 2.4.1(react@19.3.1)

@@ -1,12 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  AnimatePresence,
+  motion,
+  usePresence,
+  useReducedMotion,
+} from "motion/react";
 import {
   Link,
   NavLink,
-  Outlet,
   ScrollRestoration,
   useLocation,
+  useOutlet,
 } from "react-router";
-import { useFocusTrap, useLockBodyScroll, useMedia } from "seam-hooks";
+import {
+  useFocusTrap,
+  useLockBodyScroll,
+  useMedia,
+  useWindowSize,
+} from "seam-hooks";
 import { Button, Sidebar } from "seam-react";
 import uiPackage from "../../../packages/ui/package.json";
 import { DocsSearch } from "./components/docs-search";
@@ -26,6 +37,8 @@ const THEME_LABELS: Record<ThemeMode, string> = {
 };
 
 const REPO_URL = "https://github.com/ChenHaoJie9527/ui-kit";
+/** main 紧接在顶栏下方，用它把卡片的初始上边缘对齐到视口底部。 */
+const PAGE_CARD_TARGET_TOP = 60;
 
 const TOP_NAV_LINK =
   "rounded-lg px-[11px] py-1.5 text-[13.5px] text-muted no-underline transition-colors hover:bg-surface-2 hover:text-ink data-[active=true]:bg-accent-soft data-[active=true]:font-semibold data-[active=true]:text-accent-strong";
@@ -176,6 +189,55 @@ function ThemeIcon({ mode }: { mode: ThemeMode }) {
   );
 }
 
+interface PageCardProps {
+  children: ReactNode;
+  reduceMotion: boolean;
+  startY: number;
+}
+
+function PageCard({ children, reduceMotion, startY }: PageCardProps) {
+  const [isPresent, safeToRemove] = usePresence();
+  const cardDuration = reduceMotion ? 0.12 : 0.42;
+
+  useEffect(() => {
+    if (isPresent) {
+      return;
+    }
+
+    const timeout = window.setTimeout(safeToRemove, cardDuration * 1000 + 40);
+
+    return () => window.clearTimeout(timeout);
+  }, [cardDuration, isPresent, safeToRemove]);
+
+  return (
+    <motion.div
+      className="mx-auto max-w-[1180px] bg-canvas px-12 pt-[46px] pb-[72px] max-tablet:px-8 max-tablet:pt-[38px] max-tablet:pb-16 max-phone:px-5 max-phone:pt-[30px] max-phone:pb-14"
+      style={{ gridArea: "page" }}
+      aria-hidden={!isPresent ? true : undefined}
+      inert={!isPresent}
+      initial={reduceMotion ? { opacity: 0 } : { y: startY }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={
+        reduceMotion
+          ? {
+              opacity: 0,
+              transition: { duration: cardDuration, ease: [0.23, 1, 0.32, 1] },
+            }
+          : {
+              opacity: 1,
+              transition: { duration: cardDuration, ease: "linear" },
+            }
+      }
+      transition={{
+        duration: cardDuration,
+        ease: [0.23, 1, 0.32, 1],
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 /**
  * 文档站外壳：顶栏、侧边栏、内容区与上一页/下一页。
  *
@@ -183,9 +245,12 @@ function ThemeIcon({ mode }: { mode: ThemeMode }) {
  */
 export function AppLayout() {
   const location = useLocation();
+  const outlet = useOutlet();
   const routeKey = routeKeyFromPathname(location.pathname);
   const activeItem = navItemByPath.get(routeKey);
   const { mode, setMode } = useTheme();
+  const reduceMotion = useReducedMotion() ?? false;
+  const { height: viewportHeight } = useWindowSize();
   // 抽屉记录「在哪个路由下打开的」。路由一变，表达式自然为 false，
   // 不需要在 effect 里 setState 去同步。
   const [drawerPath, setDrawerPath] = useState<string | null>(null);
@@ -398,39 +463,48 @@ export function AppLayout() {
         id="doc-content"
         tabIndex={-1}
       >
-        <div
-          className="mx-auto max-w-[1180px] px-12 pt-[46px] pb-[72px] max-tablet:px-8 max-tablet:pt-[38px] max-tablet:pb-16 max-phone:px-5 max-phone:pt-[30px] max-phone:pb-14"
-          key={location.pathname}
-        >
-          <Outlet />
+        {/*
+         * 页面切换是低频的空间事件。新页面从视口底边上升并在目标区域停住，
+         * 旧页面保持原位直到被完全覆盖，避免先退场造成闪白。
+         */}
+        <div className="grid" style={{ gridTemplateAreas: '"page"' }}>
+          <AnimatePresence initial={false} mode="sync">
+            <PageCard
+              key={location.pathname}
+              reduceMotion={reduceMotion}
+              startY={Math.max(viewportHeight - PAGE_CARD_TARGET_TOP, 320)}
+            >
+              {outlet}
 
-          {previous || next ? (
-            <div className="doc-bottom-column">
-              <nav
-                className="mt-16 grid grid-cols-2 gap-3 border-t border-line pt-6 max-phone:grid-cols-1"
-                aria-label="上一页与下一页"
-              >
-                {previous ? (
-                  <Link
-                    className="flex flex-col gap-[3px] rounded-[11px] border border-line bg-surface px-4 py-[13px] text-ink no-underline transition-colors hover:border-accent hover:no-underline [&_span]:text-[11.5px] [&_span]:text-muted [&_strong]:text-sm [&_strong]:font-semibold"
-                    to={toRoute(previous.path)}
+              {previous || next ? (
+                <div className="doc-bottom-column">
+                  <nav
+                    className="mt-16 grid grid-cols-2 gap-3 border-t border-line pt-6 max-phone:grid-cols-1"
+                    aria-label="上一页与下一页"
                   >
-                    <span>上一页</span>
-                    <strong>{previous.label}</strong>
-                  </Link>
-                ) : null}
-                {next ? (
-                  <Link
-                    className="col-start-2 flex flex-col gap-[3px] rounded-[11px] border border-line bg-surface px-4 py-[13px] text-end text-ink no-underline transition-colors hover:border-accent hover:no-underline max-phone:col-start-1 [&_span]:text-[11.5px] [&_span]:text-muted [&_strong]:text-sm [&_strong]:font-semibold"
-                    to={toRoute(next.path)}
-                  >
-                    <span>下一页</span>
-                    <strong>{next.label}</strong>
-                  </Link>
-                ) : null}
-              </nav>
-            </div>
-          ) : null}
+                    {previous ? (
+                      <Link
+                        className="flex flex-col gap-[3px] rounded-[11px] border border-line bg-surface px-4 py-[13px] text-ink no-underline transition-colors hover:border-accent hover:no-underline [&_span]:text-[11.5px] [&_span]:text-muted [&_strong]:text-sm [&_strong]:font-semibold"
+                        to={toRoute(previous.path)}
+                      >
+                        <span>上一页</span>
+                        <strong>{previous.label}</strong>
+                      </Link>
+                    ) : null}
+                    {next ? (
+                      <Link
+                        className="col-start-2 flex flex-col gap-[3px] rounded-[11px] border border-line bg-surface px-4 py-[13px] text-end text-ink no-underline transition-colors hover:border-accent hover:no-underline max-phone:col-start-1 [&_span]:text-[11.5px] [&_span]:text-muted [&_strong]:text-sm [&_strong]:font-semibold"
+                        to={toRoute(next.path)}
+                      >
+                        <span>下一页</span>
+                        <strong>{next.label}</strong>
+                      </Link>
+                    ) : null}
+                  </nav>
+                </div>
+              ) : null}
+            </PageCard>
+          </AnimatePresence>
         </div>
 
         <div className="mx-auto max-w-[1180px] px-12 max-tablet:px-8 max-phone:px-5">
