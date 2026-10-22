@@ -95,13 +95,6 @@ npm install seam-react
 pnpm add seam-hooks
 ```
 
-也可以从 JSR 安装同名能力：
-
-```bash
-pnpm add jsr:@seam/ui
-pnpm add jsr:@seam/hooks
-```
-
 ## 使用
 
 ### 受控 / 非受控
@@ -248,14 +241,13 @@ pnpm check         # format:check + lint + typecheck + test
 - [x] `packages/ui`：Button、Input、Switch、Tabs、Dialog、Tooltip 最小闭环
 - [ ] `packages/ui`：VirtualList、Menu、Select 等第二批组件
 - [ ] 文档站补充每个组件的 API 表格与边界用例
-- [x] 用 Changesets 管理版本并发布到 npm 与 JSR
+- [x] 用 Changesets 管理版本并发布到 npm
 - [ ] 增加 1 万行列表的首屏渲染基准（全量 vs 虚拟滚动）
 
 ## 发布
 
 合并 Changesets 的版本 PR 后，GitHub Actions 会通过 npm Trusted Publishing
-自动发布 `seam-hooks` → `seam-react`。JSR 使用独立的 `publish` workflow 和
-GitHub Actions OIDC 发布，两套流程不需要长期 token。
+自动发布 `seam-hooks` → `seam-react`，不需要保存长期 token。
 
 ## License
 

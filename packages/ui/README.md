@@ -12,8 +12,6 @@ pnpm add seam-react
 npm install seam-react
 ```
 
-也可以从 JSR 安装 `@seam/ui`。
-
 ## 使用
 
 ```tsx

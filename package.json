@@ -16,10 +16,8 @@
     "build:docs": "pnpm --filter @chenhaojie9527/docs build",
     "commit": "cz",
     "changeset": "changeset",
-    "sync:jsr": "node scripts/sync-jsr-versions.mjs",
-    "version-packages": "changeset version && pnpm sync:jsr && node scripts/update-component-releases.mjs && pnpm format",
+    "version-packages": "changeset version && node scripts/update-component-releases.mjs && pnpm format",
     "publish:npm": "node scripts/publish-npm.mjs",
-    "publish:jsr": "pnpm sync:jsr && pnpm --filter seam-react generate:styles && pnpm exec oxfmt packages/hooks/jsr.json packages/ui/jsr.json packages/ui/src/styles.generated.ts && node scripts/publish-jsr.mjs",
     "release": "pnpm build && pnpm publish:npm",
     "prepare": "husky"
   },

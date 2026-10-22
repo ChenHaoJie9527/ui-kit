@@ -10,12 +10,6 @@
 pnpm add seam-hooks
 ```
 
-也可以从 JSR 安装：
-
-```bash
-pnpm add jsr:@seam/hooks
-```
-
 ## 快速开始
 
 ```tsx

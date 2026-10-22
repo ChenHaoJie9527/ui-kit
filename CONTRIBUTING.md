@@ -45,7 +45,6 @@ echo "feat(ui): 新增 Badge 组件" | pnpm exec commitlint
 2. 提交并合并到 `main` 后，`release` 工作流会自动创建一个 “Version Packages” PR（含版本号与 CHANGELOG）；
 3. 合并该 PR 后，`release` 工作流通过 npm Trusted Publishing 自动发布
    `seam-hooks` → `seam-react`，不需要保存 npm token。
-   JSR 使用独立的 `publish` 工作流和 `pnpm publish:jsr`。
 
 本地预演：
 
