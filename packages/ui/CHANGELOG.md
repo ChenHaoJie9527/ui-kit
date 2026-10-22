@@ -1,5 +1,12 @@
 # seam-react
 
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [1a04d9e]
+  - seam-hooks@0.2.0
+
 ## 0.5.0
 
 ### Minor Changes
