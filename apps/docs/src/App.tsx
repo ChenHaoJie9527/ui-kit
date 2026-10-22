@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Link,
   NavLink,
@@ -9,6 +9,7 @@ import {
 import { useFocusTrap, useLockBodyScroll, useMedia } from "seam-hooks";
 import { Button, Sidebar } from "seam-react";
 import uiPackage from "../../../packages/ui/package.json";
+import { DocsSearch } from "./components/docs-search";
 import {
   navGroups,
   navItems,
@@ -175,12 +176,8 @@ function ThemeIcon({ mode }: { mode: ThemeMode }) {
   );
 }
 
-function matches(value: string, query: string): boolean {
-  return value.toLowerCase().includes(query);
-}
-
 /**
- * 文档站外壳：顶栏、可搜索的侧边栏、内容区与上一页/下一页。
+ * 文档站外壳：顶栏、侧边栏、内容区与上一页/下一页。
  *
  * 路由由 react-router 的 HashRouter 提供，页面内容通过 <Outlet /> 渲染。
  */
@@ -189,7 +186,6 @@ export function AppLayout() {
   const routeKey = routeKeyFromPathname(location.pathname);
   const activeItem = navItemByPath.get(routeKey);
   const { mode, setMode } = useTheme();
-  const [query, setQuery] = useState("");
   // 抽屉记录「在哪个路由下打开的」。路由一变，表达式自然为 false，
   // 不需要在 effect 里 setState 去同步。
   const [drawerPath, setDrawerPath] = useState<string | null>(null);
@@ -206,22 +202,6 @@ export function AppLayout() {
     containerRef: sidebarRef,
     returnFocusRef: menuButtonRef,
   });
-
-  const filteredGroups = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-
-    if (!needle) {
-      return navGroups;
-    }
-
-    return navGroups.flatMap((group) => {
-      const items = group.items.filter((item) =>
-        matches(`${item.label} ${item.hint ?? ""} ${group.title}`, needle),
-      );
-
-      return items.length > 0 ? [{ title: group.title, items }] : [];
-    });
-  }, [query]);
 
   useEffect(() => {
     document.title =
@@ -311,7 +291,7 @@ export function AppLayout() {
         </div>
 
         <nav
-          className="ml-auto flex items-center gap-0.5 max-drawer:hidden"
+          className="flex items-center gap-0.5 max-drawer:hidden"
           aria-label="主导航"
         >
           <Link
@@ -342,7 +322,8 @@ export function AppLayout() {
           </a>
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
+          <DocsSearch />
           <Button
             variant="ghost"
             size="sm"
@@ -366,51 +347,8 @@ export function AppLayout() {
         aria-hidden={isMobile && !sidebarOpen ? true : undefined}
       >
         <div className="sidebar-scroll flex h-full flex-col overflow-y-auto overscroll-contain px-3.5 pt-[18px] pb-5">
-          <div className="sticky -top-[18px] z-[2] -mx-3.5 mb-1.5 flex items-center gap-2 bg-[linear-gradient(to_bottom,var(--doc-bg)_78%,transparent)] px-3.5 pt-[18px] pb-3">
-            <svg
-              className="pointer-events-none absolute left-[26px] text-faint"
-              viewBox="0 0 20 20"
-              width="15"
-              height="15"
-              aria-hidden="true"
-            >
-              <circle
-                cx="8.6"
-                cy="8.6"
-                r="5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-              />
-              <path
-                d="m12.4 12.4 4 4"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-              />
-            </svg>
-            <input
-              className="no-search-cancel h-[34px] w-full rounded-[9px] border border-line bg-surface pr-[30px] pl-8 font-[inherit] text-[13px] text-ink outline-none transition placeholder:text-faint focus-visible:border-accent focus-visible:shadow-[0_0_0_3px_color-mix(in_srgb,var(--doc-accent)_20%,transparent)]"
-              type="search"
-              value={query}
-              placeholder="搜索组件或 Hook"
-              aria-label="搜索文档"
-              onChange={(event) => setQuery(event.target.value)}
-            />
-            {query ? (
-              <button
-                type="button"
-                className="absolute right-5 grid size-5 cursor-pointer place-items-center rounded-md border-0 bg-transparent p-0 text-[15px] leading-none text-muted hover:bg-surface-2 hover:text-ink"
-                aria-label="清空搜索"
-                onClick={() => setQuery("")}
-              >
-                ×
-              </button>
-            ) : null}
-          </div>
-
           <Sidebar className="flex-1" aria-label="文档导航">
-            {filteredGroups.map((group) => (
+            {navGroups.map((group) => (
               <Sidebar.Group
                 collapsible
                 icon={<SidebarGroupIcon title={group.title} />}
@@ -434,12 +372,6 @@ export function AppLayout() {
                 ))}
               </Sidebar.Group>
             ))}
-
-            {filteredGroups.length === 0 ? (
-              <p className="mx-2.5 my-5 text-[13px] text-muted">
-                没有匹配的条目。
-              </p>
-            ) : null}
           </Sidebar>
 
           <div className="mt-5 flex justify-between gap-2 border-t border-line px-2.5 pt-3.5 text-[11.5px] text-faint [&_a]:text-muted [&_a]:no-underline [&_a:hover]:text-accent">
