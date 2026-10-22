@@ -390,7 +390,7 @@ export function AppLayout() {
         </div>
 
         <nav
-          className="flex items-center gap-0.5 max-drawer:hidden"
+          className="ml-auto flex items-center gap-0.5 max-drawer:hidden"
           aria-label="主导航"
         >
           <Link
@@ -421,7 +421,7 @@ export function AppLayout() {
           </a>
         </nav>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <DocsSearch />
           <Button
             variant="ghost"
