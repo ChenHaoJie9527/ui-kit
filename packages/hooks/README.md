@@ -1,6 +1,6 @@
 # seam-hooks
 
-29 个生产级 React hooks：受控状态、虚拟滚动、异步竞态、焦点管理与浏览器能力封装。
+31 个生产级 React hooks：受控状态、计数器、虚拟滚动、异步竞态、焦点管理与浏览器能力封装。
 
 ## 安装
 
@@ -33,7 +33,7 @@ const { start, end, totalHeight, offsetTop } = useVirtualList({
 
 ## 包含的能力
 
-- **状态**：`useControllableState`、`useSetState`、`useMap`、`useList`、`useGetSet`
+- **状态**：`useControllableState`、`useCounter`、`useSetState`、`useMap`、`useList`、`useGetSet`
 - **异步**：`useAsync`、`useAsyncFn`、`useAsyncRetry`
 - **性能**：`useVirtualList`、`useDebounce`、`useDebouncedValue`、`useThrottle`、`useEventCallback`
 - **交互**：`useClickAway`、`useFocusTrap`、`useDropArea`、`useFullscreen`、`useVideo`

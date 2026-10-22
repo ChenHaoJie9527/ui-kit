@@ -1,5 +1,12 @@
 export { useControllableState } from "./useControllableState";
 export type { UseControllableStateOptions } from "./useControllableState";
+export { useCounter } from "./useCounter";
+export type {
+  CounterActions,
+  CounterUpdate,
+  UseCounterOptions,
+  UseCounterResult,
+} from "./useCounter";
 export { useEventCallback } from "./useEventCallback";
 export { useDebouncedValue } from "./useDebouncedValue";
 export { useVirtualList } from "./useVirtualList";

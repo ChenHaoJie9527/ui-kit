@@ -160,6 +160,100 @@ export const hookGroups: HookGroup[] = [
         ),
       }),
       complete({
+        name: "useCounter",
+        signature: "useCounter(options?): readonly [number, CounterActions]",
+        description:
+          "管理带步长和上下界约束的数值计数器，支持受控与非受控模式；set、increment、decrement、reset 均基于最新有效值计算。",
+        whenToUse: [
+          "数量选择器、分页器、步进输入或投票计数等需要增减与重置的数值状态。",
+          "希望 min / max / step 作为一组具名配置，并把边界处理交给 hook。",
+          "需要同时兼容父级受控和组件内部管理，且在受控模式仍能快速连续操作。",
+        ],
+        notFor: [
+          "只有一个普通数值、没有增减语义——useState 更直接。",
+          "需要按固定列表循环——考虑 useCycleList 一类列表状态。",
+          "需要小数精度格式化或金额计算——先明确精度策略，不要让计数器替你处理金额舍入。",
+        ],
+        notes: [
+          {
+            tone: "info",
+            title: "所有入口统一裁剪边界",
+            text: "初次值、set、increment、decrement 与 reset 都会经过当前 min / max 裁剪。边界变化时，当前值也会立即收紧；之后放宽边界不会恢复旧值。",
+          },
+          {
+            tone: "warning",
+            title: "受控模式需要父级回写",
+            text: "传入 value 后，hook 只调用 onChange 报告裁剪后的目标值，不会替你更新外部值。父级没有回写时，界面仍显示外部 value。",
+          },
+          "defaultValue 只在首次渲染读取，支持惰性初始化。同名普通字段不会因为 options 对象重新创建而重置状态。",
+          "min、max、step 每次操作都会读取最新配置。min 必须小于等于 max，step 必须大于 0，所有数值都必须是有限数。",
+          "set 和增减操作接受非法数值时会抛出 RangeError，且不会写入计数器，避免 NaN 或 Infinity 悄悄污染状态。",
+          "actions 对象与其中的函数引用保持稳定；受控模式下同一事件中的连续操作会基于最新目标值继续计算。",
+          "onChange 只在有效值真正变化时调用，不会因为边界配置变化或写入相同的裁剪结果而重复触发。",
+        ],
+        usage: [
+          {
+            title: "商品数量步进器",
+            description:
+              "购物车、库存选择等常见数量输入：默认值为 2，限制在 1 到 5。快捷按钮直接传入越界值，hook 会裁剪到合法范围再更新。",
+            demo: "use-counter/quantity-stepper",
+          },
+          {
+            title: "分页器：总页数动态变化",
+            description:
+              "当前页的上限来自筛选结果。先跳到第 10 页，再模拟结果只剩 5 页，当前页会自动收紧到 5；恢复 12 页时也不会重新暴露旧页。",
+            demo: "use-counter/pagination",
+          },
+          {
+            title: "接口重试：控制次数上限",
+            description:
+              "订单同步失败后的重试流程：业务组件持有尝试次数，通过 value + onChange 接入受控模式；达到 3 次后按钮自动禁用。",
+            demo: "use-counter/retry-limit",
+          },
+        ],
+        api: api(
+          "useCounter(options?: UseCounterOptions): readonly [number, CounterActions]",
+          [
+            param("value", "number", "受控值；传入后进入受控模式。"),
+            param(
+              "defaultValue",
+              "number | (() => number)",
+              "非受控模式的初始值，支持惰性初始化。",
+              { defaultValue: "0" },
+            ),
+            param("min", "number", "包含在内的下界。"),
+            param("max", "number", "包含在内的上界。"),
+            param("step", "number", "增减操作的默认步长。", {
+              defaultValue: "1",
+            }),
+            param("onChange", "(value: number) => void", "有效值变化时触发。"),
+          ],
+          [
+            ret("value", "number", "当前有效值，始终位于 min / max 范围内。"),
+            ret(
+              "actions.set",
+              "(next: number | ((current: number) => number)) => number",
+              "设置计数器并返回裁剪后的目标值。",
+            ),
+            ret(
+              "actions.increment",
+              "(delta?: number) => number",
+              "增加指定增量或默认步长，并返回裁剪后的目标值。",
+            ),
+            ret(
+              "actions.decrement",
+              "(delta?: number) => number",
+              "减少指定减量或默认步长，并返回裁剪后的目标值。",
+            ),
+            ret(
+              "actions.reset",
+              "() => number",
+              "恢复初始快照并按当前边界裁剪，返回最终目标值。",
+            ),
+          ],
+        ),
+      }),
+      complete({
         name: "useMap",
         signature: "useMap<K, V>(initial?): [Map<K, V>, actions]",
         description:

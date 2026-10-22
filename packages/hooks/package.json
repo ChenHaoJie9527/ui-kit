@@ -1,13 +1,14 @@
 {
   "name": "seam-hooks",
   "version": "0.1.1",
-  "description": "29 个生产级 React hooks：受控状态、虚拟滚动、异步竞态、焦点管理与浏览器能力封装",
+  "description": "31 个生产级 React hooks：受控状态、计数器、虚拟滚动、异步竞态、焦点管理与浏览器能力封装",
   "keywords": [
     "hooks",
     "react",
     "typescript",
     "ui-kit",
     "use-async",
+    "use-counter",
     "virtual-list"
   ],
   "homepage": "https://chenhaojie9527.github.io/ui-kit/",
