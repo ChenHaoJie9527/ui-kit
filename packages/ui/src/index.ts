@@ -1,6 +1,9 @@
 export { Button } from "./Button";
 export type { ButtonProps, ButtonSize, ButtonVariant } from "./Button";
 
+export { CheckBox } from "./CheckBox";
+export type { CheckBoxProps } from "./CheckBox";
+
 export { Input } from "./Input";
 export type { InputProps, InputSize } from "./Input";
 

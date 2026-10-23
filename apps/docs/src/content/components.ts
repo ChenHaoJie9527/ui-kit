@@ -31,6 +31,12 @@ const componentDefinitions: Array<
     tags: ["表单", "错误态"],
   },
   {
+    path: "components/checkbox",
+    name: "CheckBox",
+    summary: "SVG 描边对勾与即时按压反馈，保留原生表单与键盘语义。",
+    tags: ["表单", "受控", "SVG 描边"],
+  },
+  {
     path: "components/switch",
     name: "Switch",
     summary: "基于原生 checkbox，受控与非受控共享同一套语义。",

@@ -3,6 +3,7 @@ import { createHashRouter, useParams } from "react-router";
 import { hookByPath } from "./content/hooks";
 import { AppLayout } from "./App";
 import { ButtonPage } from "./pages/button";
+import { CheckBoxPage } from "./pages/checkbox";
 import { CustomizingPage } from "./pages/customizing";
 import { DialogPage } from "./pages/dialog";
 import { HookPage } from "./pages/hook";
@@ -19,6 +20,7 @@ import { UsagePage } from "./pages/usage";
 const componentPages: Record<string, ComponentType> = {
   button: ButtonPage,
   input: InputPage,
+  checkbox: CheckBoxPage,
   switch: SwitchPage,
   sidebar: SidebarPage,
   tabs: TabsPage,
