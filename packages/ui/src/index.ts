@@ -40,6 +40,9 @@ export type {
   DialogTriggerProps,
 } from "./Dialog";
 
+export { Marquee } from "./Marquee";
+export type { MarqueeDirection, MarqueeProps } from "./Marquee";
+
 export { Tooltip } from "./Tooltip";
 export type {
   TooltipAlign,

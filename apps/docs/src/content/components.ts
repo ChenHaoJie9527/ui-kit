@@ -61,6 +61,12 @@ const componentDefinitions: Array<
       "延迟 hover / focus 显示，支持触屏、视口翻转与 aria-describedby 关联。",
     tags: ["浮层", "定位", "可访问性"],
   },
+  {
+    path: "components/marquee",
+    name: "Marquee",
+    summary: "水平或垂直无缝滚动内容，副本轨道不可访问，并支持悬停暂停。",
+    tags: ["Motion", "循环", "CSS 动画"],
+  },
 ];
 
 const releases = componentReleases as Record<

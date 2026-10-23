@@ -1,0 +1,114 @@
+@layer uk.components {
+  .uk-marquee {
+    display: flex;
+    overflow: hidden;
+    gap: var(--uk-marquee-gap, var(--uk-space-4));
+  }
+
+  .uk-marquee__track {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--uk-marquee-gap, var(--uk-space-4));
+  }
+
+  .uk-marquee[data-direction="up"],
+  .uk-marquee[data-direction="down"] {
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .uk-marquee[data-direction="up"] .uk-marquee__track,
+  .uk-marquee[data-direction="down"] .uk-marquee__track {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .uk-marquee[data-direction="up"][data-fade="true"],
+  .uk-marquee[data-direction="down"][data-fade="true"] {
+    mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      black 12%,
+      black 88%,
+      transparent
+    );
+  }
+
+  .uk-marquee__item {
+    flex-shrink: 0;
+    min-width: 0;
+  }
+
+  .uk-marquee[data-fade="true"] {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 12%,
+      black 88%,
+      transparent
+    );
+  }
+
+  .uk-marquee[data-direction="left"] .uk-marquee__track,
+  .uk-marquee[data-direction="right"] .uk-marquee__track {
+    animation: uk-marquee-horizontal var(--uk-marquee-duration, 30s) linear
+      infinite;
+  }
+
+  .uk-marquee[data-direction="up"] .uk-marquee__track,
+  .uk-marquee[data-direction="down"] .uk-marquee__track {
+    animation: uk-marquee-vertical var(--uk-marquee-duration, 30s) linear
+      infinite;
+  }
+
+  .uk-marquee[data-direction="right"] .uk-marquee__track,
+  .uk-marquee[data-direction="down"] .uk-marquee__track {
+    animation-direction: reverse;
+  }
+
+  @keyframes uk-marquee-horizontal {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+
+    to {
+      transform: translate3d(
+        calc(-100% - var(--uk-marquee-gap, var(--uk-space-4))),
+        0,
+        0
+      );
+    }
+  }
+
+  @keyframes uk-marquee-vertical {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+
+    to {
+      transform: translate3d(
+        0,
+        calc(-100% - var(--uk-marquee-gap, var(--uk-space-4))),
+        0
+      );
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .uk-marquee[data-pause-on-hover="true"]:hover .uk-marquee__track {
+      animation-play-state: paused;
+    }
+  }
+
+  .uk-marquee:focus-within .uk-marquee__track {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .uk-marquee .uk-marquee__track {
+      animation-play-state: paused;
+    }
+  }
+}

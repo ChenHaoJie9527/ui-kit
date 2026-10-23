@@ -7,6 +7,7 @@ import { CustomizingPage } from "./pages/customizing";
 import { DialogPage } from "./pages/dialog";
 import { HookPage } from "./pages/hook";
 import { InputPage } from "./pages/input";
+import { MarqueePage } from "./pages/marquee";
 import { NotFoundPage } from "./pages/not-found";
 import { OverviewPage } from "./pages/overview";
 import { SidebarPage } from "./pages/sidebar";
@@ -23,6 +24,7 @@ const componentPages: Record<string, ComponentType> = {
   tabs: TabsPage,
   dialog: DialogPage,
   tooltip: TooltipPage,
+  marquee: MarqueePage,
 };
 
 function ComponentRoute() {
