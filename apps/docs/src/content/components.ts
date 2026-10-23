@@ -37,6 +37,12 @@ const componentDefinitions: Array<
     tags: ["表单", "受控", "SVG 描边"],
   },
   {
+    path: "components/select",
+    name: "Select",
+    summary: "单选列表，支持键盘搜索、受控值、空态和弹出层定位。",
+    tags: ["表单", "键盘", "浮层"],
+  },
+  {
     path: "components/switch",
     name: "Switch",
     summary: "基于原生 checkbox，受控与非受控共享同一套语义。",

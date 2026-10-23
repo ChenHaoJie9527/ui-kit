@@ -4,6 +4,9 @@ export type { ButtonProps, ButtonSize, ButtonVariant } from "./Button";
 export { CheckBox } from "./CheckBox";
 export type { CheckBoxProps } from "./CheckBox";
 
+export { Select } from "./Select";
+export type { SelectOption, SelectProps, SelectSize } from "./Select";
+
 export { Input } from "./Input";
 export type { InputProps, InputSize } from "./Input";
 

@@ -12,6 +12,7 @@ import { MarqueePage } from "./pages/marquee";
 import { NotFoundPage } from "./pages/not-found";
 import { OverviewPage } from "./pages/overview";
 import { SidebarPage } from "./pages/sidebar";
+import { SelectPage } from "./pages/select";
 import { SwitchPage } from "./pages/switch";
 import { TabsPage } from "./pages/tabs";
 import { TooltipPage } from "./pages/tooltip";
@@ -21,6 +22,7 @@ const componentPages: Record<string, ComponentType> = {
   button: ButtonPage,
   input: InputPage,
   checkbox: CheckBoxPage,
+  select: SelectPage,
   switch: SwitchPage,
   sidebar: SidebarPage,
   tabs: TabsPage,
