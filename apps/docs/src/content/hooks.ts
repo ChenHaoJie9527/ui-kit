@@ -589,6 +589,70 @@ export const hookGroups: HookGroup[] = [
         ),
       }),
       complete({
+        name: "useAsyncEffect",
+        signature:
+          "useAsyncEffect<T>(effect, deps?, options?): { status, value, error, loading, cancel }",
+        description:
+          "用 effect 生命周期执行异步任务：跟踪状态、支持结果化清理，并保证只有最新一次执行会落盘。",
+        whenToUse: [
+          "挂载或依赖变化时要启动异步订阅、写入、上传等任务。",
+          "任务成功后需要用结果做一次清理，例如撤销草稿或释放句柄。",
+          "快速依赖变化时，旧结果、旧错误和旧清理都不能影响当前 effect。",
+        ],
+        notFor: [
+          "只要 loading / value / error 的数据请求——useAsync 更简单。",
+          "由按钮或表单提交触发的任务——useAsyncFn 更贴合事件模型。",
+          "需要中止底层 fetch 或管理 AbortController——请在业务函数里自行传入 signal。",
+        ],
+        notes: [
+          "需要同时返回结果和清理时，返回 { value, cleanup }；只返回函数时会按 cleanup 处理。",
+          "依赖变化或卸载时，旧任务的成功结果、失败结果和清理函数都会失效。",
+          "cancel 只阻止任务继续影响 hook，不会取消底层 Promise 或网络请求。",
+          "value 不会在 loading 开始时被清空，这样刷新数据时旧内容仍然可以展示。",
+        ],
+        usage: [
+          {
+            title: "异步订阅与暂停",
+            description:
+              "切换设备会重新建立异步订阅；关闭订阅会暂停任务并取消当前结果。",
+            demo: "use-async-effect/device-subscription",
+          },
+        ],
+        api: api(
+          "useAsyncEffect<T>(asyncEffect: () => Promise<T> | AsyncEffectResult<T>, deps?: DependencyList, options?: UseAsyncEffectOptions<T>): AsyncEffectState<T> & { cancel: () => void }",
+          [
+            param(
+              "asyncEffect",
+              "() => Promise<T> | AsyncEffectResult<T>",
+              "要执行的异步 effect；可返回结果、{ value, cleanup } 或 cleanup。",
+              { required: true },
+            ),
+            param("deps", "DependencyList", "重新执行的依赖。", {
+              defaultValue: "[]",
+            }),
+            param(
+              "options.initialValue",
+              "T",
+              "首次渲染或未产生结果时的 value。",
+            ),
+            param("options.enabled", "boolean", "为 false 时暂停执行。", {
+              defaultValue: "true",
+            }),
+          ],
+          [
+            ret(
+              "status",
+              '"idle" | "loading" | "success" | "error"',
+              "最近一次有效执行的生命周期状态。",
+            ),
+            ret("value", "T | undefined", "最近一次成功执行的返回值。"),
+            ret("error", "Error | undefined", "最近一次失败的原因。"),
+            ret("loading", "boolean", "最近一次有效执行是否仍在进行。"),
+            ret("cancel", "() => void", "让当前执行和清理函数失效。"),
+          ],
+        ),
+      }),
+      complete({
         name: "useAsyncFn",
         signature: "useAsyncFn<T, Args>(fn, deps?): [state, run]",
         description:
