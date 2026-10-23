@@ -41,6 +41,15 @@
     min-width: 0;
   }
 
+  .uk-marquee__item[data-clickable="true"] {
+    cursor: pointer;
+  }
+
+  .uk-marquee__item[data-clickable="true"]:focus-visible {
+    outline: 2px solid var(--uk-focus-ring);
+    outline-offset: 2px;
+  }
+
   .uk-marquee[data-fade="true"] {
     mask-image: linear-gradient(
       to right,
@@ -102,7 +111,11 @@
     }
   }
 
-  .uk-marquee:focus-within .uk-marquee__track {
+  .uk-marquee:has([data-clickable="true"]:focus-visible) .uk-marquee__track {
+    animation-play-state: paused;
+  }
+
+  .uk-marquee[data-paused="true"] .uk-marquee__track {
     animation-play-state: paused;
   }
 

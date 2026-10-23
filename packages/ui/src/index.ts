@@ -41,7 +41,13 @@ export type {
 } from "./Dialog";
 
 export { Marquee } from "./Marquee";
-export type { MarqueeDirection, MarqueeProps } from "./Marquee";
+export type {
+  MarqueeDirection,
+  MarqueeItemClickEvent,
+  MarqueeItem,
+  MarqueeItemDetail,
+  MarqueeProps,
+} from "./Marquee";
 
 export { Tooltip } from "./Tooltip";
 export type {
