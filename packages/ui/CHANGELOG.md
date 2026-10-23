@@ -1,5 +1,11 @@
 # seam-react
 
+## 0.8.0
+
+### Minor Changes
+
+- d06dbcf: 新增 Select 组件，支持受控 / 非受控单选、键盘搜索、弹出层定位与空态。
+
 ## 0.7.0
 
 ### Minor Changes
