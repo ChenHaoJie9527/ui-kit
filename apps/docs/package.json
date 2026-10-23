@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build --base ./ --outDir ../../docs --emptyOutDir",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "pnpm exec tsrs --noEmit",
     "check:live": "node --experimental-strip-types scripts/check-live-compiler.ts"
   },
   "dependencies": {
