@@ -1,6 +1,6 @@
 {
   "name": "seam-hooks",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "32 个生产级 React hooks：受控状态、计数器、虚拟滚动、异步竞态、焦点管理与浏览器能力封装",
   "keywords": [
     "hooks",

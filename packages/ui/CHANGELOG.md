@@ -1,5 +1,17 @@
 # seam-react
 
+## 0.7.0
+
+### Minor Changes
+
+- 54a04d2: 新增 CheckBox 组件，支持受控/非受控状态、SVG 描边对勾和按压反馈。
+- 947a1e3: Marquee 新增 paused、items 和 onItemClick，支持手动暂停/恢复滚动，并在 item 激活时返回当前项元数据。
+
+### Patch Changes
+
+- Updated dependencies [a0168fc]
+  - seam-hooks@0.3.0
+
 ## 0.6.0
 
 ### Minor Changes
