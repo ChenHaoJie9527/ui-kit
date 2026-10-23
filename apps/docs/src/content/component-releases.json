@@ -30,5 +30,9 @@
   "Marquee": {
     "introducedIn": "0.6.0",
     "releasedAt": "2026-10-23T12:18:52.710Z"
+  },
+  "CheckBox": {
+    "introducedIn": "0.7.0",
+    "releasedAt": "2026-10-23T14:09:53.604Z"
   }
 }

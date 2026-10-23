@@ -1,5 +1,11 @@
 # seam-hooks
 
+## 0.3.0
+
+### Minor Changes
+
+- a0168fc: 新增 useAsyncEffect，支持状态跟踪、结果化清理和最新执行获胜的竞态保护。
+
 ## 0.2.0
 
 ### Minor Changes
