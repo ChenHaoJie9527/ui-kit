@@ -1,5 +1,11 @@
 # seam-react
 
+## 0.9.2
+
+### Patch Changes
+
+- 1dea728: 修复单选 Select 重开时未自动展开已选层级叶子所属子面板的问题。
+
 ## 0.9.1
 
 ### Patch Changes
