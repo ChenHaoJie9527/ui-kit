@@ -26,6 +26,16 @@ export const DISCLOSURE_TRANSITION: Transition = {
   ease: EASE_IN_OUT,
 };
 
+/**
+ * Select tags are occasional state indicators. A short re-targeting move
+ * keeps the selected queue readable without delaying repeated choices.
+ */
+export const TAG_TRANSITION: Transition = {
+  layout: { duration: 0.16, ease: EASE_IN_OUT },
+  opacity: { duration: 0.16, ease: EASE_OUT },
+  x: { duration: 0.16, ease: EASE_IN_OUT },
+};
+
 /** Frequent explanatory surface: near-immediate presence without spring settle. */
 export const TOOLTIP_TRANSITION: Transition = {
   duration: 0.12,

@@ -106,6 +106,25 @@ describe("Select", () => {
     expect(onValueChange).toHaveBeenCalledWith("vue");
   });
 
+  it("clears the selected value from the clear button", () => {
+    const onValueChange = vi.fn<(value: string) => void>();
+    render(
+      <Select
+        clear
+        options={options}
+        defaultValue="react"
+        onValueChange={onValueChange}
+        aria-label="框架"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "清空" }));
+
+    expect(onValueChange).toHaveBeenLastCalledWith("");
+    expect(screen.getByText("请选择")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "清空" })).toBeNull();
+  });
+
   it("retargets one shared highlight between hovered options", async () => {
     render(<Select options={options} aria-label="框架" />);
     const trigger = openListbox();
@@ -192,5 +211,131 @@ describe("Select", () => {
 
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(screen.getByText("暂无数据")).toBeTruthy();
+  });
+});
+
+describe("Select multiple", () => {
+  it("clears all selected values from the clear button", () => {
+    const onValueChange = vi.fn<(value: Array<string>) => void>();
+    render(
+      <Select
+        multiple
+        clear
+        options={options}
+        defaultValue={["react", "vue"]}
+        onValueChange={onValueChange}
+        aria-label="框架"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "清空" }));
+
+    expect(onValueChange).toHaveBeenLastCalledWith([]);
+    expect(screen.getByText("请选择")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "清空" })).toBeNull();
+    expect(document.activeElement).toBe(
+      screen.getByRole("combobox", { name: "框架" }),
+    );
+  });
+
+  it("renders selected values as removable tags", () => {
+    render(
+      <Select
+        multiple
+        options={options}
+        defaultValue={["react", "vue"]}
+        aria-label="框架"
+      />,
+    );
+    const trigger = screen.getByRole("combobox", { name: "框架" });
+
+    expect(screen.getByText("React")).toBeTruthy();
+    expect(screen.getByText("Vue")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "移除 React" })).toBeTruthy();
+    expect(trigger.getAttribute("data-multiple")).toBe("true");
+  });
+
+  it("toggles options and keeps the listbox open", async () => {
+    const onValueChange = vi.fn<(value: Array<string>) => void>();
+    render(
+      <Select
+        multiple
+        options={options}
+        onValueChange={onValueChange}
+        aria-label="框架"
+      />,
+    );
+    const trigger = openListbox();
+
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "Enter" });
+    });
+    expect(onValueChange).toHaveBeenLastCalledWith(["react"]);
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    });
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "Enter" });
+    });
+    expect(onValueChange).toHaveBeenLastCalledWith(["react", "vue"]);
+
+    await waitFor(() => {
+      expect(
+        screen
+          .getByRole("option", { name: "Vue" })
+          .getAttribute("aria-selected"),
+      ).toBe("true");
+      expect(screen.getByRole("button", { name: "移除 Vue" })).toBeTruthy();
+    });
+  });
+
+  it("keeps a controlled multiple value until the owner updates it", () => {
+    const onValueChange = vi.fn<(value: Array<string>) => void>();
+    render(
+      <Select
+        multiple
+        options={options}
+        value={["react"]}
+        onValueChange={onValueChange}
+        aria-label="框架"
+      />,
+    );
+    const trigger = openListbox();
+
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    });
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "Enter" });
+    });
+
+    expect(onValueChange).toHaveBeenCalledWith(["react", "vue"]);
+    expect(screen.queryByRole("button", { name: "移除 Vue" })).toBeNull();
+  });
+
+  it("removes a tag from its button and the last tag with Backspace", async () => {
+    const onValueChange = vi.fn<(value: Array<string>) => void>();
+    render(
+      <Select
+        multiple
+        options={options}
+        defaultValue={["react", "vue"]}
+        onValueChange={onValueChange}
+        aria-label="框架"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "移除 React" }));
+    expect(onValueChange).toHaveBeenLastCalledWith(["vue"]);
+
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "框架" }), {
+      key: "Backspace",
+    });
+    expect(onValueChange).toHaveBeenLastCalledWith([]);
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "移除 Vue" })).toBeNull();
+    });
   });
 });

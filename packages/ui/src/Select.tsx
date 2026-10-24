@@ -10,13 +10,14 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
-  type ButtonHTMLAttributes,
   type CSSProperties,
+  type HTMLAttributes,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
   type ReactNode,
+  type RefAttributes,
 } from "react";
 import {
   AnimatePresence,
@@ -27,8 +28,12 @@ import {
 } from "motion/react";
 import { createPortal } from "react-dom";
 import { useControllableState, useEventCallback } from "seam-hooks";
-import { DISCLOSURE_TRANSITION, REDUCED_MOTION_TRANSITION } from "./motion";
-import { INDICATOR_SPRING } from "./motion";
+import {
+  DISCLOSURE_TRANSITION,
+  INDICATOR_SPRING,
+  REDUCED_MOTION_TRANSITION,
+  TAG_TRANSITION,
+} from "./motion";
 import { cx } from "./utils/cx";
 
 export type SelectSize = "sm" | "md" | "lg";
@@ -42,18 +47,12 @@ export interface SelectOption {
   disabled?: boolean;
 }
 
-export interface SelectProps extends Omit<
-  ButtonHTMLAttributes<HTMLButtonElement>,
+interface SelectBaseProps extends Omit<
+  HTMLAttributes<HTMLElement>,
   "children" | "value" | "onChange" | "aria-expanded" | "defaultValue"
 > {
   /** 可选项；label 用于展示，value 用于提交。 */
   options: Array<SelectOption>;
-  /** 受控选中值。 */
-  value?: string | null;
-  /** 非受控模式下的初始值。 */
-  defaultValue?: string | null;
-  /** 选中值变化时触发。 */
-  onValueChange?: (value: string) => void;
   /** 未选择时的展示文本。 */
   placeholder?: string;
   /** 控件尺寸。 */
@@ -64,15 +63,49 @@ export interface SelectProps extends Omit<
   emptyText?: string;
   /** 标记选择值无效，使用共享 invalid 样式。 */
   invalid?: boolean;
+  /** 是否显示一键清空按钮。 */
+  clear?: boolean;
 }
 
+export interface SelectSingleProps extends SelectBaseProps {
+  multiple?: false;
+  value?: string | null;
+  defaultValue?: string | null;
+  onValueChange?: (value: string) => void;
+}
+
+export interface SelectMultipleProps extends SelectBaseProps {
+  multiple: true;
+  value?: ReadonlyArray<string>;
+  defaultValue?: ReadonlyArray<string>;
+  onValueChange?: (value: Array<string>) => void;
+}
+
+export type SelectProps<Multiple extends boolean = false> = SelectBaseProps &
+  (Multiple extends true
+    ? {
+        multiple: true;
+        value?: ReadonlyArray<string>;
+        defaultValue?: ReadonlyArray<string>;
+        onValueChange?: (value: Array<string>) => void;
+      }
+    : {
+        multiple?: false;
+        value?: string | null;
+        defaultValue?: string | null;
+        onValueChange?: (value: string) => void;
+      });
+
 interface SelectContextValue {
-  value: string | null;
+  values: Array<string>;
+  multiple: boolean;
   activeIndex: number;
   open: boolean;
   setOpen: (open: boolean) => void;
   setActiveIndex: (index: number) => void;
   commit: (index: number) => void;
+  removeValue: (value: string) => void;
+  clearValues: () => void;
   triggerId: string;
   contentId: string;
   options: Array<SelectOption>;
@@ -121,6 +154,15 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+function normalizeSelectValues(
+  value: string | ReadonlyArray<string> | null | undefined,
+  multiple: boolean,
+) {
+  const rawValues = multiple ? (value ?? []) : value == null ? [] : [value];
+
+  return Array.from(new Set(rawValues as ReadonlyArray<string>));
+}
+
 function transformOrigin(
   side: SelectPosition["side"],
 ): CSSProperties["transformOrigin"] {
@@ -133,26 +175,30 @@ function SelectRoot({
   value,
   defaultValue = null,
   onValueChange,
+  multiple = false,
   children,
 }: {
   options: Array<SelectOption>;
-  value?: string | null;
-  defaultValue?: string | null;
-  onValueChange?: (value: string) => void;
+  value?: string | ReadonlyArray<string> | null;
+  defaultValue?: string | ReadonlyArray<string> | null;
+  onValueChange?: (value: string | Array<string>) => void;
+  multiple?: boolean;
   children: ReactNode;
 }): ReactElement {
   const baseId = useId();
-  const [current, setValue] = useControllableState<string | null>({
-    value,
-    defaultValue,
+  const normalizedValue = normalizeSelectValues(value, multiple);
+  const normalizedDefaultValue = normalizeSelectValues(defaultValue, multiple);
+  const [values, setSelectedValues] = useControllableState<Array<string>>({
+    value: value === undefined ? undefined : normalizedValue,
+    defaultValue: normalizedDefaultValue,
     onChange: (next) => {
-      if (next !== null) {
-        onValueChange?.(next);
-      }
+      onValueChange?.(multiple ? next : (next[0] ?? ""));
     },
   });
   const [open, setOpen] = useState(false);
-  const selectedIndex = options.findIndex((option) => option.value === current);
+  const selectedIndex = options.findIndex(
+    (option) => option.value === values[0],
+  );
   const [activeIndexOverride, setActiveIndexOverride] = useState<number | null>(
     null,
   );
@@ -168,24 +214,63 @@ function SelectRoot({
       return;
     }
 
-    setValue(option.value);
-    setOpen(false);
-    setActiveIndexOverride(null);
+    setSelectedValues((previous) => {
+      if (multiple) {
+        return previous.includes(option.value)
+          ? previous.filter((selectedValue) => selectedValue !== option.value)
+          : [...previous, option.value];
+      }
+
+      if (previous[0] === option.value) {
+        return previous;
+      }
+
+      return [option.value];
+    });
+
+    if (!multiple) {
+      setOpen(false);
+      setActiveIndexOverride(null);
+    }
+  });
+
+  const removeValue = useEventCallback((removedValue: string) => {
+    setSelectedValues((previous) =>
+      previous.filter((selectedValue) => selectedValue !== removedValue),
+    );
+  });
+
+  const clearValues = useEventCallback(() => {
+    setSelectedValues([]);
   });
 
   const context = useMemo<SelectContextValue>(
     () => ({
-      value: current,
+      values,
+      multiple,
       activeIndex,
       open,
       setOpen,
       setActiveIndex,
       commit,
+      removeValue,
+      clearValues,
       triggerId: `${baseId}-trigger`,
       contentId: `${baseId}-content`,
       options,
     }),
-    [activeIndex, baseId, commit, current, open, options, setActiveIndex],
+    [
+      activeIndex,
+      baseId,
+      commit,
+      multiple,
+      open,
+      options,
+      removeValue,
+      clearValues,
+      setActiveIndex,
+      values,
+    ],
   );
 
   return (
@@ -224,17 +309,34 @@ function moveActiveIndex(
 
 /** 渲染触发器并合并调用方的事件、aria 与 ref。 */
 const SelectTrigger = forwardRef<
-  HTMLButtonElement,
-  ButtonHTMLAttributes<HTMLButtonElement> & { placeholder?: string }
+  HTMLDivElement,
+  HTMLAttributes<HTMLDivElement> & {
+    placeholder?: string;
+    size?: SelectSize;
+    clear?: boolean;
+    disabled?: boolean;
+  }
 >(function SelectTrigger(
-  { className, placeholder = "请选择", onPointerDown, onKeyDown, ...rest },
+  {
+    className,
+    placeholder = "请选择",
+    size = "md",
+    clear = false,
+    disabled,
+    onPointerDown,
+    onKeyDown,
+    ...rest
+  },
   forwardedRef,
 ) {
   const context = useSelectContext("Select.Trigger");
-  const selectedOption = context.options.find(
-    (option) => option.value === context.value,
-  );
-  const disabled = rest.disabled;
+  const reduceMotion = useReducedMotion() ?? false;
+  const selectedOptions = context.values.map((value) => {
+    const option = context.options.find((item) => item.value === value);
+
+    return option ?? { value, label: value };
+  });
+  const selectedOption = selectedOptions[0];
   const typeaheadRef = useRef<{
     search: string;
     timer: ReturnType<typeof setTimeout> | null;
@@ -288,13 +390,16 @@ const SelectTrigger = forwardRef<
 
     if (context.open) {
       context.setActiveIndex(match);
+    } else if (context.multiple) {
+      context.setActiveIndex(match);
+      context.setOpen(true);
     } else {
       context.commit(match);
     }
   });
 
   const handlePointerDown = useEventCallback(
-    (_event: ReactPointerEvent<HTMLButtonElement>) => {
+    (_event: ReactPointerEvent<HTMLDivElement>) => {
       if (disabled) {
         return;
       }
@@ -304,7 +409,7 @@ const SelectTrigger = forwardRef<
   );
 
   const handleKeyDown = useEventCallback(
-    (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    (event: ReactKeyboardEvent<HTMLDivElement>) => {
       if (disabled) {
         return;
       }
@@ -317,6 +422,17 @@ const SelectTrigger = forwardRef<
       ) {
         event.preventDefault();
         selectByTypeahead(event.key);
+        return;
+      }
+
+      if (event.key === "Backspace" && context.multiple) {
+        const lastValue = context.values[context.values.length - 1];
+
+        if (lastValue) {
+          event.preventDefault();
+          context.removeValue(lastValue);
+        }
+
         return;
       }
 
@@ -375,12 +491,13 @@ const SelectTrigger = forwardRef<
   );
 
   return (
-    <button
+    <div
       {...rest}
       ref={forwardedRef}
       id={context.triggerId}
-      type="button"
       role="combobox"
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled || undefined}
       aria-expanded={context.open}
       aria-haspopup="listbox"
       aria-controls={context.open ? context.contentId : undefined}
@@ -389,31 +506,122 @@ const SelectTrigger = forwardRef<
           ? `${context.contentId}-option-${context.activeIndex}`
           : undefined
       }
-      data-size="md"
+      data-size={size}
+      data-multiple={context.multiple || undefined}
       className={cx("uk-select__trigger", className)}
       onPointerDown={composeHandler(onPointerDown, handlePointerDown)}
       onKeyDown={composeHandler(onKeyDown, handleKeyDown)}
     >
-      <span className="uk-select__value">
-        {selectedOption?.label ?? context.value ?? placeholder}
+      {context.multiple ? (
+        <span className="uk-select__tags">
+          <AnimatePresence initial={false}>
+            {selectedOptions.map((option) => {
+              const label = option.label ?? option.value;
+              const accessibleLabel =
+                typeof label === "string" ? label : option.value;
+
+              return (
+                <motion.span
+                  key={option.value}
+                  className="uk-select__tag"
+                  data-slot="select-tag"
+                  layout
+                  initial={
+                    reduceMotion ? { opacity: 0 } : { opacity: 0, x: 12 }
+                  }
+                  animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
+                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 4 }}
+                  transition={reduceMotion ? { duration: 0 } : TAG_TRANSITION}
+                >
+                  <span className="uk-select__tag-label">{label}</span>
+                  <button
+                    type="button"
+                    className="uk-select__tag-remove"
+                    disabled={disabled}
+                    aria-label={`移除 ${accessibleLabel}`}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => {
+                      if (event.key === "Backspace") {
+                        event.stopPropagation();
+                      }
+                    }}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      context.removeValue(option.value);
+                    }}
+                  >
+                    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path
+                        d="M5 5l6 6M11 5l-6 6"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+                </motion.span>
+              );
+            })}
+          </AnimatePresence>
+          {selectedOptions.length === 0 ? (
+            <span className="uk-select__placeholder">{placeholder}</span>
+          ) : null}
+        </span>
+      ) : (
+        <span className="uk-select__value">
+          {selectedOption?.label ?? context.values[0] ?? placeholder}
+        </span>
+      )}
+      <span className="uk-select__actions">
+        {clear && !disabled && context.values.length > 0 ? (
+          <button
+            type="button"
+            className="uk-select__clear"
+            aria-label="清空"
+            onPointerDown={(event) => event.stopPropagation()}
+            onKeyDown={(event) => {
+              if (["Backspace", " "].includes(event.key)) {
+                event.stopPropagation();
+              }
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+              document.getElementById(context.triggerId)?.focus();
+              context.clearValues();
+            }}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        ) : null}
+        <span aria-hidden="true" className="uk-select__chevron">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path
+              d="m4 6.2 4 4 4-4"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
       </span>
-      <span aria-hidden="true" className="uk-select__chevron">
-        <svg viewBox="0 0 16 16" fill="none">
-          <path
-            d="m4 6.2 4 4 4-4"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </span>
-    </button>
+    </div>
   );
 });
 
 function useSelectPosition(
-  triggerElement: HTMLButtonElement | null,
+  triggerElement: HTMLElement | null,
   floatingRef: { current: HTMLDivElement | null },
 ): SelectPosition | null {
   const [position, setPosition] = useState<SelectPosition | null>(null);
@@ -481,7 +689,7 @@ function SelectLayer({
   const triggerId = context.triggerId;
   const triggerElement = document.getElementById(
     triggerId,
-  ) as HTMLButtonElement | null;
+  ) as HTMLElement | null;
   const floatingRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion() ?? false;
   const isPresent = useIsPresent();
@@ -589,9 +797,11 @@ function SelectLayer({
                   id={`${context.contentId}-option-${index}`}
                   role="option"
                   aria-disabled={option.disabled || undefined}
-                  aria-selected={option.value === context.value}
+                  aria-selected={context.values.includes(option.value)}
                   data-disabled={option.disabled || undefined}
-                  data-selected={option.value === context.value || undefined}
+                  data-selected={
+                    context.values.includes(option.value) || undefined
+                  }
                   data-active={index === context.activeIndex || undefined}
                   className="uk-select__option"
                   onPointerEnter={(event: ReactPointerEvent<HTMLLIElement>) => {
@@ -636,14 +846,23 @@ function SelectLayer({
 }
 
 /** Select 单控件：受控/非受控选择、键盘搜索语义由内部共享。 */
-const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select(
+type SelectInternalProps = SelectBaseProps & {
+  multiple?: boolean;
+  value?: string | ReadonlyArray<string> | null;
+  defaultValue?: string | ReadonlyArray<string> | null;
+  onValueChange?: (value: string | Array<string>) => void;
+};
+
+const Select = forwardRef<HTMLDivElement, SelectInternalProps>(function Select(
   {
     options,
+    multiple,
     value,
     defaultValue,
     onValueChange,
     placeholder,
     size = "md",
+    clear,
     disabled,
     invalid,
     emptyText = "暂无可选项",
@@ -655,6 +874,7 @@ const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select(
   return (
     <SelectRoot
       options={options}
+      multiple={multiple}
       value={value}
       defaultValue={defaultValue}
       onValueChange={onValueChange}
@@ -663,6 +883,8 @@ const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select(
         {...rest}
         ref={ref}
         placeholder={placeholder}
+        size={size}
+        clear={clear}
         disabled={disabled}
         aria-invalid={invalid || undefined}
         data-size={size}
@@ -671,7 +893,14 @@ const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select(
       <SelectPresence emptyText={emptyText} />
     </SelectRoot>
   );
-});
+}) as {
+  (
+    props: SelectSingleProps & RefAttributes<HTMLDivElement>,
+  ): ReactElement | null;
+  (
+    props: SelectMultipleProps & RefAttributes<HTMLDivElement>,
+  ): ReactElement | null;
+};
 
 function SelectPresence({ emptyText }: { emptyText: string }): ReactElement {
   const context = useSelectContext("Select.Content");
