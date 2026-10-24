@@ -271,6 +271,26 @@ describe("Select", () => {
 });
 
 describe("Select nested options", () => {
+  it("restores the selected leaf's submenu when reopening", async () => {
+    render(
+      <Select
+        options={nestedOptions}
+        defaultValue="guangzhou"
+        aria-label="区域"
+      />,
+    );
+    const trigger = screen.getByRole("combobox", { name: "区域" });
+
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    });
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("listbox")).toHaveLength(2);
+      expect(screen.getByRole("option", { name: "广州" })).toBeTruthy();
+    });
+  });
+
   it("gives exact selected leaves a selected background", async () => {
     render(
       <Select
@@ -293,36 +313,6 @@ describe("Select nested options", () => {
           .getAttribute("data-selected"),
       ).toBe("true");
     });
-  });
-
-  it("does not restore a stale submenu when reopening", async () => {
-    render(
-      <Select
-        options={nestedOptions}
-        defaultValue="shanghai"
-        aria-label="区域"
-      />,
-    );
-    const trigger = screen.getByRole("combobox", { name: "区域" });
-
-    act(() => {
-      fireEvent.keyDown(trigger, { key: "ArrowDown" });
-    });
-    fireEvent.pointerEnter(screen.getByRole("option", { name: "华东" }));
-
-    await waitFor(() => {
-      expect(screen.getAllByRole("listbox")).toHaveLength(2);
-    });
-
-    act(() => {
-      fireEvent.keyDown(trigger, { key: "Escape" });
-    });
-    act(() => {
-      fireEvent.keyDown(trigger, { key: "ArrowDown" });
-    });
-
-    expect(screen.getAllByRole("listbox")).toHaveLength(1);
-    expect(document.querySelectorAll(".uk-select__submenu")).toHaveLength(0);
   });
 
   it("keeps one submenu open while moving between sibling parents", async () => {

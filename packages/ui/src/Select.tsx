@@ -914,50 +914,79 @@ function SelectLayer({
         return previous;
       }
 
-      const keepLevel = node.hasChildren ? node.depth + 1 : node.depth;
-      const next = previous.filter((submenu) => submenu.level <= keepLevel);
+      const ancestorIndexes: Array<number> = [];
+      let ancestor: number | null = node.hasChildren
+        ? (context.optionNodes[node.index]?.parentIndex ?? null)
+        : node.parentIndex;
 
-      if (!node.hasChildren) {
-        return next.length === previous.length ? previous : next;
+      while (ancestor != null) {
+        ancestorIndexes.unshift(ancestor);
+        ancestor = context.optionNodes[ancestor]?.parentIndex ?? null;
       }
 
-      const parentElement = optionNodeRefs.current.get(node.index);
+      const targetParentIndexes = node.hasChildren
+        ? [...ancestorIndexes, node.index]
+        : ancestorIndexes;
+      const lastParentIndex =
+        targetParentIndexes[targetParentIndexes.length - 1];
+      const deepestLevel =
+        lastParentIndex == null
+          ? 0
+          : (context.optionNodes[lastParentIndex]?.depth ?? 0) + 1;
+      let next = previous.filter((submenu) => submenu.level <= deepestLevel);
+      let changed = next.length !== previous.length;
 
-      if (!parentElement) {
-        return next;
-      }
+      for (const parentIndex of targetParentIndexes) {
+        const parentNode = context.optionNodes[parentIndex];
 
-      const parentRect = parentElement.getBoundingClientRect();
-      const estimatedWidth = 224;
-      const flipLeft =
-        parentRect.right + estimatedWidth + 14 > window.innerWidth;
-      const left = flipLeft
-        ? parentRect.left - estimatedWidth - 6
-        : parentRect.right + 6;
-      const top = clamp(parentRect.top - 6, 8, window.innerHeight - 8);
-      const existing = next.find((submenu) => submenu.level === keepLevel);
-
-      if (existing?.parentIndex === node.index) {
-        if (existing.left === left && existing.top === top) {
-          return previous;
+        if (!parentNode) {
+          continue;
         }
 
-        return [
-          ...next.filter((submenu) => submenu.level !== keepLevel),
-          { ...existing, left, top },
+        const level = parentNode.depth + 1;
+        const parentElement = optionNodeRefs.current.get(parentIndex);
+
+        if (!parentElement) {
+          continue;
+        }
+
+        const parentRect = parentElement.getBoundingClientRect();
+        const estimatedWidth = 224;
+        const flipLeft =
+          parentRect.right + estimatedWidth + 14 > window.innerWidth;
+        const left = flipLeft
+          ? parentRect.left - estimatedWidth - 6
+          : parentRect.right + 6;
+        const top = clamp(parentRect.top - 6, 8, window.innerHeight - 8);
+        const existing = next.find((submenu) => submenu.level === level);
+
+        if (existing?.parentIndex === parentIndex) {
+          if (existing.left === left && existing.top === top) {
+            continue;
+          }
+
+          next = [
+            ...next.filter((submenu) => submenu.level !== level),
+            { ...existing, left, top },
+          ];
+          changed = true;
+          continue;
+        }
+
+        next = [
+          ...next.filter((submenu) => submenu.level !== level),
+          {
+            session: submenuSession,
+            level,
+            parentIndex,
+            left,
+            top,
+          },
         ];
+        changed = true;
       }
 
-      return [
-        ...next.filter((submenu) => submenu.level !== keepLevel),
-        {
-          session: submenuSession,
-          level: keepLevel,
-          parentIndex: node.index,
-          left,
-          top,
-        },
-      ];
+      return changed ? next : previous;
     });
   }, [
     context.activeIndex,
