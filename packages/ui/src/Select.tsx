@@ -397,7 +397,17 @@ const SelectTrigger = forwardRef<
       <span className="uk-select__value">
         {selectedOption?.label ?? context.value ?? placeholder}
       </span>
-      <span aria-hidden="true" className="uk-select__chevron" />
+      <span aria-hidden="true" className="uk-select__chevron">
+        <svg viewBox="0 0 16 16" fill="none">
+          <path
+            d="m4 6.2 4 4 4-4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
     </button>
   );
 });

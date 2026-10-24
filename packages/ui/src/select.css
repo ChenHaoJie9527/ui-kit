@@ -75,24 +75,10 @@
     transition: transform var(--uk-duration-base) var(--uk-ease-out);
   }
 
-  .uk-select__chevron::before,
-  .uk-select__chevron::after {
-    content: "";
-    position: absolute;
-    top: 40%;
-    width: 0.4375rem;
-    height: 1px;
-    background: currentColor;
-  }
-
-  .uk-select__chevron::before {
-    left: 0;
-    transform: rotate(45deg);
-  }
-
-  .uk-select__chevron::after {
-    right: 0;
-    transform: rotate(-45deg);
+  .uk-select__chevron svg {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 
   .uk-select__trigger[aria-expanded="true"] .uk-select__chevron {
