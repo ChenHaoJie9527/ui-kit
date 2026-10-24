@@ -1,5 +1,11 @@
 # seam-react
 
+## 0.9.0
+
+### Minor Changes
+
+- 108ee51: 为 Select 增加 multiple 多选与 clear 一键清空，支持 Tag 选择与移除、键盘连续选择，并保留键盘搜索、弹出层定位与空态。
+
 ## 0.8.0
 
 ### Minor Changes
