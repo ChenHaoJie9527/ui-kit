@@ -32,6 +32,7 @@ import {
   DISCLOSURE_TRANSITION,
   INDICATOR_SPRING,
   REDUCED_MOTION_TRANSITION,
+  SELECT_SUBMENU_TRANSITION,
   TAG_TRANSITION,
 } from "./motion";
 import { cx } from "./utils/cx";
@@ -45,6 +46,8 @@ export interface SelectOption {
   label?: ReactNode;
   /** 是否禁止选择该项。 */
   disabled?: boolean;
+  /** 子选项；提供 children 的节点只作为分组节点，不提交 value。 */
+  children?: Array<SelectOption>;
 }
 
 interface SelectBaseProps extends Omit<
@@ -63,6 +66,10 @@ interface SelectBaseProps extends Omit<
   emptyText?: string;
   /** 标记选择值无效，使用共享 invalid 样式。 */
   invalid?: boolean;
+  /** 标记选项数据正在加载；请求由调用方管理。 */
+  loading?: boolean;
+  /** loading 时的提示文本。 */
+  loadingText?: string;
   /** 是否显示一键清空按钮。 */
   clear?: boolean;
 }
@@ -109,6 +116,16 @@ interface SelectContextValue {
   triggerId: string;
   contentId: string;
   options: Array<SelectOption>;
+  optionNodes: Array<SelectOptionNode>;
+  loading: boolean;
+}
+
+interface SelectOptionNode {
+  option: SelectOption;
+  index: number;
+  parentIndex: number | null;
+  depth: number;
+  hasChildren: boolean;
 }
 
 const SelectContext = createContext<SelectContextValue | null>(null);
@@ -146,6 +163,14 @@ interface SelectPosition {
   side: "top" | "bottom";
 }
 
+interface SelectSubmenu {
+  session: number;
+  level: number;
+  parentIndex: number;
+  left: number;
+  top: number;
+}
+
 function clamp(value: number, min: number, max: number) {
   if (max < min) {
     return min;
@@ -169,9 +194,70 @@ function transformOrigin(
   return side === "bottom" ? "center top" : "center bottom";
 }
 
+function flattenSelectOptions(
+  options: Array<SelectOption>,
+  parentIndex: number | null = null,
+  depth = 0,
+): Array<SelectOptionNode> {
+  let index = 0;
+
+  function flatten(
+    currentOptions: Array<SelectOption>,
+    currentParentIndex: number | null,
+    currentDepth: number,
+  ): Array<SelectOptionNode> {
+    return currentOptions.flatMap((option) => {
+      const children = option.children ?? [];
+      const node: SelectOptionNode = {
+        option,
+        index,
+        parentIndex: currentParentIndex,
+        depth: currentDepth,
+        hasChildren: children.length > 0,
+      };
+
+      index += 1;
+
+      return [node, ...flatten(children, node.index, currentDepth + 1)];
+    });
+  }
+
+  return flatten(options, parentIndex, depth);
+}
+
+function findSelectOption(
+  options: Array<SelectOption>,
+  value: string,
+): SelectOption | null {
+  for (const option of options) {
+    if (option.value === value) {
+      return option;
+    }
+
+    const child = findSelectOption(option.children ?? [], value);
+
+    if (child) {
+      return child;
+    }
+  }
+
+  return null;
+}
+
+function hasSelectedDescendant(
+  option: SelectOption,
+  values: Array<string>,
+): boolean {
+  return (option.children ?? []).some(
+    (child) =>
+      values.includes(child.value) || hasSelectedDescendant(child, values),
+  );
+}
+
 /** Select 的状态、键盘语义与选项查找根节点。 */
 function SelectRoot({
   options,
+  loading = false,
   value,
   defaultValue = null,
   onValueChange,
@@ -179,6 +265,7 @@ function SelectRoot({
   children,
 }: {
   options: Array<SelectOption>;
+  loading?: boolean;
   value?: string | ReadonlyArray<string> | null;
   defaultValue?: string | ReadonlyArray<string> | null;
   onValueChange?: (value: string | Array<string>) => void;
@@ -196,21 +283,32 @@ function SelectRoot({
     },
   });
   const [open, setOpen] = useState(false);
-  const selectedIndex = options.findIndex(
-    (option) => option.value === values[0],
+  const [previousLoading, setPreviousLoading] = useState(loading);
+
+  if (previousLoading !== loading) {
+    setPreviousLoading(loading);
+
+    if (loading) {
+      setOpen(false);
+    }
+  }
+  const optionNodes = useMemo(() => flattenSelectOptions(options), [options]);
+  const selectedNodeIndex = optionNodes.findIndex(
+    (node) => node.option.value === values[0],
   );
   const [activeIndexOverride, setActiveIndexOverride] = useState<number | null>(
     null,
   );
-  const activeIndex = activeIndexOverride ?? Math.max(selectedIndex, 0);
+  const activeIndex = activeIndexOverride ?? Math.max(selectedNodeIndex, 0);
   const setActiveIndex = useCallback((index: number) => {
     setActiveIndexOverride(index);
   }, []);
 
   const commit = useEventCallback((index: number) => {
-    const option = options[index];
+    const node = optionNodes[index];
+    const option = node?.option;
 
-    if (!option || option.disabled) {
+    if (loading || !option || option.disabled || node?.hasChildren) {
       return;
     }
 
@@ -258,6 +356,8 @@ function SelectRoot({
       triggerId: `${baseId}-trigger`,
       contentId: `${baseId}-content`,
       options,
+      optionNodes,
+      loading,
     }),
     [
       activeIndex,
@@ -266,6 +366,8 @@ function SelectRoot({
       multiple,
       open,
       options,
+      optionNodes,
+      loading,
       removeValue,
       clearValues,
       setActiveIndex,
@@ -279,12 +381,12 @@ function SelectRoot({
 }
 
 function moveActiveIndex(
-  options: Array<SelectOption>,
+  optionNodes: Array<SelectOptionNode>,
   activeIndex: number,
   direction: 1 | -1,
   wrap = true,
 ) {
-  const total = options.length;
+  const total = optionNodes.length;
 
   if (total === 0) {
     return -1;
@@ -299,12 +401,39 @@ function moveActiveIndex(
       break;
     }
 
-    if (!options[candidate]?.disabled) {
+    if (!optionNodes[candidate]?.option.disabled) {
       return candidate;
     }
   }
 
   return activeIndex;
+}
+
+function firstChildNodeIndex(
+  optionNodes: Array<SelectOptionNode>,
+  parentIndex: number,
+) {
+  const parentNode = optionNodes[parentIndex];
+
+  if (!parentNode?.hasChildren) {
+    return parentIndex;
+  }
+
+  for (
+    let index = parentIndex + 1;
+    index < optionNodes.length &&
+    (optionNodes[index]?.depth ?? 0) > parentNode.depth;
+    index += 1
+  ) {
+    if (
+      optionNodes[index]?.depth === parentNode.depth + 1 &&
+      !optionNodes[index]?.option.disabled
+    ) {
+      return index;
+    }
+  }
+
+  return parentIndex;
 }
 
 /** 渲染触发器并合并调用方的事件、aria 与 ref。 */
@@ -314,6 +443,7 @@ const SelectTrigger = forwardRef<
     placeholder?: string;
     size?: SelectSize;
     clear?: boolean;
+    loadingText?: string;
     disabled?: boolean;
   }
 >(function SelectTrigger(
@@ -322,6 +452,7 @@ const SelectTrigger = forwardRef<
     placeholder = "请选择",
     size = "md",
     clear = false,
+    loadingText = "加载中...",
     disabled,
     onPointerDown,
     onKeyDown,
@@ -332,7 +463,7 @@ const SelectTrigger = forwardRef<
   const context = useSelectContext("Select.Trigger");
   const reduceMotion = useReducedMotion() ?? false;
   const selectedOptions = context.values.map((value) => {
-    const option = context.options.find((item) => item.value === value);
+    const option = findSelectOption(context.options, value);
 
     return option ?? { value, label: value };
   });
@@ -352,6 +483,10 @@ const SelectTrigger = forwardRef<
   useEffect(() => clearTypeahead, [clearTypeahead]);
 
   const selectByTypeahead = useEventCallback((character: string) => {
+    if (context.loading) {
+      return;
+    }
+
     const state = typeaheadRef.current;
 
     if (state.timer) {
@@ -361,10 +496,12 @@ const SelectTrigger = forwardRef<
     state.search += character.toLowerCase();
     state.timer = setTimeout(clearTypeahead, 500);
 
-    const labels = context.options.map((option) => {
-      const label = option.label;
+    const labels = context.optionNodes.map((node) => {
+      const label = node.option.label;
 
-      return (typeof label === "string" ? label : option.value).toLowerCase();
+      return (
+        typeof label === "string" ? label : node.option.value
+      ).toLowerCase();
     });
     const startIndex =
       context.open && context.activeIndex >= 0 ? context.activeIndex + 1 : 0;
@@ -374,12 +511,12 @@ const SelectTrigger = forwardRef<
     );
     const exact = orderedIndexes.find(
       (index) =>
-        !context.options[index]?.disabled &&
+        !context.optionNodes[index]?.option.disabled &&
         labels[index]?.startsWith(state.search),
     );
     const fuzzy = orderedIndexes.find(
       (index) =>
-        !context.options[index]?.disabled &&
+        !context.optionNodes[index]?.option.disabled &&
         labels[index]?.includes(state.search),
     );
     const match = exact ?? fuzzy;
@@ -390,7 +527,7 @@ const SelectTrigger = forwardRef<
 
     if (context.open) {
       context.setActiveIndex(match);
-    } else if (context.multiple) {
+    } else if (context.multiple || context.optionNodes[match]?.hasChildren) {
       context.setActiveIndex(match);
       context.setOpen(true);
     } else {
@@ -400,7 +537,7 @@ const SelectTrigger = forwardRef<
 
   const handlePointerDown = useEventCallback(
     (_event: ReactPointerEvent<HTMLDivElement>) => {
-      if (disabled) {
+      if (disabled || context.loading) {
         return;
       }
 
@@ -410,7 +547,7 @@ const SelectTrigger = forwardRef<
 
   const handleKeyDown = useEventCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
-      if (disabled) {
+      if (disabled || context.loading) {
         return;
       }
 
@@ -440,11 +577,13 @@ const SelectTrigger = forwardRef<
         if (["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) {
           event.preventDefault();
           context.setOpen(true);
-          context.setActiveIndex(
-            context.activeIndex >= 0
-              ? context.activeIndex
-              : moveActiveIndex(context.options, -1, 1),
-          );
+          if (!context.loading) {
+            context.setActiveIndex(
+              context.activeIndex >= 0
+                ? context.activeIndex
+                : moveActiveIndex(context.optionNodes, -1, 1),
+            );
+          }
         }
 
         return;
@@ -456,17 +595,45 @@ const SelectTrigger = forwardRef<
         return;
       }
 
+      const activeNode = context.optionNodes[context.activeIndex];
+
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
+        if (activeNode?.hasChildren) {
+          context.setActiveIndex(
+            firstChildNodeIndex(context.optionNodes, context.activeIndex),
+          );
+          event.currentTarget.focus();
+          return;
+        }
+
         context.commit(context.activeIndex);
         event.currentTarget.focus();
+        return;
+      }
+
+      if (event.key === "ArrowRight" && activeNode?.hasChildren) {
+        event.preventDefault();
+        context.setActiveIndex(
+          firstChildNodeIndex(context.optionNodes, context.activeIndex),
+        );
+        return;
+      }
+
+      if (event.key === "ArrowLeft" && activeNode?.parentIndex != null) {
+        event.preventDefault();
+        context.setActiveIndex(activeNode.parentIndex);
+        return;
+      }
+
+      if (context.loading) {
         return;
       }
 
       if (event.key === "ArrowDown") {
         event.preventDefault();
         context.setActiveIndex(
-          moveActiveIndex(context.options, context.activeIndex, 1),
+          moveActiveIndex(context.optionNodes, context.activeIndex, 1),
         );
         return;
       }
@@ -474,7 +641,7 @@ const SelectTrigger = forwardRef<
       if (event.key === "ArrowUp") {
         event.preventDefault();
         context.setActiveIndex(
-          moveActiveIndex(context.options, context.activeIndex, -1),
+          moveActiveIndex(context.optionNodes, context.activeIndex, -1),
         );
         return;
       }
@@ -482,9 +649,9 @@ const SelectTrigger = forwardRef<
       if (event.key === "Home" || event.key === "End") {
         event.preventDefault();
         const direction = event.key === "Home" ? 1 : -1;
-        const start = event.key === "Home" ? -1 : context.options.length;
+        const start = event.key === "Home" ? -1 : context.optionNodes.length;
         context.setActiveIndex(
-          moveActiveIndex(context.options, start, direction, false),
+          moveActiveIndex(context.optionNodes, start, direction, false),
         );
       }
     },
@@ -496,18 +663,20 @@ const SelectTrigger = forwardRef<
       ref={forwardedRef}
       id={context.triggerId}
       role="combobox"
-      tabIndex={disabled ? -1 : 0}
-      aria-disabled={disabled || undefined}
+      tabIndex={disabled || context.loading ? -1 : 0}
+      aria-disabled={disabled || context.loading || undefined}
       aria-expanded={context.open}
+      aria-busy={context.loading || undefined}
       aria-haspopup="listbox"
       aria-controls={context.open ? context.contentId : undefined}
       aria-activedescendant={
-        context.open && context.options[context.activeIndex]
+        context.open && context.optionNodes[context.activeIndex]
           ? `${context.contentId}-option-${context.activeIndex}`
           : undefined
       }
       data-size={size}
       data-multiple={context.multiple || undefined}
+      data-loading={context.loading || undefined}
       className={cx("uk-select__trigger", className)}
       onPointerDown={composeHandler(onPointerDown, handlePointerDown)}
       onKeyDown={composeHandler(onKeyDown, handleKeyDown)}
@@ -573,7 +742,7 @@ const SelectTrigger = forwardRef<
         </span>
       )}
       <span className="uk-select__actions">
-        {clear && !disabled && context.values.length > 0 ? (
+        {clear && !disabled && !context.loading && context.values.length > 0 ? (
           <button
             type="button"
             className="uk-select__clear"
@@ -604,18 +773,35 @@ const SelectTrigger = forwardRef<
             </svg>
           </button>
         ) : null}
-        <span aria-hidden="true" className="uk-select__chevron">
-          <svg viewBox="0 0 16 16" fill="none">
-            <path
-              d="m4 6.2 4 4 4-4"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+        <span
+          aria-hidden="true"
+          className={cx(
+            "uk-select__chevron",
+            context.loading && "uk-select__spinner",
+          )}
+        >
+          {context.loading ? null : (
+            <svg viewBox="0 0 16 16" fill="none">
+              <path
+                d="m4 6.2 4 4 4-4"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
         </span>
       </span>
+      {context.loading ? (
+        <span
+          className="uk-select__loading-status"
+          role="status"
+          aria-live="polite"
+        >
+          {loadingText}
+        </span>
+      ) : null}
     </div>
   );
 });
@@ -699,6 +885,89 @@ function SelectLayer({
     getClientSnapshot,
     getServerSnapshot,
   );
+  const [submenus, setSubmenus] = useState<Array<SelectSubmenu>>([]);
+  const [submenuSession, setSubmenuSession] = useState(0);
+  const optionNodeRefs = useRef(new Map<number, HTMLLIElement>());
+  const submenuRefs = useRef(new Map<number, HTMLDivElement>());
+  const [renderedOpen, setRenderedOpen] = useState(context.open);
+  const [surfaceSettled, setSurfaceSettled] = useState(false);
+
+  if (renderedOpen !== context.open) {
+    setRenderedOpen(context.open);
+    setSurfaceSettled(false);
+
+    if (!context.open) {
+      setSubmenus([]);
+      setSubmenuSession((session) => session + 1);
+    }
+  }
+
+  useEffect(() => {
+    if (!context.open || !position || !surfaceSettled) {
+      return;
+    }
+
+    setSubmenus((previous) => {
+      const node = context.optionNodes[context.activeIndex];
+
+      if (!node) {
+        return previous;
+      }
+
+      const keepLevel = node.hasChildren ? node.depth + 1 : node.depth;
+      const next = previous.filter((submenu) => submenu.level <= keepLevel);
+
+      if (!node.hasChildren) {
+        return next.length === previous.length ? previous : next;
+      }
+
+      const parentElement = optionNodeRefs.current.get(node.index);
+
+      if (!parentElement) {
+        return next;
+      }
+
+      const parentRect = parentElement.getBoundingClientRect();
+      const estimatedWidth = 224;
+      const flipLeft =
+        parentRect.right + estimatedWidth + 14 > window.innerWidth;
+      const left = flipLeft
+        ? parentRect.left - estimatedWidth - 6
+        : parentRect.right + 6;
+      const top = clamp(parentRect.top - 6, 8, window.innerHeight - 8);
+      const existing = next.find((submenu) => submenu.level === keepLevel);
+
+      if (existing?.parentIndex === node.index) {
+        if (existing.left === left && existing.top === top) {
+          return previous;
+        }
+
+        return [
+          ...next.filter((submenu) => submenu.level !== keepLevel),
+          { ...existing, left, top },
+        ];
+      }
+
+      return [
+        ...next.filter((submenu) => submenu.level !== keepLevel),
+        {
+          session: submenuSession,
+          level: keepLevel,
+          parentIndex: node.index,
+          left,
+          top,
+        },
+      ];
+    });
+  }, [
+    context.activeIndex,
+    context.open,
+    context.optionNodes,
+    submenuSession,
+    position,
+    surfaceSettled,
+    setSubmenus,
+  ]);
 
   useEffect(() => {
     if (!context.open) {
@@ -714,7 +983,10 @@ function SelectLayer({
 
       if (
         triggerElement?.contains(target) ||
-        floatingRef.current?.contains(target)
+        floatingRef.current?.contains(target) ||
+        Array.from(submenuRefs.current.values()).some((element) =>
+          element.contains(target),
+        )
       ) {
         return;
       }
@@ -751,96 +1023,208 @@ function SelectLayer({
   const portalContainer =
     triggerElement?.closest<HTMLElement>("dialog") ?? document.body;
 
-  return createPortal(
-    <div
-      ref={floatingRef}
-      className="uk-select"
-      data-side={position?.side ?? "bottom"}
-      data-state={isPresent ? "open" : "closed"}
-      aria-hidden={isPresent ? undefined : true}
-      style={
-        {
-          left: position ? `${position.x}px` : 0,
-          top: position ? `${position.y}px` : 0,
-          "--uk-select-width": `${triggerElement?.offsetWidth ?? 220}px`,
-          visibility: position ? "visible" : "hidden",
-        } as CSSProperties
+  const setOptionNodeRef = useCallback(
+    (index: number, element: HTMLLIElement | null) => {
+      if (element) {
+        optionNodeRefs.current.set(index, element);
+      } else {
+        optionNodeRefs.current.delete(index);
       }
-    >
-      <motion.div
-        className="uk-select__surface"
-        style={{ transformOrigin: transformOrigin(position?.side ?? "bottom") }}
-        initial={
-          reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.97, y: -4 }
+    },
+    [],
+  );
+
+  const renderOptionNode = (node: SelectOptionNode): ReactElement => {
+    const option = node.option;
+    const selected = context.values.includes(option.value);
+    const active = node.index === context.activeIndex;
+
+    return (
+      <li
+        key={option.value}
+        ref={(element) => setOptionNodeRef(node.index, element)}
+        id={`${context.contentId}-option-${node.index}`}
+        role="option"
+        aria-disabled={option.disabled || undefined}
+        aria-selected={selected}
+        data-disabled={option.disabled || undefined}
+        data-selected={
+          selected || hasSelectedDescendant(option, context.values) || undefined
         }
-        animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
-        exit={
-          reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.97, y: -2 }
-        }
-        transition={
-          reduceMotion ? REDUCED_MOTION_TRANSITION : DISCLOSURE_TRANSITION
+        data-active={active || undefined}
+        data-has-children={node.hasChildren || undefined}
+        data-depth={node.depth}
+        className="uk-select__option"
+        onPointerEnter={(event: ReactPointerEvent<HTMLLIElement>) => {
+          if (event.pointerType === "mouse" && !option.disabled) {
+            context.setActiveIndex(node.index);
+          }
+        }}
+        onClick={(event: ReactMouseEvent<HTMLLIElement>) => {
+          event.stopPropagation();
+
+          if (node.hasChildren) {
+            context.setActiveIndex(
+              firstChildNodeIndex(context.optionNodes, node.index),
+            );
+            return;
+          }
+
+          context.commit(node.index);
+        }}
+      >
+        <AnimatePresence initial={false}>
+          {active ? (
+            <motion.span
+              className="uk-select__option-highlight"
+              data-slot="select-active-highlight"
+              layoutId={`${context.contentId}-active-${node.depth}`}
+              aria-hidden="true"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={reduceMotion ? { duration: 0 } : INDICATOR_SPRING}
+            />
+          ) : null}
+        </AnimatePresence>
+        <span className="uk-select__option-label">
+          {option.label ?? option.value}
+        </span>
+        {node.hasChildren ? (
+          <span aria-hidden="true" className="uk-select__expand">
+            <svg viewBox="0 0 16 16" fill="none">
+              <path
+                d="m6 4 4 4-4 4"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+        ) : (
+          <span aria-hidden="true" className="uk-select__check" />
+        )}
+      </li>
+    );
+  };
+
+  const visibleSubmenus = context.open ? submenus : [];
+
+  return createPortal(
+    <LayoutGroup id={`select-${context.contentId}`}>
+      <div
+        ref={floatingRef}
+        className="uk-select"
+        data-side={position?.side ?? "bottom"}
+        data-state={isPresent ? "open" : "closed"}
+        aria-hidden={isPresent ? undefined : true}
+        style={
+          {
+            left: position ? `${position.x}px` : 0,
+            top: position ? `${position.y}px` : 0,
+            "--uk-select-width": `${triggerElement?.offsetWidth ?? 220}px`,
+            visibility: position ? "visible" : "hidden",
+          } as CSSProperties
         }
       >
-        {context.options.length === 0 ? (
-          <p className="uk-select__empty">{emptyText}</p>
-        ) : (
-          <LayoutGroup id={`select-${context.contentId}`}>
+        <motion.div
+          className="uk-select__surface"
+          style={{
+            transformOrigin: transformOrigin(position?.side ?? "bottom"),
+          }}
+          initial={
+            reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.97, y: -4 }
+          }
+          animate={
+            reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }
+          }
+          exit={
+            reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.97, y: -2 }
+          }
+          transition={
+            reduceMotion ? REDUCED_MOTION_TRANSITION : DISCLOSURE_TRANSITION
+          }
+          onAnimationComplete={() => {
+            if (context.open) {
+              setSurfaceSettled(true);
+            }
+          }}
+        >
+          {context.options.length === 0 ? (
+            <p className="uk-select__empty">{emptyText}</p>
+          ) : (
             <ul
               id={context.contentId}
               className="uk-select__list"
               role="listbox"
               aria-labelledby={triggerId}
+              aria-owns={
+                visibleSubmenus
+                  .map(
+                    (submenu) =>
+                      `${context.contentId}-submenu-${submenu.level}`,
+                  )
+                  .join(" ") || undefined
+              }
             >
-              {context.options.map((option, index) => (
-                <li
-                  key={option.value}
-                  id={`${context.contentId}-option-${index}`}
-                  role="option"
-                  aria-disabled={option.disabled || undefined}
-                  aria-selected={context.values.includes(option.value)}
-                  data-disabled={option.disabled || undefined}
-                  data-selected={
-                    context.values.includes(option.value) || undefined
-                  }
-                  data-active={index === context.activeIndex || undefined}
-                  className="uk-select__option"
-                  onPointerEnter={(event: ReactPointerEvent<HTMLLIElement>) => {
-                    if (event.pointerType === "mouse" && !option.disabled) {
-                      context.setActiveIndex(index);
-                    }
-                  }}
-                  onClick={(event: ReactMouseEvent<HTMLLIElement>) => {
-                    event.stopPropagation();
-                    context.commit(index);
-                  }}
-                >
-                  <AnimatePresence initial={false}>
-                    {index === context.activeIndex ? (
-                      <motion.span
-                        className="uk-select__option-highlight"
-                        data-slot="select-active-highlight"
-                        layoutId={`${context.contentId}-active`}
-                        aria-hidden="true"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={
-                          reduceMotion ? { duration: 0 } : INDICATOR_SPRING
-                        }
-                      />
-                    ) : null}
-                  </AnimatePresence>
-                  <span className="uk-select__option-label">
-                    {option.label ?? option.value}
-                  </span>
-                  <span aria-hidden="true" className="uk-select__check" />
-                </li>
-              ))}
+              {context.optionNodes
+                .filter((node) => node.depth === 0)
+                .map(renderOptionNode)}
             </ul>
-          </LayoutGroup>
-        )}
-      </motion.div>
-    </div>,
+          )}
+        </motion.div>
+      </div>
+      {visibleSubmenus.map((submenu) => {
+        const submenuOptions = context.optionNodes.filter(
+          (node) => node.parentIndex === submenu.parentIndex,
+        );
+
+        return (
+          <motion.div
+            key={`${submenu.session}-${submenu.level}`}
+            ref={(element) => {
+              if (element) {
+                submenuRefs.current.set(submenu.level, element);
+              } else {
+                submenuRefs.current.delete(submenu.level);
+              }
+            }}
+            className="uk-select__submenu"
+            data-select-owner={context.contentId}
+            data-state={isPresent ? "open" : "closed"}
+            layout
+            initial={{
+              opacity: 0,
+              x: -34,
+              scaleX: 0.18,
+              scaleY: 0.36,
+            }}
+            animate={{ opacity: 1, x: 0, scaleX: 1, scaleY: 1 }}
+            exit={{ opacity: 0, x: -16, scaleX: 0.28, scaleY: 0.42 }}
+            style={{
+              left: submenu.left,
+              top: submenu.top,
+              transformOrigin: "left center",
+            }}
+            transition={
+              reduceMotion
+                ? REDUCED_MOTION_TRANSITION
+                : SELECT_SUBMENU_TRANSITION
+            }
+          >
+            <ul
+              id={`${context.contentId}-submenu-${submenu.level}`}
+              className="uk-select__list"
+              role="listbox"
+              aria-labelledby={triggerId}
+            >
+              {submenuOptions.map(renderOptionNode)}
+            </ul>
+          </motion.div>
+        );
+      })}
+    </LayoutGroup>,
     portalContainer,
   );
 }
@@ -866,6 +1250,8 @@ const Select = forwardRef<HTMLDivElement, SelectInternalProps>(function Select(
     disabled,
     invalid,
     emptyText = "暂无可选项",
+    loading = false,
+    loadingText = "加载中...",
     className,
     ...rest
   },
@@ -874,6 +1260,7 @@ const Select = forwardRef<HTMLDivElement, SelectInternalProps>(function Select(
   return (
     <SelectRoot
       options={options}
+      loading={loading}
       multiple={multiple}
       value={value}
       defaultValue={defaultValue}
@@ -885,6 +1272,7 @@ const Select = forwardRef<HTMLDivElement, SelectInternalProps>(function Select(
         placeholder={placeholder}
         size={size}
         clear={clear}
+        loadingText={loadingText}
         disabled={disabled}
         aria-invalid={invalid || undefined}
         data-size={size}

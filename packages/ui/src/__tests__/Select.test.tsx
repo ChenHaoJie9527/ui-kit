@@ -10,6 +10,25 @@ const options = [
   { value: "svelte", label: "Svelte" },
 ];
 
+const nestedOptions = [
+  {
+    value: "east",
+    label: "华东",
+    children: [
+      { value: "shanghai", label: "上海" },
+      { value: "hangzhou", label: "杭州" },
+    ],
+  },
+  {
+    value: "south",
+    label: "华南",
+    children: [
+      { value: "guangzhou", label: "广州" },
+      { value: "shenzhen", label: "深圳" },
+    ],
+  },
+];
+
 function openListbox() {
   const trigger = screen.getByRole("combobox", { name: "框架" });
 
@@ -211,6 +230,159 @@ describe("Select", () => {
 
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(screen.getByText("暂无数据")).toBeTruthy();
+  });
+
+  it("shows loading on the trigger and blocks interactions", () => {
+    const onValueChange = vi.fn<(value: string) => void>();
+    render(
+      <Select
+        loading
+        options={options}
+        onValueChange={onValueChange}
+        aria-label="框架"
+      />,
+    );
+    const trigger = screen.getByRole("combobox", { name: "框架" });
+
+    expect(trigger.getAttribute("aria-busy")).toBe("true");
+    expect(trigger.getAttribute("aria-disabled")).toBe("true");
+    expect(trigger.dataset.loading).toBe("true");
+    expect(trigger.querySelector(".uk-select__spinner")).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toBe("加载中...");
+
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "Enter" });
+    });
+    fireEvent.pointerDown(trigger);
+
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(onValueChange).not.toHaveBeenCalled();
+  });
+
+  it("closes the listbox when loading begins", () => {
+    const { rerender } = render(<Select options={options} aria-label="框架" />);
+    const trigger = openListbox();
+
+    rerender(<Select loading options={options} aria-label="框架" />);
+
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+  });
+});
+
+describe("Select nested options", () => {
+  it("gives exact selected leaves a selected background", async () => {
+    render(
+      <Select
+        options={nestedOptions}
+        defaultValue="shanghai"
+        aria-label="区域"
+      />,
+    );
+    const trigger = screen.getByRole("combobox", { name: "区域" });
+
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    });
+    fireEvent.pointerEnter(screen.getByRole("option", { name: "华东" }));
+
+    await waitFor(() => {
+      expect(
+        screen
+          .getByRole("option", { name: "上海" })
+          .getAttribute("data-selected"),
+      ).toBe("true");
+    });
+  });
+
+  it("does not restore a stale submenu when reopening", async () => {
+    render(
+      <Select
+        options={nestedOptions}
+        defaultValue="shanghai"
+        aria-label="区域"
+      />,
+    );
+    const trigger = screen.getByRole("combobox", { name: "区域" });
+
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    });
+    fireEvent.pointerEnter(screen.getByRole("option", { name: "华东" }));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("listbox")).toHaveLength(2);
+    });
+
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "Escape" });
+    });
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    });
+
+    expect(screen.getAllByRole("listbox")).toHaveLength(1);
+    expect(document.querySelectorAll(".uk-select__submenu")).toHaveLength(0);
+  });
+
+  it("keeps one submenu open while moving between sibling parents", async () => {
+    render(<Select options={nestedOptions} aria-label="区域" />);
+    const trigger = screen.getByRole("combobox", { name: "区域" });
+
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    });
+
+    fireEvent.pointerEnter(screen.getByRole("option", { name: "华东" }));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("listbox")).toHaveLength(2);
+      expect(screen.getByRole("option", { name: "上海" })).toBeTruthy();
+    });
+
+    fireEvent.pointerEnter(screen.getByRole("option", { name: "华南" }));
+
+    expect(screen.getAllByRole("listbox")).toHaveLength(2);
+    expect(screen.getByRole("option", { name: "广州" })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: "上海" })).toBeNull();
+  });
+
+  it("commits only leaf options with pointer and keyboard navigation", () => {
+    const onValueChange = vi.fn<(value: string) => void>();
+    render(
+      <Select
+        options={nestedOptions}
+        onValueChange={onValueChange}
+        aria-label="区域"
+      />,
+    );
+    const trigger = screen.getByRole("combobox", { name: "区域" });
+
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    });
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "ArrowRight" });
+    });
+    expect(trigger.getAttribute("aria-activedescendant")).toContain(
+      "-option-1",
+    );
+
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "ArrowLeft" });
+    });
+    expect(trigger.getAttribute("aria-activedescendant")).toContain(
+      "-option-0",
+    );
+
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "ArrowRight" });
+    });
+    act(() => {
+      fireEvent.keyDown(trigger, { key: "Enter" });
+    });
+
+    expect(onValueChange).toHaveBeenCalledWith("shanghai");
   });
 });
 

@@ -27,6 +27,19 @@ export const DISCLOSURE_TRANSITION: Transition = {
 };
 
 /**
+ * Select submenus stay mounted while sibling parents are hovered. The short
+ * layout transition keeps the shared panel moving with the pointer instead of
+ * replacing one menu with another.
+ */
+export const SELECT_SUBMENU_TRANSITION: Transition = {
+  layout: { type: "spring", bounce: 0.04, duration: 0.22 },
+  opacity: { duration: 0.12, ease: EASE_OUT },
+  x: { type: "spring", bounce: 0.08, duration: 0.26 },
+  scaleX: { type: "spring", bounce: 0.08, duration: 0.26 },
+  scaleY: { type: "spring", bounce: 0.08, duration: 0.26 },
+};
+
+/**
  * Select tags are occasional state indicators. A short re-targeting move
  * keeps the selected queue readable without delaying repeated choices.
  */
