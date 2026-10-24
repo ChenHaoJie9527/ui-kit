@@ -41,7 +41,7 @@ echo "feat(ui): 新增 Badge 组件" | pnpm exec commitlint
 
 提交只做校验，不产生版本。版本由 Changesets 管理：
 
-1. 对 `packages/*` 有用户可见改动时，运行 `pnpm changeset`，选择包与升级类型（patch / minor / major），写一句说明；
+1. 对 `packages/*` 有用户可见改动时，运行 `pnpm changeset`，选择包与升级类型，写一句说明。组件和 Hook 的常规迭代默认使用 patch（+0.0.1）；只有破坏性变更或需要明确标记里程碑的系统性升级才使用 minor / major；
 2. 提交并合并到 `main` 后，`release` 工作流会自动创建一个 “Version Packages” PR（含版本号与 CHANGELOG）；
 3. 合并该 PR 后，`release` 工作流通过 npm Trusted Publishing 自动发布
    `seam-hooks` → `seam-react`，不需要保存 npm token。
