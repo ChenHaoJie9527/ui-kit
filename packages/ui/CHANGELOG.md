@@ -1,5 +1,12 @@
 # seam-react
 
+## 0.9.1
+
+### Patch Changes
+
+- 7ea48d0: 为 Select 增加 loading 外部加载状态与 loadingText；加载期间触发器进入禁用态、显示 spinner、暴露 aria-busy 并阻止交互。
+- 7ea48d0: 为 Select 增加递归 children 层级选项；子菜单从父级右侧平滑延伸，相邻父级切换时复用同一面板。只有叶子选项触发选择。
+
 ## 0.9.0
 
 ### Minor Changes

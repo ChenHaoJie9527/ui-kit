@@ -1,6 +1,6 @@
 {
   "name": "seam-react",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "基于 seam-hooks 与 Motion 的 Fluid React 组件库",
   "keywords": [
     "component-library",
