@@ -77,6 +77,8 @@ export type ToastIcons = Partial<Record<ToastStatus, ReactNode>>;
 export type ToastStackProps = Omit<HTMLMotionProps<"ol">, "children"> & {
   toasts: Toast[];
   onDismiss?: (id: string) => void;
+  onPauseToast?: (id: string) => void;
+  onResumeToast?: (id: string) => void;
   position?: ToastPosition;
   placement?: ToastPlacement;
   portal?: boolean;
@@ -119,13 +121,15 @@ const STATUS_ICONS: Record<ToastStatus, ReactNode> = {
   ),
 };
 
+type ManagedToast = Toast & { pausedAt?: number };
+
 export function useToast({
   initialToasts = [],
   defaultDuration = 4200,
   limit,
 }: UseToastOptions = {}) {
   const timersRef = useRef<Map<string, number>>(new Map());
-  const [toasts, setToasts] = useState<Toast[]>(() =>
+  const [toasts, setToasts] = useState<ManagedToast[]>(() =>
     initialToasts.map((toast) => createToast(toast, defaultDuration)),
   );
 
@@ -167,6 +171,24 @@ export function useToast({
     );
   }, []);
 
+  const pauseToast = useCallback((id: string) => {
+    setToasts((current) =>
+      current.map((toast) =>
+        toast.id === id ? { ...toast, pausedAt: Date.now() } : toast,
+      ),
+    );
+  }, []);
+
+  const resumeToast = useCallback((id: string) => {
+    setToasts((current) =>
+      current.map((toast) =>
+        toast.id === id
+          ? { ...toast, pausedAt: undefined, createdAt: Date.now() }
+          : toast,
+      ),
+    );
+  }, []);
+
   useEffect(() => {
     const timers = timersRef.current;
 
@@ -181,7 +203,7 @@ export function useToast({
       const duration = toast.duration ?? defaultDuration;
       const previousTimer = timers.get(toast.id);
 
-      if (duration <= 0) {
+      if (duration <= 0 || toast.pausedAt !== undefined) {
         if (previousTimer !== undefined) {
           window.clearTimeout(previousTimer);
           timers.delete(toast.id);
@@ -216,14 +238,32 @@ export function useToast({
   }, []);
 
   return useMemo(
-    () => ({ toasts, showToast, updateToast, dismissToast, clearToasts }),
-    [clearToasts, dismissToast, showToast, toasts, updateToast],
+    () => ({
+      toasts,
+      showToast,
+      updateToast,
+      dismissToast,
+      clearToasts,
+      pauseToast,
+      resumeToast,
+    }),
+    [
+      clearToasts,
+      dismissToast,
+      pauseToast,
+      resumeToast,
+      showToast,
+      toasts,
+      updateToast,
+    ],
   );
 }
 
 export function ToastStack({
   toasts,
   onDismiss,
+  onPauseToast,
+  onResumeToast,
   position = "bottom-right",
   placement = "fixed",
   portal,
@@ -259,6 +299,8 @@ export function ToastStack({
             key={toast.id}
             toast={toast}
             onDismiss={onDismiss}
+            onPauseToast={onPauseToast}
+            onResumeToast={onResumeToast}
             classNames={classNames}
             icons={icons}
             renderToast={renderToast}
@@ -282,12 +324,16 @@ export function ToastStack({
 const ToastItem = memo(function ToastItem({
   toast,
   onDismiss,
+  onPauseToast,
+  onResumeToast,
   classNames,
   icons,
   renderToast,
 }: {
   toast: Toast;
   onDismiss?: (id: string) => void;
+  onPauseToast?: (id: string) => void;
+  onResumeToast?: (id: string) => void;
   classNames?: ToastClassNames;
   icons?: ToastIcons;
   renderToast?: (toast: Toast) => ReactNode;
@@ -325,6 +371,8 @@ const ToastItem = memo(function ToastItem({
           onDismiss(toast.id);
         }
       }}
+      onPointerEnter={() => onPauseToast?.(toast.id)}
+      onPointerLeave={() => onResumeToast?.(toast.id)}
     >
       <div className={cx("uk-toast__surface", classNames?.surface)}>
         {renderToast ? renderToast(toast) : null}

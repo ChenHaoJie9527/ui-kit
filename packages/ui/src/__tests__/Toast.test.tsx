@@ -114,6 +114,37 @@ describe("useToast", () => {
     });
     expect(result.current.toasts).toHaveLength(1);
   });
+
+  it("pauses auto-dismiss while hovering and resumes on leave", () => {
+    const { result } = renderToastHook({ defaultDuration: 1000 });
+
+    act(() => {
+      result.current.showToast({ id: "hover", title: "Hover" });
+    });
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
+    act(() => {
+      result.current.pauseToast("hover");
+    });
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+    expect(result.current.toasts).toHaveLength(1);
+
+    act(() => {
+      result.current.resumeToast("hover");
+    });
+    act(() => {
+      vi.advanceTimersByTime(299);
+    });
+    expect(result.current.toasts).toHaveLength(1);
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(result.current.toasts).toEqual([]);
+  });
 });
 
 describe("ToastStack", () => {
@@ -241,5 +272,27 @@ describe("ToastStack", () => {
     expect(
       screen.getByRole("button", { name: "Dismiss notification" }),
     ).toBeTruthy();
+  });
+
+  it("pauses and resumes a toast on pointer movement", () => {
+    const onPauseToast = vi.fn<(id: string) => void>();
+    const onResumeToast = vi.fn<(id: string) => void>();
+
+    render(
+      <ToastStack
+        toasts={[{ id: "hover", title: "Hover" }]}
+        onDismiss={() => {}}
+        onPauseToast={onPauseToast}
+        onResumeToast={onResumeToast}
+        placement="static"
+        portal={false}
+      />,
+    );
+
+    fireEvent.pointerEnter(screen.getByText("Hover").closest("li")!);
+    fireEvent.pointerLeave(screen.getByText("Hover").closest("li")!);
+
+    expect(onPauseToast).toHaveBeenCalledWith("hover");
+    expect(onResumeToast).toHaveBeenCalledWith("hover");
   });
 });
