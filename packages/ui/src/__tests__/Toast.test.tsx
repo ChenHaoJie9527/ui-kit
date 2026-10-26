@@ -1,6 +1,12 @@
-import { act, renderHook, render } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  renderHook,
+  render,
+  screen,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ToastStack, useToast, type ToastInput } from "../Toast";
+import { ToastStack, useToast, type Toast, type ToastInput } from "../Toast";
 
 function renderToastHook(options?: Parameters<typeof useToast>[0]) {
   return renderHook(() => useToast(options));
@@ -166,5 +172,74 @@ describe("ToastStack", () => {
     expect(container.querySelector("ol")?.getAttribute("data-placement")).toBe(
       "absolute",
     );
+  });
+
+  it("renders status content with a custom icon, action, and accessible dismissal", () => {
+    const onAction = vi.fn<(toast: Toast) => void>();
+    const onDismiss = vi.fn<(id: string) => void>();
+
+    render(
+      <ToastStack
+        toasts={[
+          {
+            id: "saved",
+            title: "已保存",
+            description: "文档已同步",
+            status: "success",
+            action: { label: "查看", onClick: onAction },
+          },
+        ]}
+        icons={{ success: <span>OK</span> }}
+        onDismiss={onDismiss}
+        placement="static"
+        portal={false}
+      />,
+    );
+
+    expect(screen.getByText("OK")).toBeTruthy();
+    expect(screen.getByText("已保存")).toBeTruthy();
+    expect(screen.getByText("文档已同步")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "查看" }));
+    expect(onAction).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "saved", title: "已保存" }),
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Dismiss notification" }),
+    );
+    expect(onDismiss).toHaveBeenCalledWith("saved");
+  });
+
+  it("hides dismissal when a toast is not dismissible", () => {
+    render(
+      <ToastStack
+        toasts={[{ id: "sticky", title: "Sticky", dismissible: false }]}
+        onDismiss={() => {}}
+        placement="static"
+        portal={false}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Dismiss notification" }),
+    ).toBeNull();
+  });
+
+  it("supports fully custom item rendering while keeping keyboard dismissal", () => {
+    render(
+      <ToastStack
+        toasts={[{ id: "custom", title: "Ignored" }]}
+        renderToast={(toast) => `Custom ${toast.id}`}
+        onDismiss={() => {}}
+        placement="static"
+        portal={false}
+      />,
+    );
+
+    expect(screen.getByText("Custom custom")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Dismiss notification" }),
+    ).toBeTruthy();
   });
 });

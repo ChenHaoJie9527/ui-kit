@@ -1,8 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion, type HTMLMotionProps } from "motion/react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  type HTMLMotionProps,
+} from "motion/react";
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
-import { EASE_OUT, UI_SPRING } from "./motion";
+import { EASE_OUT, REDUCED_MOTION_TRANSITION, UI_SPRING } from "./motion";
 import { cx } from "./utils/cx";
 
 export type ToastStatus = "neutral" | "info" | "loading" | "success" | "error";
@@ -16,15 +21,16 @@ export type ToastPosition =
   | "bottom-right";
 
 export type ToastAction = {
-  label: string;
+  label: ReactNode;
   onClick: (toast: Toast) => void;
 };
 
 export type Toast = {
   id: string;
-  title: string;
-  description?: string;
+  title: ReactNode;
+  description?: ReactNode;
   status?: ToastStatus;
+  action?: ToastAction;
   duration?: number;
   dismissible?: boolean;
   createdAt?: number;
@@ -66,6 +72,8 @@ export type ToastClassNames = {
   close?: string;
 };
 
+export type ToastIcons = Partial<Record<ToastStatus, ReactNode>>;
+
 export type ToastStackProps = Omit<HTMLMotionProps<"ol">, "children"> & {
   toasts: Toast[];
   onDismiss?: (id: string) => void;
@@ -76,7 +84,39 @@ export type ToastStackProps = Omit<HTMLMotionProps<"ol">, "children"> & {
   maxVisible?: number;
   className?: string;
   classNames?: ToastClassNames;
+  icons?: ToastIcons;
   renderToast?: (toast: Toast) => ReactNode;
+};
+
+const STATUS_ICONS: Record<ToastStatus, ReactNode> = {
+  neutral: (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 8v4M12 16h.01" />
+    </svg>
+  ),
+  info: (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5M12 8h.01" />
+    </svg>
+  ),
+  loading: (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M12 3a9 9 0 1 0 9 9" />
+    </svg>
+  ),
+  success: (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M20 7 10 17l-6-6" />
+    </svg>
+  ),
+  error: (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 8v4M12 16h.01" />
+    </svg>
+  ),
 };
 
 export function useToast({
@@ -183,6 +223,7 @@ export function useToast({
 
 export function ToastStack({
   toasts,
+  onDismiss,
   position = "bottom-right",
   placement = "fixed",
   portal,
@@ -190,6 +231,7 @@ export function ToastStack({
   maxVisible = 4,
   className,
   classNames,
+  icons,
   renderToast,
   ...listProps
 }: ToastStackProps) {
@@ -213,24 +255,14 @@ export function ToastStack({
     >
       <AnimatePresence initial={false} mode="popLayout">
         {visibleToasts.map((toast) => (
-          <motion.li
+          <ToastItem
             key={toast.id}
-            layout
-            className={cx("uk-toast__item", classNames?.item)}
-            initial={{ opacity: 0, y: 18, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{
-              opacity: 0,
-              x: 24,
-              scale: 0.98,
-              transition: { duration: 0.18, ease: EASE_OUT },
-            }}
-            transition={UI_SPRING}
-          >
-            <div className={cx("uk-toast__surface", classNames?.surface)}>
-              {renderToast ? renderToast(toast) : toast.title}
-            </div>
-          </motion.li>
+            toast={toast}
+            onDismiss={onDismiss}
+            classNames={classNames}
+            icons={icons}
+            renderToast={renderToast}
+          />
         ))}
       </AnimatePresence>
     </motion.ol>
@@ -246,3 +278,110 @@ export function ToastStack({
 
   return stack;
 }
+
+const ToastItem = memo(function ToastItem({
+  toast,
+  onDismiss,
+  classNames,
+  icons,
+  renderToast,
+}: {
+  toast: Toast;
+  onDismiss?: (id: string) => void;
+  classNames?: ToastClassNames;
+  icons?: ToastIcons;
+  renderToast?: (toast: Toast) => ReactNode;
+}) {
+  const reduce = useReducedMotion();
+  const status = toast.status ?? "neutral";
+  const canDismiss = toast.dismissible !== false && Boolean(onDismiss);
+  const transition = reduce ? REDUCED_MOTION_TRANSITION : UI_SPRING;
+  const initial = reduce ? { opacity: 0 } : { opacity: 0, y: 18, scale: 0.98 };
+  const animate = reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 };
+  const exit = reduce
+    ? { opacity: 0 }
+    : {
+        opacity: 0,
+        x: 24,
+        scale: 0.98,
+        transition: { duration: 0.18, ease: EASE_OUT },
+      };
+
+  return (
+    <motion.li
+      layout
+      className={cx("uk-toast__item", classNames?.item)}
+      initial={initial}
+      animate={animate}
+      exit={exit}
+      transition={transition}
+      drag={canDismiss && !reduce ? "x" : false}
+      dragConstraints={{ left: 0, right: 0 }}
+      dragDirectionLock
+      dragElastic={0.18}
+      onDragEnd={(_, info) => {
+        if (!canDismiss || !onDismiss) return;
+        if (Math.abs(info.offset.x) > 72 || Math.abs(info.velocity.x) > 520) {
+          onDismiss(toast.id);
+        }
+      }}
+    >
+      <div className={cx("uk-toast__surface", classNames?.surface)}>
+        {renderToast ? renderToast(toast) : null}
+
+        {!renderToast && (
+          <div className="uk-toast__row">
+            <span
+              className={cx(
+                "uk-toast__icon",
+                `uk-toast__icon--${status}`,
+                classNames?.iconWrap,
+              )}
+            >
+              {icons?.[status] ?? STATUS_ICONS[status]}
+            </span>
+
+            <div className={cx("uk-toast__content", classNames?.content)}>
+              <p className={cx("uk-toast__title", classNames?.title)}>
+                {toast.title}
+              </p>
+              {toast.description ? (
+                <p
+                  className={cx(
+                    "uk-toast__description",
+                    classNames?.description,
+                  )}
+                >
+                  {toast.description}
+                </p>
+              ) : null}
+
+              {toast.action ? (
+                <button
+                  type="button"
+                  className={cx("uk-toast__action", classNames?.action)}
+                  onClick={() => toast.action?.onClick(toast)}
+                >
+                  {toast.action.label}
+                </button>
+              ) : null}
+            </div>
+          </div>
+        )}
+
+        {canDismiss ? (
+          <button
+            type="button"
+            className={cx("uk-toast__close", classNames?.close)}
+            aria-label="Dismiss notification"
+            onClick={() => onDismiss?.(toast.id)}
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        ) : null}
+      </div>
+    </motion.li>
+  );
+});
