@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Button,
   ToastStack,
@@ -65,6 +65,7 @@ const playgroundOptions = [
 
 function DirectionDemo() {
   const [position, setPosition] = useState<ToastPosition>("top-center");
+  const toastIdRef = useRef(0);
   const { toasts, showToast, updateToast, dismissToast, clearToasts } =
     useToast({ limit: 4 });
 
@@ -77,7 +78,7 @@ function DirectionDemo() {
             variant="outline"
             className="rounded-full"
             onClick={() => {
-              const id = `playground-${option.key}`;
+              const id = `playground-${option.key}-${toastIdRef.current++}`;
               showToast({
                 id,
                 title: option.label,
@@ -305,7 +306,7 @@ export function ToastPage() {
 
       <Section
         title="方向与状态"
-        description="选择六个方向控制通知栈位置；Promise 会先展示 loading，再自动更新为成功。"
+        description="选择六个方向控制通知栈位置；示例每次点击都会追加新通知，Promise 会先展示 loading，再自动更新为成功。"
       >
         <Demo code={directionCode}>
           <DirectionDemo />
