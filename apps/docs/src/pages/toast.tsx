@@ -25,7 +25,6 @@ function BasicDemo() {
       <Button
         onClick={() =>
           showToast({
-            id: "publish",
             title: "发布成功",
             description: "文档站已在 3 秒内更新完成。",
             status: "success",
@@ -65,7 +64,6 @@ const playgroundOptions = [
 
 function DirectionDemo() {
   const [position, setPosition] = useState<ToastPosition>("top-center");
-  const toastIdRef = useRef(0);
   const { toasts, showToast, updateToast, dismissToast, clearToasts } =
     useToast({ limit: 4 });
 
@@ -78,9 +76,7 @@ function DirectionDemo() {
             variant="outline"
             className="rounded-full"
             onClick={() => {
-              const id = `playground-${option.key}-${toastIdRef.current++}`;
-              showToast({
-                id,
+              const id = showToast({
                 title: option.label,
                 description:
                   option.status === "loading"
@@ -135,24 +131,32 @@ function DirectionDemo() {
 }
 
 function ManualDemo() {
+  const manualToastIdRef = useRef<string | null>(null);
   const { toasts, showToast, dismissToast } = useToast();
 
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Button
-        onClick={() =>
-          showToast({
-            id: "manual",
+        onClick={() => {
+          manualToastIdRef.current = showToast({
             title: "等待确认",
             description: "通知不会自动消失，由按钮控制关闭。",
             duration: 0,
             dismissible: false,
-          })
-        }
+          });
+        }}
       >
         手动打开
       </Button>
-      <Button variant="outline" onClick={() => dismissToast("manual")}>
+      <Button
+        variant="outline"
+        onClick={() => {
+          const id = manualToastIdRef.current;
+          if (id) {
+            dismissToast(id);
+          }
+        }}
+      >
         手动关闭
       </Button>
       <ToastStack
@@ -184,9 +188,8 @@ function StatusDemo() {
           size="sm"
           onClick={() =>
             showToast({
-              id: option.status,
               title: `示例 ${option.label}`,
-              description: "相同 id 会更新现有通知并重置计时。",
+              description: "showToast 每次都会新增一条通知。",
               status: option.status as ToastStatus,
             })
           }
@@ -232,7 +235,7 @@ function InlineDemo() {
 const basicCode = [
   "const { toasts, showToast, dismissToast } = useToast();",
   "",
-  '<Button onClick={() => showToast({ id: "publish", title: "发布成功" })}>',
+  '<Button onClick={() => showToast({ title: "发布成功" })}>',
   "  显示发布通知",
   "</Button>",
   "<ToastStack toasts={toasts} onDismiss={dismissToast} maxVisible={3} />",
@@ -240,11 +243,23 @@ const basicCode = [
 
 const manualCode = [
   "const { toasts, showToast, dismissToast } = useToast();",
+  "const manualToastIdRef = useRef<string | null>(null);",
   "",
-  '<Button onClick={() => showToast({ id: "manual", title: "等待确认", duration: 0 })}>',
+  "<Button",
+  "  onClick={() => {",
+  '    manualToastIdRef.current = showToast({ title: "等待确认", duration: 0 });',
+  "  }}",
+  ">",
   "  手动打开",
   "</Button>",
-  '<Button onClick={() => dismissToast("manual")}>手动关闭</Button>',
+  "<Button",
+  "  onClick={() => {",
+  "    const id = manualToastIdRef.current;",
+  "    if (id) dismissToast(id);",
+  "  }}",
+  ">",
+  "  手动关闭",
+  "</Button>",
   "<ToastStack toasts={toasts} onDismiss={dismissToast} />",
 ].join("\n");
 
@@ -315,7 +330,7 @@ export function ToastPage() {
 
       <Section
         title="基础用法"
-        description="showToast 会把通知加入队列；相同 id 会更新现有项并重置自动关闭计时。"
+        description="showToast 每次都会新增通知并返回 id；需要修改已有通知时使用 updateToast。"
       >
         <Demo code={basicCode}>
           <BasicDemo />
@@ -366,7 +381,7 @@ export function ToastPage() {
               name: "useToast 返回值",
               type: "toasts / showToast / updateToast / dismissToast / clearToasts / pauseToast / resumeToast",
               description:
-                "状态队列与生命周期操作；showToast 返回通知 id。pauseToast 和 resumeToast 可暂停或恢复倒计时。",
+                "状态队列与生命周期操作；showToast 每次新增并返回通知 id，updateToast 更新已有通知。pauseToast 和 resumeToast 可暂停或恢复倒计时。",
             },
             {
               name: "ToastStack.toasts",

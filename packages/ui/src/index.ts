@@ -63,6 +63,7 @@ export type {
   ToastPosition,
   ToastStackProps,
   ToastStatus,
+  ToastUpdateInput,
   UseToastOptions,
 } from "./Toast";
 

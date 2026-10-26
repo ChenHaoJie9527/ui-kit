@@ -49,6 +49,8 @@ export type ToastInput = Omit<Toast, "id" | "createdAt"> & {
   id?: string;
 };
 
+export type ToastUpdateInput = Omit<Partial<ToastInput>, "id">;
+
 export type UseToastOptions = {
   initialToasts?: ToastInput[];
   defaultDuration?: number;
@@ -159,11 +161,11 @@ export function useToast({
   }, []);
 
   const showToast = useCallback(
-    (input: ToastInput) => {
+    (input: Omit<ToastInput, "id">) => {
       const toast = createToast(input, defaultDuration);
 
       setToasts((current) => {
-        const next = [...current.filter((item) => item.id !== toast.id), toast];
+        const next = [...current, toast];
         return typeof limit === "number" ? next.slice(-limit) : next;
       });
 
@@ -172,14 +174,13 @@ export function useToast({
     [defaultDuration, limit],
   );
 
-  const updateToast = useCallback((id: string, patch: Partial<ToastInput>) => {
+  const updateToast = useCallback((id: string, patch: ToastUpdateInput) => {
     setToasts((current) =>
       current.map((toast) =>
         toast.id === id
           ? {
               ...toast,
               ...patch,
-              id,
               createdAt:
                 patch.duration === undefined ? toast.createdAt : Date.now(),
             }

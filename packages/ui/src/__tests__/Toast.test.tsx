@@ -24,26 +24,27 @@ describe("useToast", () => {
 
   it("adds, updates, dismisses, and clears toasts", () => {
     const { result } = renderToastHook();
+    let savedId = "";
 
     act(() => {
-      result.current.showToast({ id: "saved", title: "已保存" });
+      savedId = result.current.showToast({ title: "已保存" });
     });
-    expect(result.current.toasts.map((toast) => toast.id)).toEqual(["saved"]);
+    expect(result.current.toasts.map((toast) => toast.id)).toEqual([savedId]);
 
     act(() => {
-      result.current.updateToast("saved", {
+      result.current.updateToast(savedId, {
         title: "保存完成",
         status: "success",
       });
     });
     expect(result.current.toasts[0]).toMatchObject({
-      id: "saved",
+      id: savedId,
       title: "保存完成",
       status: "success",
     });
 
     act(() => {
-      result.current.dismissToast("saved");
+      result.current.dismissToast(savedId);
     });
     expect(result.current.toasts).toEqual([]);
 
@@ -57,16 +58,16 @@ describe("useToast", () => {
     expect(result.current.toasts).toEqual([]);
   });
 
-  it("reuses the same id and keeps only the newest toasts within a limit", () => {
+  it("appends repeated toasts and keeps only the newest within a limit", () => {
     const { result } = renderToastHook({ limit: 2 });
 
     act(() => {
-      result.current.showToast({ id: "one", title: "One" });
-      result.current.showToast({ id: "one", title: "One updated" });
+      result.current.showToast({ title: "One" });
+      result.current.showToast({ title: "One" });
       result.current.showToast({ title: "Two" });
     });
     expect(result.current.toasts.map((toast) => toast.title)).toEqual([
-      "One updated",
+      "One",
       "Two",
     ]);
 
@@ -81,16 +82,17 @@ describe("useToast", () => {
 
   it("dismisses automatically and resets the timer when duration changes", () => {
     const { result } = renderToastHook({ defaultDuration: 1000 });
+    let timerId = "";
 
     act(() => {
-      result.current.showToast({ id: "timer", title: "Timer" });
+      timerId = result.current.showToast({ title: "Timer" });
     });
 
     act(() => {
       vi.advanceTimersByTime(700);
     });
     act(() => {
-      result.current.updateToast("timer", { duration: 2000 });
+      result.current.updateToast(timerId, { duration: 2000 });
     });
     act(() => {
       vi.advanceTimersByTime(1200);
@@ -117,15 +119,16 @@ describe("useToast", () => {
 
   it("pauses auto-dismiss while hovering and resumes on leave", () => {
     const { result } = renderToastHook({ defaultDuration: 1000 });
+    let hoverId = "";
 
     act(() => {
-      result.current.showToast({ id: "hover", title: "Hover" });
+      hoverId = result.current.showToast({ title: "Hover" });
     });
     act(() => {
       vi.advanceTimersByTime(700);
     });
     act(() => {
-      result.current.pauseToast("hover");
+      result.current.pauseToast(hoverId);
     });
     act(() => {
       vi.advanceTimersByTime(10_000);
@@ -133,7 +136,7 @@ describe("useToast", () => {
     expect(result.current.toasts).toHaveLength(1);
 
     act(() => {
-      result.current.resumeToast("hover");
+      result.current.resumeToast(hoverId);
     });
     act(() => {
       vi.advanceTimersByTime(299);
