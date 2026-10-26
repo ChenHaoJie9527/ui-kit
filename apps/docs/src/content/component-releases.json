@@ -38,5 +38,13 @@
   "Select": {
     "introducedIn": "0.8.0",
     "releasedAt": "2026-10-23T14:42:37.665Z"
+  },
+  "ToastStack": {
+    "introducedIn": "0.10.0",
+    "releasedAt": "2026-10-26T13:02:56.975Z"
+  },
+  "useToast": {
+    "introducedIn": "0.10.0",
+    "releasedAt": "2026-10-26T13:02:56.975Z"
   }
 }
