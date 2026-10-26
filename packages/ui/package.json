@@ -57,6 +57,7 @@
     "prepublishOnly": "pnpm build && pnpm test"
   },
   "dependencies": {
+    "lucide-animated": "^1.0.5",
     "motion": "^14.4.0",
     "seam-hooks": "workspace:*"
   },

@@ -1,5 +1,14 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  CircleCheckBigIcon,
+  CircleHelpIcon,
+  LoaderCircleIcon,
+  MessageCircleIcon,
+  MessageCircleXIcon,
+  XIcon,
+  type LoaderCircleIconHandle,
+} from "lucide-animated";
+import {
   AnimatePresence,
   motion,
   useReducedMotion,
@@ -90,36 +99,58 @@ export type ToastStackProps = Omit<HTMLMotionProps<"ol">, "children"> & {
   renderToast?: (toast: Toast) => ReactNode;
 };
 
-const STATUS_ICONS: Record<ToastStatus, ReactNode> = {
-  neutral: (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 8v4M12 16h.01" />
-    </svg>
-  ),
-  info: (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 11v5M12 8h.01" />
-    </svg>
-  ),
-  loading: (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M12 3a9 9 0 1 0 9 9" />
-    </svg>
-  ),
-  success: (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M20 7 10 17l-6-6" />
-    </svg>
-  ),
-  error: (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 8v4M12 16h.01" />
-    </svg>
-  ),
-};
+function createStatusIcons(
+  reducedMotion: boolean,
+): Record<ToastStatus, ReactNode> {
+  const animateOnHover = !reducedMotion;
+
+  return {
+    neutral: (
+      <MessageCircleIcon
+        aria-hidden
+        size={16}
+        animateOnHover={animateOnHover}
+      />
+    ),
+    info: (
+      <CircleHelpIcon aria-hidden size={16} animateOnHover={animateOnHover} />
+    ),
+    loading: <LoadingIcon reducedMotion={reducedMotion} />,
+    success: (
+      <CircleCheckBigIcon
+        aria-hidden
+        size={16}
+        animateOnHover={animateOnHover}
+      />
+    ),
+    error: (
+      <MessageCircleXIcon
+        aria-hidden
+        size={16}
+        animateOnHover={animateOnHover}
+      />
+    ),
+  };
+}
+
+function LoadingIcon({ reducedMotion }: { reducedMotion: boolean }) {
+  const iconRef = useRef<LoaderCircleIconHandle>(null);
+
+  useEffect(() => {
+    if (!reducedMotion) {
+      iconRef.current?.startAnimation();
+    }
+  }, [reducedMotion]);
+
+  return (
+    <LoaderCircleIcon
+      ref={iconRef}
+      aria-hidden
+      size={16}
+      animateOnHover={false}
+    />
+  );
+}
 
 type ManagedToast = Toast & { pausedAt?: number };
 
@@ -338,8 +369,9 @@ const ToastItem = memo(function ToastItem({
   icons?: ToastIcons;
   renderToast?: (toast: Toast) => ReactNode;
 }) {
-  const reduce = useReducedMotion();
+  const reduce = Boolean(useReducedMotion());
   const status = toast.status ?? "neutral";
+  const statusIcons = createStatusIcons(reduce);
   const canDismiss = toast.dismissible !== false && Boolean(onDismiss);
   const transition = reduce ? REDUCED_MOTION_TRANSITION : UI_SPRING;
   const initial = reduce ? { opacity: 0 } : { opacity: 0, y: 18, scale: 0.98 };
@@ -386,7 +418,7 @@ const ToastItem = memo(function ToastItem({
                 classNames?.iconWrap,
               )}
             >
-              {icons?.[status] ?? STATUS_ICONS[status]}
+              {icons?.[status] ?? statusIcons[status]}
             </span>
 
             <div className={cx("uk-toast__content", classNames?.content)}>
@@ -424,9 +456,7 @@ const ToastItem = memo(function ToastItem({
             aria-label="Dismiss notification"
             onClick={() => onDismiss?.(toast.id)}
           >
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
+            <XIcon aria-hidden size={16} animateOnHover={!reduce} />
           </button>
         ) : null}
       </div>
