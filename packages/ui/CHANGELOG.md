@@ -1,5 +1,16 @@
 # seam-react
 
+## 0.10.0
+
+### Minor Changes
+
+- 8c1fa84: 新增 Toast 组件：提供 useToast 状态队列、六向布局栈、自动关闭、悬停暂停计时、Lucide
+  状态图标、操作和拖拽关闭。
+
+### Patch Changes
+
+- 1dea728: 修复单选 Select 重开时未自动展开已选层级叶子所属子面板的问题。
+
 ## 0.9.1
 
 ### Patch Changes
