@@ -15,7 +15,14 @@ npm install seam-react
 ## 使用
 
 ```tsx
-import { Button, Tabs, Dialog, Sidebar } from "seam-react";
+import {
+  Button,
+  Tabs,
+  Dialog,
+  Sidebar,
+  ToastStack,
+  useToast,
+} from "seam-react";
 import { SeamStyles } from "seam-react/styles";
 
 export function Root() {
@@ -28,11 +35,12 @@ export function Root() {
 }
 ```
 
-组件包含：Button、Input、Switch、Tabs、Dialog、Tooltip、Sidebar。
+组件包含：Button、Input、Switch、Tabs、Dialog、Toast、Tooltip、Sidebar。
 
 - Tabs 支持方向键切换、ARIA 关联与 fluid 指示器。
 - Switch 支持点击、键盘和拖拽 spring。
 - Dialog 提供 Root / Trigger / Content 与语义化内容层，自带 Motion 进出场、焦点陷阱、Esc 关闭与滚动锁定。
+- Toast 提供 `useToast` 状态队列与 `ToastStack` 呈现层，支持六向定位、自动关闭、状态图标、操作和拖拽关闭。
 - Tooltip 提供延迟显示、键盘与触屏访问、视口翻转/避让，以及可让相邻触发器共享并连续移动表面的 Group / Item 组合。
 - Sidebar 提供可折叠 Group、可配置分组间距，以及互斥的轨道与背景 hover 模式。
 

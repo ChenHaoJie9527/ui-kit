@@ -67,6 +67,12 @@ const componentDefinitions: Array<
     tags: ["模态", "焦点"],
   },
   {
+    path: "components/toast",
+    name: "Toast",
+    summary: "非模态通知队列，支持自动关闭、状态图标、操作和拖拽关闭。",
+    tags: ["通知", "aria-live", "Motion"],
+  },
+  {
     path: "components/tooltip",
     name: "Tooltip",
     summary:

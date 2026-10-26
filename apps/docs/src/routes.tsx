@@ -15,6 +15,7 @@ import { SidebarPage } from "./pages/sidebar";
 import { SelectPage } from "./pages/select";
 import { SwitchPage } from "./pages/switch";
 import { TabsPage } from "./pages/tabs";
+import { ToastPage } from "./pages/toast";
 import { TooltipPage } from "./pages/tooltip";
 import { UsagePage } from "./pages/usage";
 
@@ -27,6 +28,7 @@ const componentPages: Record<string, ComponentType> = {
   sidebar: SidebarPage,
   tabs: TabsPage,
   dialog: DialogPage,
+  toast: ToastPage,
   tooltip: TooltipPage,
   marquee: MarqueePage,
 };
