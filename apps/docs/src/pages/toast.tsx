@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Button, ToastStack, useToast, type ToastStatus } from "seam-react";
+import {
+  Button,
+  ToastStack,
+  useToast,
+  type ToastPosition,
+  type ToastStatus,
+} from "seam-react";
 import {
   BulletList,
   Callout,
@@ -36,6 +42,92 @@ function BasicDemo() {
         position="bottom-right"
         placement="fixed"
         maxVisible={3}
+      />
+    </div>
+  );
+}
+
+const positionOptions = [
+  "top-left",
+  "top-center",
+  "top-right",
+  "bottom-left",
+  "bottom-center",
+  "bottom-right",
+] as const;
+
+const playgroundOptions = [
+  { key: "title", label: "Title only", status: undefined },
+  { key: "promise", label: "Promise", status: "loading" },
+  { key: "success", label: "Success", status: "success" },
+  { key: "error", label: "Error", status: "error" },
+] as const;
+
+function DirectionDemo() {
+  const [position, setPosition] = useState<ToastPosition>("top-center");
+  const { toasts, showToast, updateToast, dismissToast, clearToasts } =
+    useToast({ limit: 4 });
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center gap-2">
+        {playgroundOptions.map((option) => (
+          <Button
+            key={option.key}
+            variant="outline"
+            className="rounded-full"
+            onClick={() => {
+              const id = `playground-${option.key}`;
+              showToast({
+                id,
+                title: option.label,
+                description:
+                  option.status === "loading"
+                    ? "正在同步文档..."
+                    : "选择方向会移动整个通知栈。",
+                status: option.status,
+                duration: option.status === undefined ? 3000 : 4200,
+              });
+
+              if (option.status === "loading") {
+                window.setTimeout(() => {
+                  updateToast(id, {
+                    title: "Sync complete",
+                    description: "Promise 已完成。",
+                    status: "success",
+                  });
+                }, 1600);
+              }
+            }}
+          >
+            {option.label}
+          </Button>
+        ))}
+        <Button variant="ghost" onClick={clearToasts}>
+          Clear
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {positionOptions.map((option) => (
+          <Button
+            key={option}
+            variant={option === position ? "primary" : "secondary"}
+            size="sm"
+            className="rounded-full"
+            onClick={() => setPosition(option)}
+          >
+            {option}
+          </Button>
+        ))}
+      </div>
+
+      <ToastStack
+        toasts={toasts}
+        onDismiss={dismissToast}
+        position={position}
+        placement="fixed"
+        maxVisible={4}
       />
     </div>
   );
@@ -155,6 +247,19 @@ const manualCode = [
   "<ToastStack toasts={toasts} onDismiss={dismissToast} />",
 ].join("\n");
 
+const directionCode = [
+  'const [position, setPosition] = useState<ToastPosition>("top-center");',
+  "const { toasts, showToast, updateToast, dismissToast, clearToasts } = useToast({ limit: 4 });",
+  "",
+  "<ToastStack",
+  "  toasts={toasts}",
+  "  onDismiss={dismissToast}",
+  "  position={position}",
+  '  placement="fixed"',
+  "  maxVisible={4}",
+  "/>",
+].join("\n");
+
 const statusCode = [
   "const { toasts, showToast, dismissToast, clearToasts } = useToast({ limit: 4 });",
   "",
@@ -195,6 +300,15 @@ export function ToastPage() {
       >
         <Demo code={manualCode}>
           <ManualDemo />
+        </Demo>
+      </Section>
+
+      <Section
+        title="方向与状态"
+        description="选择六个方向控制通知栈位置；Promise 会先展示 loading，再自动更新为成功。"
+      >
+        <Demo code={directionCode}>
+          <DirectionDemo />
         </Demo>
       </Section>
 
