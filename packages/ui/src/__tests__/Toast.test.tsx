@@ -1,6 +1,6 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useToast, type ToastInput } from "../Toast";
+import { ToastStack, useToast, type ToastInput } from "../Toast";
 
 function renderToastHook(options?: Parameters<typeof useToast>[0]) {
   return renderHook(() => useToast(options));
@@ -107,5 +107,64 @@ describe("useToast", () => {
       vi.advanceTimersByTime(10_000);
     });
     expect(result.current.toasts).toHaveLength(1);
+  });
+});
+
+describe("ToastStack", () => {
+  const toasts = [
+    { id: "one", title: "One" },
+    { id: "two", title: "Two" },
+    { id: "three", title: "Three" },
+  ];
+
+  it("renders inline, positions the stack, and marks live semantics", () => {
+    const { container } = render(
+      <ToastStack
+        toasts={toasts}
+        onDismiss={() => {}}
+        position="top-center"
+        placement="static"
+        portal={false}
+      />,
+    );
+    const stack = container.querySelector("ol");
+
+    expect(stack).toBeTruthy();
+    expect(stack?.getAttribute("aria-live")).toBe("polite");
+    expect(stack?.getAttribute("aria-atomic")).toBe("false");
+    expect(stack?.getAttribute("data-position")).toBe("top-center");
+    expect(stack?.getAttribute("data-placement")).toBe("static");
+    expect(stack?.querySelectorAll("li")).toHaveLength(3);
+  });
+
+  it("limits visible toasts and portals fixed placement to body", () => {
+    render(<ToastStack toasts={toasts} maxVisible={2} />);
+
+    const stack = document.body.querySelector("ol");
+    expect(stack?.getAttribute("data-placement")).toBe("fixed");
+    expect(stack?.querySelectorAll("li")).toHaveLength(2);
+    expect(stack?.textContent).toBe("TwoThree");
+  });
+
+  it("supports a custom portal root without putting the stack in its React parent", () => {
+    const portalRoot = document.createElement("div");
+    document.body.append(portalRoot);
+    const { container } = render(
+      <ToastStack toasts={toasts} portal portalRoot={portalRoot} />,
+    );
+
+    expect(container.querySelector("ol")).toBeNull();
+    expect(portalRoot.querySelector("ol")).toBeTruthy();
+    portalRoot.remove();
+  });
+
+  it("keeps absolute placement inside its local positioning context", () => {
+    const { container } = render(
+      <ToastStack toasts={toasts} placement="absolute" portal={false} />,
+    );
+
+    expect(container.querySelector("ol")?.getAttribute("data-placement")).toBe(
+      "absolute",
+    );
   });
 });

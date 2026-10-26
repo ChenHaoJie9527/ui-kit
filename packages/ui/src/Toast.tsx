@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, type HTMLMotionProps } from "motion/react";
+import { createPortal } from "react-dom";
+import type { ReactNode } from "react";
+import { EASE_OUT, UI_SPRING } from "./motion";
+import { cx } from "./utils/cx";
 
 export type ToastStatus = "neutral" | "info" | "loading" | "success" | "error";
 
@@ -46,6 +51,33 @@ function createToast(input: ToastInput, defaultDuration: number): Toast {
     createdAt: Date.now(),
   };
 }
+
+export type ToastPlacement = "static" | "absolute" | "fixed";
+
+export type ToastClassNames = {
+  root?: string;
+  item?: string;
+  surface?: string;
+  iconWrap?: string;
+  content?: string;
+  title?: string;
+  description?: string;
+  action?: string;
+  close?: string;
+};
+
+export type ToastStackProps = Omit<HTMLMotionProps<"ol">, "children"> & {
+  toasts: Toast[];
+  onDismiss?: (id: string) => void;
+  position?: ToastPosition;
+  placement?: ToastPlacement;
+  portal?: boolean;
+  portalRoot?: Element | null;
+  maxVisible?: number;
+  className?: string;
+  classNames?: ToastClassNames;
+  renderToast?: (toast: Toast) => ReactNode;
+};
 
 export function useToast({
   initialToasts = [],
@@ -147,4 +179,70 @@ export function useToast({
     () => ({ toasts, showToast, updateToast, dismissToast, clearToasts }),
     [clearToasts, dismissToast, showToast, toasts, updateToast],
   );
+}
+
+export function ToastStack({
+  toasts,
+  position = "bottom-right",
+  placement = "fixed",
+  portal,
+  portalRoot,
+  maxVisible = 4,
+  className,
+  classNames,
+  renderToast,
+  ...listProps
+}: ToastStackProps) {
+  const shouldPortal = portal ?? placement === "fixed";
+  const visibleToasts = toasts.slice(-Math.max(maxVisible, 0));
+
+  const stack = (
+    <motion.ol
+      {...listProps}
+      aria-live="polite"
+      aria-atomic="false"
+      data-position={position}
+      data-placement={placement}
+      className={cx(
+        "uk-toast",
+        placement !== "static" && "uk-toast--floating",
+        classNames?.root,
+        className,
+      )}
+      initial={false}
+    >
+      <AnimatePresence initial={false} mode="popLayout">
+        {visibleToasts.map((toast) => (
+          <motion.li
+            key={toast.id}
+            layout
+            className={cx("uk-toast__item", classNames?.item)}
+            initial={{ opacity: 0, y: 18, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{
+              opacity: 0,
+              x: 24,
+              scale: 0.98,
+              transition: { duration: 0.18, ease: EASE_OUT },
+            }}
+            transition={UI_SPRING}
+          >
+            <div className={cx("uk-toast__surface", classNames?.surface)}>
+              {renderToast ? renderToast(toast) : toast.title}
+            </div>
+          </motion.li>
+        ))}
+      </AnimatePresence>
+    </motion.ol>
+  );
+
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  if (shouldPortal) {
+    return createPortal(stack, portalRoot ?? document.body);
+  }
+
+  return stack;
 }
