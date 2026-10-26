@@ -11,7 +11,8 @@ import {
 } from "../components/docs";
 
 function BasicDemo() {
-  const { toasts, showToast, dismissToast } = useToast();
+  const { toasts, showToast, dismissToast, pauseToast, resumeToast } =
+    useToast();
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -30,9 +31,42 @@ function BasicDemo() {
       <ToastStack
         toasts={toasts}
         onDismiss={dismissToast}
+        onPauseToast={pauseToast}
+        onResumeToast={resumeToast}
         position="bottom-right"
         placement="fixed"
         maxVisible={3}
+      />
+    </div>
+  );
+}
+
+function ManualDemo() {
+  const { toasts, showToast, dismissToast } = useToast();
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <Button
+        onClick={() =>
+          showToast({
+            id: "manual",
+            title: "等待确认",
+            description: "通知不会自动消失，由按钮控制关闭。",
+            duration: 0,
+            dismissible: false,
+          })
+        }
+      >
+        手动打开
+      </Button>
+      <Button variant="outline" onClick={() => dismissToast("manual")}>
+        手动关闭
+      </Button>
+      <ToastStack
+        toasts={toasts}
+        onDismiss={dismissToast}
+        position="bottom-right"
+        placement="fixed"
       />
     </div>
   );
@@ -111,6 +145,16 @@ const basicCode = [
   "<ToastStack toasts={toasts} onDismiss={dismissToast} maxVisible={3} />",
 ].join("\n");
 
+const manualCode = [
+  "const { toasts, showToast, dismissToast } = useToast();",
+  "",
+  '<Button onClick={() => showToast({ id: "manual", title: "等待确认", duration: 0 })}>',
+  "  手动打开",
+  "</Button>",
+  '<Button onClick={() => dismissToast("manual")}>手动关闭</Button>',
+  "<ToastStack toasts={toasts} onDismiss={dismissToast} />",
+].join("\n");
+
 const statusCode = [
   "const { toasts, showToast, dismissToast, clearToasts } = useToast({ limit: 4 });",
   "",
@@ -143,6 +187,15 @@ export function ToastPage() {
         <CodeBlock
           code={'import { ToastStack, useToast } from "seam-react";'}
         />
+      </Section>
+
+      <Section
+        title="手动开关"
+        description="duration=0 表示常驻；showToast 与 dismissToast 分别承担打开和关闭。"
+      >
+        <Demo code={manualCode}>
+          <ManualDemo />
+        </Demo>
       </Section>
 
       <Section
@@ -196,8 +249,9 @@ export function ToastPage() {
             },
             {
               name: "useToast 返回值",
-              type: "toasts / showToast / updateToast / dismissToast / clearToasts",
-              description: "状态队列与生命周期操作；showToast 返回通知 id。",
+              type: "toasts / showToast / updateToast / dismissToast / clearToasts / pauseToast / resumeToast",
+              description:
+                "状态队列与生命周期操作；showToast 返回通知 id。pauseToast 和 resumeToast 可暂停或恢复倒计时。",
             },
             {
               name: "ToastStack.toasts",
@@ -226,6 +280,12 @@ export function ToastPage() {
               type: "number",
               defaultValue: "4",
               description: "同时可见的通知数量；超过时只显示最新项。",
+            },
+            {
+              name: "onPauseToast / onResumeToast",
+              type: "(id: string) => void",
+              description:
+                "默认内容悬停时暂停计时，离开后恢复；需要把 useToast 的同名方法传入。",
             },
             {
               name: "toast.duration",
