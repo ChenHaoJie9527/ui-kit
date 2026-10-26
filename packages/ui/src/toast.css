@@ -83,6 +83,7 @@
 
   .uk-toast__row {
     display: flex;
+    align-items: center;
     gap: var(--uk-space-3);
   }
 
