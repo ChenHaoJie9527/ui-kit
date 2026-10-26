@@ -101,15 +101,12 @@ export type ToastStackProps = Omit<HTMLMotionProps<"ol">, "children"> & {
 
 function StatusIcon({
   status,
-  active,
   reducedMotion,
 }: {
   status: ToastStatus;
-  active: boolean;
   reducedMotion: boolean;
 }) {
   const iconRef = useRef<LoaderCircleIconHandle>(null);
-  const isContinuous = status === "loading";
 
   useEffect(() => {
     if (reducedMotion) {
@@ -117,12 +114,8 @@ function StatusIcon({
       return;
     }
 
-    if (isContinuous || active) {
-      iconRef.current?.startAnimation();
-    } else {
-      iconRef.current?.stopAnimation();
-    }
-  }, [active, isContinuous, reducedMotion]);
+    iconRef.current?.startAnimation();
+  }, [reducedMotion]);
 
   const iconProps = {
     ref: iconRef,
@@ -364,7 +357,6 @@ const ToastItem = memo(function ToastItem({
 }) {
   const reduce = Boolean(useReducedMotion());
   const status = toast.status ?? "neutral";
-  const [isHovered, setIsHovered] = useState(false);
   const canDismiss = toast.dismissible !== false && Boolean(onDismiss);
   const transition = reduce ? REDUCED_MOTION_TRANSITION : UI_SPRING;
   const initial = reduce ? { opacity: 0 } : { opacity: 0, y: 18, scale: 0.98 };
@@ -397,11 +389,9 @@ const ToastItem = memo(function ToastItem({
         }
       }}
       onPointerEnter={() => {
-        setIsHovered(true);
         onPauseToast?.(toast.id);
       }}
       onPointerLeave={() => {
-        setIsHovered(false);
         onResumeToast?.(toast.id);
       }}
     >
@@ -419,8 +409,8 @@ const ToastItem = memo(function ToastItem({
             >
               {icons?.[status] ?? (
                 <StatusIcon
+                  key={status}
                   status={status}
-                  active={isHovered}
                   reducedMotion={reduce}
                 />
               )}
