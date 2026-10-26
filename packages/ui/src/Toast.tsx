@@ -99,57 +99,50 @@ export type ToastStackProps = Omit<HTMLMotionProps<"ol">, "children"> & {
   renderToast?: (toast: Toast) => ReactNode;
 };
 
-function createStatusIcons(
-  reducedMotion: boolean,
-): Record<ToastStatus, ReactNode> {
-  const animateOnHover = !reducedMotion;
-
-  return {
-    neutral: (
-      <MessageCircleIcon
-        aria-hidden
-        size={16}
-        animateOnHover={animateOnHover}
-      />
-    ),
-    info: (
-      <CircleHelpIcon aria-hidden size={16} animateOnHover={animateOnHover} />
-    ),
-    loading: <LoadingIcon reducedMotion={reducedMotion} />,
-    success: (
-      <CircleCheckBigIcon
-        aria-hidden
-        size={16}
-        animateOnHover={animateOnHover}
-      />
-    ),
-    error: (
-      <MessageCircleXIcon
-        aria-hidden
-        size={16}
-        animateOnHover={animateOnHover}
-      />
-    ),
-  };
-}
-
-function LoadingIcon({ reducedMotion }: { reducedMotion: boolean }) {
+function StatusIcon({
+  status,
+  active,
+  reducedMotion,
+}: {
+  status: ToastStatus;
+  active: boolean;
+  reducedMotion: boolean;
+}) {
   const iconRef = useRef<LoaderCircleIconHandle>(null);
+  const isContinuous = status === "loading";
 
   useEffect(() => {
-    if (!reducedMotion) {
-      iconRef.current?.startAnimation();
+    if (reducedMotion) {
+      iconRef.current?.stopAnimation();
+      return;
     }
-  }, [reducedMotion]);
 
-  return (
-    <LoaderCircleIcon
-      ref={iconRef}
-      aria-hidden
-      size={16}
-      animateOnHover={false}
-    />
-  );
+    if (isContinuous || active) {
+      iconRef.current?.startAnimation();
+    } else {
+      iconRef.current?.stopAnimation();
+    }
+  }, [active, isContinuous, reducedMotion]);
+
+  const iconProps = {
+    ref: iconRef,
+    "aria-hidden": true,
+    size: 16,
+    animateOnHover: false,
+  } as const;
+
+  switch (status) {
+    case "neutral":
+      return <MessageCircleIcon {...iconProps} />;
+    case "info":
+      return <CircleHelpIcon {...iconProps} />;
+    case "loading":
+      return <LoaderCircleIcon {...iconProps} />;
+    case "success":
+      return <CircleCheckBigIcon {...iconProps} />;
+    case "error":
+      return <MessageCircleXIcon {...iconProps} />;
+  }
 }
 
 type ManagedToast = Toast & { pausedAt?: number };
@@ -371,7 +364,7 @@ const ToastItem = memo(function ToastItem({
 }) {
   const reduce = Boolean(useReducedMotion());
   const status = toast.status ?? "neutral";
-  const statusIcons = createStatusIcons(reduce);
+  const [isHovered, setIsHovered] = useState(false);
   const canDismiss = toast.dismissible !== false && Boolean(onDismiss);
   const transition = reduce ? REDUCED_MOTION_TRANSITION : UI_SPRING;
   const initial = reduce ? { opacity: 0 } : { opacity: 0, y: 18, scale: 0.98 };
@@ -403,8 +396,14 @@ const ToastItem = memo(function ToastItem({
           onDismiss(toast.id);
         }
       }}
-      onPointerEnter={() => onPauseToast?.(toast.id)}
-      onPointerLeave={() => onResumeToast?.(toast.id)}
+      onPointerEnter={() => {
+        setIsHovered(true);
+        onPauseToast?.(toast.id);
+      }}
+      onPointerLeave={() => {
+        setIsHovered(false);
+        onResumeToast?.(toast.id);
+      }}
     >
       <div className={cx("uk-toast__surface", classNames?.surface)}>
         {renderToast ? renderToast(toast) : null}
@@ -418,7 +417,13 @@ const ToastItem = memo(function ToastItem({
                 classNames?.iconWrap,
               )}
             >
-              {icons?.[status] ?? statusIcons[status]}
+              {icons?.[status] ?? (
+                <StatusIcon
+                  status={status}
+                  active={isHovered}
+                  reducedMotion={reduce}
+                />
+              )}
             </span>
 
             <div className={cx("uk-toast__content", classNames?.content)}>
