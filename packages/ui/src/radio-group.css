@@ -1,0 +1,110 @@
+@layer uk.components {
+  .radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--uk-space-3);
+  }
+
+  .radio-group[data-orientation="horizontal"] {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--uk-space-4);
+  }
+
+  .radio-group-item {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: var(--uk-space-2);
+    cursor: pointer;
+  }
+
+  .radio-group-item[data-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .radio-group-control {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin-top: 0.125rem;
+  }
+
+  .radio-group-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: inherit;
+    z-index: 1;
+  }
+
+  .radio-group-track {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--uk-border);
+    border-radius: var(--uk-radius-full);
+    background: var(--uk-surface);
+    transition:
+      border-color var(--uk-transition),
+      background-color var(--uk-transition);
+    pointer-events: none;
+  }
+
+  .radio-group-item:hover:not([data-disabled="true"]) .radio-group-track {
+    border-color: var(--uk-border-strong);
+  }
+
+  .radio-group-input:focus-visible + .radio-group-track {
+    outline: 2px solid var(--uk-focus-ring);
+    outline-offset: 2px;
+  }
+
+  .radio-group-item[data-checked="true"] .radio-group-track {
+    border-color: var(--uk-primary-solid);
+    background: var(--uk-primary-solid);
+  }
+
+  .radio-group-indicator {
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: var(--uk-radius-full);
+    background: var(--uk-primary-contrast);
+  }
+
+  .radio-group-copy {
+    display: flex;
+    flex-direction: column;
+    gap: var(--uk-space-1);
+  }
+
+  .radio-group-label {
+    font-size: var(--uk-text-md);
+    color: var(--uk-text);
+    line-height: 1.4;
+    cursor: inherit;
+  }
+
+  .radio-group-description {
+    font-size: var(--uk-text-sm);
+    color: var(--uk-text-muted);
+    line-height: 1.4;
+  }
+
+  .radio-group-input[aria-invalid="true"] + .radio-group-track {
+    border-color: var(--uk-danger);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .radio-group-track {
+      transition-duration: var(--uk-duration-fast);
+    }
+  }
+}
