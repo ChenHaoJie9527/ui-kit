@@ -34,22 +34,40 @@ jobs:
           script: |
             const title = context.payload.issue.title;
             const body = context.payload.issue.body || '';
-            const match = title.match(/(?:feat|fix|enhance|refactor)[:\s]+(?:add\s+|improve\s+)?(.+)/i);
-            const component = match ? match[1].trim() : title;
+
+            // Strip conventional commit prefix (support both : and ：)
+            let name = title.replace(/^(?:feat|fix|enhance|refactor|chore|docs)\s*[:：]\s*/i, '');
+
+            // Strip common verbs (English and Chinese)
+            name = name.replace(/^(?:add|improve|create|add new)\s+/i, '');
+            name = name.replace(/^(?:添加|新增|创建|修复)\s*/g, '');
+            name = name.replace(/^组件\s*/g, '');
+
+            const component = name.trim();
+
+            // Branch-safe slug: ASCII only, spaces to hyphens
+            const slug = component
+              .replace(/[^a-zA-Z0-9\s-]/g, '')
+              .replace(/\s+/g, '-')
+              .toLowerCase() || 'component';
+
             const isBug = title.toLowerCase().startsWith('fix');
             const type = isBug ? 'bugfix' : 'new-component';
-            const runId = `${component.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}`;
+            const runId = `${slug}-${new Date().toISOString().slice(0, 10)}`;
 
             core.exportVariable('AGENT_COMPONENT', component);
+            core.exportVariable('AGENT_SLUG', slug);
             core.exportVariable('AGENT_TYPE', type);
             core.exportVariable('AGENT_RUN_ID', runId);
             core.exportVariable('AGENT_ISSUE_BODY', body);
 
-            console.log(`Component: ${component}, Type: ${type}, RunId: ${runId}`);
+            console.log(`Component: ${component}, Slug: ${slug}, Type: ${type}, RunId: ${runId}`);
 
       - name: Create Work Branch
         run: |
-          BRANCH="codex/${AGENT_COMPONENT,,}"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          BRANCH="codex/${AGENT_SLUG}"
           git checkout -b "$BRANCH"
           echo "AGENT_BRANCH=$BRANCH" >> "$GITHUB_ENV"
 
