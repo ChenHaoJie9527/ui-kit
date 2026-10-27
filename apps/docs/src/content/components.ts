@@ -9,6 +9,7 @@ export interface ComponentMeta {
   name: string;
   summary: string;
   tags: string[];
+  releaseName?: string;
   /** 首次正式发布该组件的 seam-react 版本。 */
   introducedIn?: string;
   /** 首次正式发布时间，使用 UTC ISO 字符串。 */
@@ -39,6 +40,7 @@ const componentDefinitions: Array<
   {
     path: "components/radio-group",
     name: "Radio Group",
+    releaseName: "RadioGroup",
     summary: "原生单选语义、方向键循环选择与单一 Tab 停点。",
     tags: ["表单", "受控", "键盘"],
   },
@@ -100,7 +102,7 @@ const releases = componentReleases as Record<
 
 export const componentMetas: ComponentMeta[] = componentDefinitions.map(
   (meta) => {
-    const release = releases[meta.name];
+    const release = releases[meta.releaseName ?? meta.name];
 
     return release ? Object.assign({}, meta, release) : meta;
   },

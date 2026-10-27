@@ -16,7 +16,7 @@ import {
 import { motion, useReducedMotion } from "motion/react";
 import { useControllableState, useEventCallback } from "seam-hooks";
 import {
-  INDICATOR_SPRING,
+  RADIO_GROUP_INDICATOR_SPRING,
   REDUCED_MOTION_TRANSITION,
   UI_SPRING,
 } from "./motion";
@@ -70,12 +70,35 @@ export interface RadioGroupItemProps extends Omit<
   id?: string;
 }
 
+export type UseRadioGroupOptions = Pick<
+  RadioGroupProps,
+  "value" | "defaultValue" | "onValueChange"
+>;
+
+export interface UseRadioGroupReturn {
+  value: string | undefined;
+  onValueChange: (value: string) => void;
+}
+
+export function useRadioGroup({
+  value,
+  defaultValue,
+  onValueChange,
+}: UseRadioGroupOptions = {}): UseRadioGroupReturn {
+  const [current, setCurrent] = useControllableState<string>({
+    value,
+    defaultValue: defaultValue ?? "",
+    onChange: onValueChange,
+  });
+
+  return { value: current || undefined, onValueChange: setCurrent };
+}
+
 interface RadioGroupContextValue {
   value: string | undefined;
   setValue: (value: string) => void;
   orientation: RadioGroupOrientation;
   groupId: string;
-  itemCount: number;
   items: ReadonlyArray<{ value: string; id: string; disabled: boolean }>;
   registerItem: (value: string, id: string, disabled: boolean) => void;
   unregisterItem: (value: string, id: string) => void;
@@ -104,15 +127,14 @@ function RadioGroupRoot({
   ...rest
 }: RadioGroupProps): ReactElement {
   const groupId = useId();
-  const [current, setCurrent] = useControllableState<string>({
+  const { value: current, onValueChange: setCurrent } = useRadioGroup({
     value,
-    defaultValue: defaultValue ?? "",
-    onChange: onValueChange,
+    defaultValue,
+    onValueChange,
   });
   const [items, setItems] = useState<
     ReadonlyArray<{ value: string; id: string; disabled: boolean }>
   >([]);
-  const itemCount = items.length;
 
   const registerItem = useEventCallback(
     (itemValue: string, id: string, disabled: boolean) => {
@@ -185,11 +207,10 @@ function RadioGroupRoot({
 
   const context = useMemo<RadioGroupContextValue>(
     () => ({
-      value: current || undefined,
+      value: current,
       setValue: setCurrent,
       orientation,
       groupId,
-      itemCount,
       items,
       registerItem,
       unregisterItem,
@@ -200,7 +221,6 @@ function RadioGroupRoot({
       setCurrent,
       orientation,
       groupId,
-      itemCount,
       items,
       registerItem,
       unregisterItem,
@@ -262,7 +282,6 @@ const RadioGroupItem = forwardRef<HTMLInputElement, RadioGroupItemProps>(
         : -1;
     const reduceMotion = useReducedMotion() ?? false;
     const [pressed, setPressed] = useState(false);
-    const isSingle = context.itemCount <= 1;
 
     useEffect(() => {
       registerItem(value, inputId, disabled);
@@ -330,12 +349,9 @@ const RadioGroupItem = forwardRef<HTMLInputElement, RadioGroupItemProps>(
       nextInput?.click();
     };
 
-    const sharedLayout = !isSingle && !reduceMotion;
     const indicatorTransition = reduceMotion
       ? REDUCED_MOTION_TRANSITION
-      : isSingle
-        ? UI_SPRING
-        : INDICATOR_SPRING;
+      : RADIO_GROUP_INDICATOR_SPRING;
 
     return (
       <span
@@ -372,20 +388,7 @@ const RadioGroupItem = forwardRef<HTMLInputElement, RadioGroupItemProps>(
             {checked ? (
               <motion.span
                 className="radio-group-indicator"
-                layoutId={
-                  sharedLayout ? `${context.groupId}-indicator` : undefined
-                }
-                initial={
-                  reduceMotion
-                    ? { opacity: 0 }
-                    : isSingle
-                      ? { opacity: 0, scale: 0 }
-                      : { opacity: 0, scale: 0.5 }
-                }
-                animate={{ opacity: 1, scale: 1 }}
-                exit={
-                  reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5 }
-                }
+                layoutId={`${context.groupId}-indicator`}
                 transition={indicatorTransition}
               />
             ) : null}

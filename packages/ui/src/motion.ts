@@ -21,6 +21,12 @@ export const INDICATOR_SPRING: Transition = {
   duration: 0.34,
 };
 
+export const RADIO_GROUP_INDICATOR_SPRING: Transition = {
+  type: "spring",
+  bounce: 0.04,
+  duration: 0.44,
+};
+
 export const DISCLOSURE_TRANSITION: Transition = {
   duration: 0.2,
   ease: EASE_IN_OUT,

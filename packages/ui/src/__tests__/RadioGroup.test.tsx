@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { RadioGroup, RadioGroupItem } from "../RadioGroup";
+import {
+  act,
+  render,
+  renderHook,
+  screen,
+  fireEvent,
+} from "@testing-library/react";
+import { RadioGroup, RadioGroupItem, useRadioGroup } from "../RadioGroup";
 
 describe("RadioGroup", () => {
   it("renders a radiogroup with vertical orientation by default", () => {
@@ -513,5 +519,33 @@ describe("RadioGroup", () => {
     );
     expect(spy).toHaveBeenCalledWith(expect.stringContaining("duplicate"));
     spy.mockRestore();
+  });
+
+  it("useRadioGroup manages an uncontrolled value", () => {
+    const onValueChange = vi.fn<(value: string) => void>();
+    const { result } = renderHook(() =>
+      useRadioGroup({ defaultValue: "a", onValueChange }),
+    );
+
+    expect(result.current.value).toBe("a");
+    act(() => result.current.onValueChange("b"));
+
+    expect(result.current.value).toBe("b");
+    expect(onValueChange).toHaveBeenCalledWith("b");
+  });
+
+  it("useRadioGroup preserves controlled state until the owner updates it", () => {
+    const onValueChange = vi.fn<(value: string) => void>();
+    const { result, rerender } = renderHook(
+      ({ value }) => useRadioGroup({ value, onValueChange }),
+      { initialProps: { value: "a" } },
+    );
+
+    act(() => result.current.onValueChange("b"));
+    expect(result.current.value).toBe("a");
+    expect(onValueChange).toHaveBeenCalledWith("b");
+
+    rerender({ value: "b" });
+    expect(result.current.value).toBe("b");
   });
 });

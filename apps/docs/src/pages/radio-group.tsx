@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { RadioGroup } from "seam-react";
+import { RadioGroup, useRadioGroup } from "seam-react";
 import {
   BulletList,
+  CodeBlock,
   Demo,
   Page,
   PropsTable,
@@ -10,11 +10,11 @@ import {
 } from "../components/docs";
 
 function ControlledDemo() {
-  const [plan, setPlan] = useState("starter");
+  const radioGroup = useRadioGroup({ defaultValue: "starter" });
 
   return (
     <div className="flex max-w-[460px] flex-col gap-4">
-      <RadioGroup aria-label="选择套餐" value={plan} onValueChange={setPlan}>
+      <RadioGroup aria-label="选择套餐" {...radioGroup}>
         <RadioGroup.Item
           value="starter"
           label="入门版"
@@ -31,7 +31,7 @@ function ControlledDemo() {
           description="提供高级安全与管理员控制。"
         />
       </RadioGroup>
-      <Readout label="当前套餐" value={plan} />
+      <Readout label="当前套餐" value={radioGroup.value ?? ""} />
     </div>
   );
 }
@@ -59,17 +59,19 @@ export function RadioGroupPage() {
       tags={["原生 radio", "受控 / 非受控", "roving tabindex", "Motion"]}
     >
       <Section title="引入">
-        <code>{`import { RadioGroup } from "seam-react";`}</code>
+        <CodeBlock
+          code={'import { RadioGroup, useRadioGroup } from "seam-react";'}
+        />
       </Section>
 
       <Section
-        title="受控用法"
-        description="通过 value 与 onValueChange 控制选中值；Item 同时支持复合写法和独立导出。"
+        title="useRadioGroup"
+        description="管理受控或非受控选中状态，返回 value 与 onValueChange，可直接展开到 RadioGroup。"
       >
         <Demo
-          code={`const [plan, setPlan] = useState("starter");
+          code={`const radioGroup = useRadioGroup({ defaultValue: "starter" });
 
-<RadioGroup aria-label="选择套餐" value={plan} onValueChange={setPlan}>
+<RadioGroup aria-label="选择套餐" {...radioGroup}>
   <RadioGroup.Item value="starter" label="入门版" />
   <RadioGroup.Item value="team" label="团队版" />
   <RadioGroup.Item value="enterprise" label="企业版" />
@@ -122,6 +124,28 @@ export function RadioGroupPage() {
               name: "children",
               type: "ReactNode",
               description: "一个或多个 RadioGroup.Item。",
+            },
+          ]}
+        />
+      </Section>
+
+      <Section title="useRadioGroup API">
+        <PropsTable
+          rows={[
+            {
+              name: "value",
+              type: "string",
+              description: "可选的受控值；传入后由调用方负责更新。",
+            },
+            {
+              name: "defaultValue",
+              type: "string",
+              description: "非受控模式的初始值。",
+            },
+            {
+              name: "onValueChange",
+              type: "(value: string) => void",
+              description: "状态变化回调；返回值中的同名属性用于更新选择。",
             },
           ]}
         />

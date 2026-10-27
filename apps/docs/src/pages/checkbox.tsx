@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   BulletList,
+  CodeBlock,
   Demo,
   Page,
   PropsTable,
@@ -43,7 +44,7 @@ export function CheckBoxPage() {
       tags={["原生 checkbox", "SVG 描边", "受控 / 非受控", "表单集成"]}
     >
       <Section title="引入">
-        <code>{`import { CheckBox } from "seam-react";`}</code>
+        <CodeBlock code={'import { CheckBox } from "seam-react";'} />
       </Section>
 
       <Section
