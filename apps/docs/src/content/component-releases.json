@@ -50,5 +50,13 @@
   "Badge": {
     "introducedIn": "0.12.0",
     "releasedAt": "2026-10-27T05:02:37.529Z"
+  },
+  "RadioGroup": {
+    "introducedIn": "0.12.1",
+    "releasedAt": "2026-10-27T12:47:27.516Z"
+  },
+  "RadioGroupItem": {
+    "introducedIn": "0.12.1",
+    "releasedAt": "2026-10-27T12:47:27.516Z"
   }
 }
