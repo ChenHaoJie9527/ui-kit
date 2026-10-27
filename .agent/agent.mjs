@@ -15,6 +15,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import https from "node:https";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -84,45 +85,70 @@ const indexPath = join(srcDir, "index.ts");
 const currentExports = readFileSync(indexPath, "utf-8");
 
 // ─── Call Ark API ─────────────────────────────────────────────────────────
+function httpsPost(urlString, headers, body) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(urlString);
+    const payload = JSON.stringify(body);
+
+    const req = https.request(
+      {
+        hostname: url.hostname,
+        port: 443,
+        path: url.pathname,
+        method: "POST",
+        family: 4,
+        headers: {
+          ...headers,
+          "Content-Length": Buffer.byteLength(payload),
+        },
+        timeout: 120_000,
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => {
+          const text = Buffer.concat(chunks).toString("utf-8");
+          resolve({ status: res.statusCode, body: text });
+        });
+      },
+    );
+
+    req.on("error", reject);
+    req.on("timeout", () => {
+      req.destroy(new Error("Request timed out"));
+    });
+    req.write(payload);
+    req.end();
+  });
+}
+
 async function callArk(systemPrompt, userPrompt) {
   const url = `${ARK_BASE_URL}/chat/completions`;
   console.log(`[Agent] Calling ${url} with model ${ARK_MODEL}`);
 
-  let response;
-  try {
-    response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${ARK_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: ARK_MODEL,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        max_tokens: 16384,
-        temperature: 0.6,
-        thinking: { type: "disabled" },
-      }),
-      signal: AbortSignal.timeout(120_000),
-    });
-  } catch (err) {
-    console.error(`[Agent] Fetch error: ${err.message}`);
-    console.error(
-      `[Agent] Cause: ${err.cause?.message || err.cause || "unknown"}`,
-    );
-    console.error(`[Agent] URL: ${url}`);
-    throw err;
+  const response = await httpsPost(
+    url,
+    {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${ARK_API_KEY}`,
+    },
+    {
+      model: ARK_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      max_tokens: 16384,
+      temperature: 0.6,
+      thinking: { type: "disabled" },
+    },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Ark API error ${response.status}: ${response.body}`);
   }
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Ark API error ${response.status}: ${text}`);
-  }
-
-  const data = await response.json();
+  const data = JSON.parse(response.body);
   return data.choices[0]?.message?.content || "";
 }
 
