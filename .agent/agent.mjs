@@ -13,8 +13,9 @@
  *   AGENT_ISSUE_BODY - Issue description text (optional)
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, resolve as resolvePath, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 import https from "node:https";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -46,6 +47,7 @@ if (!COMPONENT) {
 const date = new Date().toISOString().slice(0, 10);
 const runId = `${COMPONENT.toLowerCase().replace(/\s+/g, "-")}-${date}`;
 const runDir = join(__dirname, "runs", runId);
+const repoDir = join(__dirname, "..");
 
 mkdirSync(runDir, { recursive: true });
 
@@ -64,7 +66,7 @@ const navigationPattern = readFileSync(navigationPath, "utf-8");
 const inlinePattern = readFileSync(inlinePath, "utf-8");
 
 // ─── Read existing component sources for reference ────────────────────────
-const srcDir = join(__dirname, "..", "packages", "ui", "src");
+const srcDir = join(repoDir, "packages", "ui", "src");
 const referenceComponents = [];
 
 for (const file of [
@@ -155,6 +157,110 @@ async function callArk(systemPrompt, userPrompt) {
 
   const data = JSON.parse(response.body);
   return data.choices[0]?.message?.content || "";
+}
+
+function getRepairFiles() {
+  const options = { cwd: repoDir, encoding: "utf-8" };
+  const tracked = execFileSync("git", ["diff", "--name-only"], options);
+  const untracked = execFileSync(
+    "git",
+    ["ls-files", "--others", "--exclude-standard"],
+    options,
+  );
+
+  return [...new Set(`${tracked}\n${untracked}`.split("\n"))]
+    .map((file) => file.trim())
+    .filter((file) =>
+      /^(?:packages|apps|e2e)\/.+\.(?:ts|tsx|css|md)$/.test(file),
+    )
+    .filter((file) => existsSync(join(repoDir, file)))
+    .slice(0, 16);
+}
+
+async function repairImplementation(logPath) {
+  console.log(`[Agent] Repairing verification failure from ${logPath}...`);
+
+  const verificationLog = readFileSync(logPath, "utf-8").slice(-40_000);
+  const repairFiles = getRepairFiles();
+  if (repairFiles.length === 0) {
+    throw new Error("No changed source files are available for repair.");
+  }
+
+  const sources = repairFiles
+    .map((file) => {
+      const content = readFileSync(join(repoDir, file), "utf-8");
+      return `=== FILE: ${file} ===\n${content}`;
+    })
+    .join("\n\n");
+  const specPath = join(runDir, "spec.md");
+  const spec = existsSync(specPath) ? readFileSync(specPath, "utf-8") : "";
+
+  const systemPrompt = `You are repairing an existing seam-ui change after automated verification failed.
+Make the smallest correct changes that resolve the reported failures. Preserve the public API and existing design decisions unless a failure proves they are incorrect.
+
+## Component Spec
+${spec}
+
+## Pattern Guide
+${patternGuide}
+
+## Design Tokens
+${tokens}
+
+## Motion Tokens
+${motionTokens}
+
+Return ONLY complete files that require changes. Do not return explanations, diffs, or code fences around the entire response.
+Each file must use this exact format:
+=== FILE: <existing-repository-relative-path> ===
+<complete file content>
+=== END FILE ===
+
+You may only return files supplied in the current sources. Do not create files or modify unrelated code.
+Remove unused imports, satisfy strict TypeScript checks including noUncheckedIndexedAccess, and preserve the repository testing conventions.`;
+
+  const userPrompt = `## Verification Log
+${verificationLog}
+
+## Current Sources
+${sources}
+
+Repair the failures and rerun-ready source files.`;
+
+  const implementation = await callArk(systemPrompt, userPrompt);
+  const fileRegex = /=== FILE: (.+?) ===\n([\s\S]*?)=== END FILE ===/g;
+  const filesWritten = [];
+  let match;
+
+  while ((match = fileRegex.exec(implementation)) !== null) {
+    let filePath = match[1].trim().replace(/^\.\//, "");
+    if (filePath.startsWith("src/")) {
+      filePath = `packages/ui/${filePath}`;
+    }
+    if (!repairFiles.includes(filePath)) {
+      throw new Error(
+        `Repair attempted to modify an unapproved file: ${filePath}`,
+      );
+    }
+
+    const absPath = resolvePath(repoDir, filePath);
+    if (!absPath.startsWith(`${repoDir}${sep}`)) {
+      throw new Error(`Repair path escapes the repository: ${filePath}`);
+    }
+
+    writeFileSync(absPath, `${match[2].trim()}\n`);
+    filesWritten.push(filePath);
+    console.log(`[Agent] Repaired: ${filePath}`);
+  }
+
+  if (filesWritten.length === 0) {
+    writeFileSync(join(runDir, "repair-raw.md"), implementation);
+    throw new Error(
+      "Repair response did not contain any parseable file changes.",
+    );
+  }
+
+  return filesWritten;
 }
 
 // ─── Phase 1: Generate Spec ───────────────────────────────────────────────
@@ -355,6 +461,12 @@ async function main() {
   console.log(`[Agent] Component: ${COMPONENT}, Type: ${TYPE}`);
 
   try {
+    if (process.env.AGENT_REPAIR_LOG) {
+      const files = await repairImplementation(process.env.AGENT_REPAIR_LOG);
+      console.log(`[Agent] Repair complete: ${files.join(", ")}`);
+      return;
+    }
+
     const spec = await generateSpec();
     const files = await generateImplementation(spec);
     await generateChangeset();

@@ -7,6 +7,13 @@ export type { BadgeDismissEvent, BadgeProps, BadgeVariant } from "./Badge";
 export { CheckBox } from "./CheckBox";
 export type { CheckBoxProps } from "./CheckBox";
 
+export { RadioGroup, RadioGroupItem } from "./RadioGroup";
+export type {
+  RadioGroupProps,
+  RadioGroupItemProps,
+  RadioGroupOrientation,
+} from "./RadioGroup";
+
 export { Select } from "./Select";
 export type {
   SelectMultipleProps,

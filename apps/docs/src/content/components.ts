@@ -37,6 +37,12 @@ const componentDefinitions: Array<
     tags: ["表单", "受控", "SVG 描边"],
   },
   {
+    path: "components/radio-group",
+    name: "Radio Group",
+    summary: "原生单选语义、方向键循环选择与单一 Tab 停点。",
+    tags: ["表单", "受控", "键盘"],
+  },
+  {
     path: "components/select",
     name: "Select",
     summary: "单选列表，支持键盘搜索、受控值、空态和弹出层定位。",
