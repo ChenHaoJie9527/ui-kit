@@ -1,5 +1,13 @@
 # seam-react
 
+## 0.12.1
+
+### Patch Changes
+
+- 28c88d7: feat(ui): add Radio Group component
+
+  🤖 Developed by AI Agent (Volcano Ark) under human-defined spec patterns.
+
 ## 0.12.0
 
 ### Minor Changes
