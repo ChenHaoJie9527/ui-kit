@@ -1,0 +1,13 @@
+{
+  "runId": "{runId}",
+  "timestamp": "",
+  "tests": { "passed": 0, "failed": 0 },
+  "ciRun": null,
+  "browser": { "verified": false, "screenshots": [] },
+  "accessibility": { "verified": false, "notes": "" },
+  "reducedMotion": { "verified": false },
+  "themes": { "light": false, "dark": false },
+  "touch": { "verified": false },
+  "longContent": { "verified": false },
+  "rapidActions": { "verified": false }
+}

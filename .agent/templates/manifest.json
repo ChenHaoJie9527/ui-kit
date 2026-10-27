@@ -1,0 +1,10 @@
+{
+  "runId": "{runId}",
+  "component": "{component}",
+  "type": "{new-component | enhancement | bugfix | deprecation}",
+  "baseBranch": "main",
+  "workBranch": "codex/{component}",
+  "status": "spec",
+  "startedAt": "{ISO date}",
+  "updatedAt": "{ISO date}"
+}

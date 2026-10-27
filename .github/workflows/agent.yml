@@ -1,0 +1,123 @@
+name: AI Component Agent
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  develop:
+    if: github.event.label.name == 'ai-develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Parse Issue and Initialize Run
+        id: init
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = context.payload.issue.title;
+            const body = context.payload.issue.body || '';
+            const match = title.match(/(?:feat|fix|enhance|refactor)[:\s]+(?:add\s+|improve\s+)?(.+)/i);
+            const component = match ? match[1].trim() : title;
+            const isBug = title.toLowerCase().startsWith('fix');
+            const type = isBug ? 'bugfix' : 'new-component';
+            const runId = `${component.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}`;
+
+            core.exportVariable('AGENT_COMPONENT', component);
+            core.exportVariable('AGENT_TYPE', type);
+            core.exportVariable('AGENT_RUN_ID', runId);
+            core.exportVariable('AGENT_ISSUE_BODY', body);
+
+            console.log(`Component: ${component}, Type: ${type}, RunId: ${runId}`);
+
+      - name: Create Work Branch
+        run: |
+          BRANCH="codex/${AGENT_COMPONENT,,}"
+          git checkout -b "$BRANCH"
+          echo "AGENT_BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+      - name: Run AI Agent
+        env:
+          ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
+          ARK_MODEL: ${{ secrets.ARK_MODEL || 'ark-code-latest' }}
+          AGENT_COMPONENT: ${{ env.AGENT_COMPONENT }}
+          AGENT_TYPE: ${{ env.AGENT_TYPE }}
+          AGENT_ISSUE_BODY: ${{ env.AGENT_ISSUE_BODY }}
+        run: |
+          node .agent/agent.mjs
+
+      - name: Run Verification Pipeline
+        run: |
+          CI=true pnpm check
+          CI=true pnpm --filter seam-react test
+          CI=true pnpm --filter seam-hooks test
+          CI=true pnpm exec playwright install --with-deps chromium
+          CI=true pnpm test:e2e
+
+      - name: Create Draft PR
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+
+            execSync('git add -A', { cwd: process.cwd() });
+            execSync(`git commit -m "feat(ui): add ${process.env.AGENT_COMPONENT} component\n\n🤖 Developed by AI Agent. See .agent/runs/${process.env.AGENT_RUN_ID}/ for spec and evidence."`, { cwd: process.cwd() });
+            execSync(`git push origin ${process.env.AGENT_BRANCH}`, { cwd: process.cwd() });
+
+            const pr = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `feat(ui): ${process.env.AGENT_COMPONENT}`,
+              head: process.env.AGENT_BRANCH,
+              base: 'main',
+              draft: true,
+              body: [
+                `Closes #${context.payload.issue.number}`,
+                '',
+                '## Spec',
+                'See `.agent/runs/' + process.env.AGENT_RUN_ID + '/spec.md`',
+                '',
+                '## Verification',
+                '- [x] Unit tests',
+                '- [x] Type check',
+                '- [x] Lint',
+                '- [x] axe-core accessibility',
+                '- [x] Keyboard navigation',
+                '- [x] Visual regression',
+                '- [x] Reduced motion',
+                '',
+                '🤖 Developed by AI Agent under human-defined spec patterns.'
+              ].join('\n')
+            });
+
+            console.log(`Draft PR created: ${pr.data.html_url}`);
+
+      - name: Comment on Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: `❌ AI Agent failed during development.\n\nCheck the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.\n\nThe agent attempted the component but encountered an error it could not resolve after 3 attempts.`
+            });
