@@ -79,6 +79,9 @@ jobs:
           AGENT_TYPE: ${{ env.AGENT_TYPE }}
           AGENT_ISSUE_BODY: ${{ env.AGENT_ISSUE_BODY }}
         run: |
+          echo "--- Connectivity check ---"
+          curl -sv --max-time 10 "https://ark.cn-beijing.volces.com/api/coding/v3/models" -H "Authorization: Bearer $ARK_API_KEY" 2>&1 | tail -5 || true
+          echo "--- Running agent ---"
           node .agent/agent.mjs
 
       - name: Run Verification Pipeline

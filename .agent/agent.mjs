@@ -85,23 +85,37 @@ const currentExports = readFileSync(indexPath, "utf-8");
 
 // ─── Call Ark API ─────────────────────────────────────────────────────────
 async function callArk(systemPrompt, userPrompt) {
-  const response = await fetch(`${ARK_BASE_URL}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${ARK_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: ARK_MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_tokens: 16384,
-      temperature: 0.6,
-      thinking: { type: "disabled" },
-    }),
-  });
+  const url = `${ARK_BASE_URL}/chat/completions`;
+  console.log(`[Agent] Calling ${url} with model ${ARK_MODEL}`);
+
+  let response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${ARK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: ARK_MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        max_tokens: 16384,
+        temperature: 0.6,
+        thinking: { type: "disabled" },
+      }),
+      signal: AbortSignal.timeout(120_000),
+    });
+  } catch (err) {
+    console.error(`[Agent] Fetch error: ${err.message}`);
+    console.error(
+      `[Agent] Cause: ${err.cause?.message || err.cause || "unknown"}`,
+    );
+    console.error(`[Agent] URL: ${url}`);
+    throw err;
+  }
 
   if (!response.ok) {
     const text = await response.text();
