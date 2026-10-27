@@ -38,7 +38,7 @@ if (!COMPONENT) {
 
 // ─── Scaffold run directory ───────────────────────────────────────────────
 const date = new Date().toISOString().slice(0, 10);
-const runId = `${COMPONENT.toLowerCase()}-${date}`;
+const runId = `${COMPONENT.toLowerCase().replace(/\s+/g, "-")}-${date}`;
 const runDir = join(__dirname, "runs", runId);
 
 mkdirSync(runDir, { recursive: true });

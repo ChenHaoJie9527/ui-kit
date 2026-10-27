@@ -83,6 +83,7 @@ jobs:
 
       - name: Run Verification Pipeline
         run: |
+          CI=true pnpm format
           CI=true pnpm check
           CI=true pnpm --filter seam-react test
           CI=true pnpm --filter seam-hooks test
