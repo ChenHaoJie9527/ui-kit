@@ -1,5 +1,13 @@
 # seam-react
 
+## 0.12.0
+
+### Minor Changes
+
+- 2ee1dda: feat(ui): add Badge component
+
+  🤖 Developed by AI Agent (Volcano Ark) under human-defined spec patterns.
+
 ## 0.11.0
 
 ### Minor Changes
