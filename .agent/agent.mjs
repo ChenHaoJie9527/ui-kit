@@ -101,7 +101,7 @@ function httpsPost(urlString, headers, body) {
           ...headers,
           "Content-Length": Buffer.byteLength(payload),
         },
-        timeout: 120_000,
+        timeout: 600_000,
       },
       (res) => {
         const chunks = [];
