@@ -7,6 +7,7 @@ export default defineConfig({
   timeout: 30_000,
   retries: 1,
   workers: 4,
+  updateSnapshots: process.env.CI ? "missing" : "none",
   reporter: [["html", { open: "never", outputFolder: "e2e/report" }]],
   use: {
     baseURL: "http://localhost:5173",
