@@ -207,7 +207,18 @@ Rules:
 - Use CSS tokens (--uk-*) from tokens.css
 - Use Motion tokens from motion.ts
 - Follow the code style of existing components
-- Include comprehensive tests`;
+- Include comprehensive tests
+
+Testing conventions (MUST follow exactly):
+- Import from "vitest": import { describe, expect, it, vi } from "vitest";
+- Use vi.fn<() => void>() (with type parameter), NEVER jest.fn()
+- Use fireEvent from "@testing-library/react", NEVER userEvent
+- Do NOT import jest-axe or @testing-library/jest-dom
+- Use plain DOM assertions: el.getAttribute("..."), el.classList.contains("..."), etc.
+- Do NOT use toHaveAttribute, toBeInTheDocument, toBeDisabled, toHaveAccessibleName
+- Use expect(el.getAttribute("data-variant")).toBe("...") instead of toHaveAttribute
+- Use expect(screen.queryByRole("...")).toBeNull() instead of not.toBeInTheDocument
+- Use expect((el as HTMLButtonElement).disabled).toBe(true) instead of toBeDisabled`;
 
   const userPrompt = `Implement the component: ${COMPONENT}
 
@@ -247,6 +258,24 @@ Generate the implementation files following the output format specified above.`;
     );
     // Save raw output for debugging
     writeFileSync(join(runDir, "implementation-raw.md"), implementation);
+  }
+
+  const cssFileName = `${COMPONENT.toLowerCase().replace(/\s+/g, "-")}.css`;
+  const cssImportLine = `@import "./${cssFileName}";`;
+  const stylesCssPath = join(srcDir, "styles.css");
+  if (existsSync(stylesCssPath)) {
+    const stylesContent = readFileSync(stylesCssPath, "utf-8");
+    if (
+      !stylesContent.includes(cssImportLine) &&
+      filesWritten.some((f) => f.endsWith(".css"))
+    ) {
+      const updated = stylesContent.replace(
+        '@import "./styles/tokens.css";',
+        `@import "./styles/tokens.css";\n${cssImportLine}`,
+      );
+      writeFileSync(stylesCssPath, updated);
+      console.log(`[Agent] Registered ${cssFileName} in styles.css`);
+    }
   }
 
   console.log(
