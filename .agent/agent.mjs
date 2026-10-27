@@ -27,6 +27,11 @@ const COMPONENT = process.env.AGENT_COMPONENT;
 const TYPE = process.env.AGENT_TYPE || "new-component";
 const ISSUE_BODY = process.env.AGENT_ISSUE_BODY || "";
 
+const COMPONENT_PASCAL = COMPONENT.replace(/(?:^|\s+)([a-zA-Z])/g, (_, char) =>
+  char.toUpperCase(),
+).replace(/\s+/g, "");
+const COMPONENT_KEBAB = COMPONENT.toLowerCase().replace(/\s+/g, "-");
+
 if (!ARK_API_KEY) {
   console.error("Error: ARK_API_KEY is required.");
   process.exit(1);
@@ -237,9 +242,9 @@ Output format: You must output separate files, each starting with a marker line:
 === END FILE ===
 
 Files to generate:
-1. ${COMPONENT}.tsx - Component implementation
-2. ${COMPONENT.toLowerCase()}.css - Component styles
-3. src/__tests__/${COMPONENT}.test.tsx - Tests
+1. ${COMPONENT_PASCAL}.tsx - Component implementation
+2. ${COMPONENT_KEBAB}.css - Component styles
+3. __tests__/${COMPONENT_PASCAL}.test.tsx - Tests
 4. Update to src/index.ts - Export addition
 
 Rules:
@@ -300,7 +305,7 @@ Generate the implementation files following the output format specified above.`;
     writeFileSync(join(runDir, "implementation-raw.md"), implementation);
   }
 
-  const cssFileName = `${COMPONENT.toLowerCase().replace(/\s+/g, "-")}.css`;
+  const cssFileName = `${COMPONENT_KEBAB}.css`;
   const cssImportLine = `@import "./${cssFileName}";`;
   const stylesCssPath = join(srcDir, "styles.css");
   if (existsSync(stylesCssPath)) {

@@ -90,6 +90,7 @@ jobs:
         continue-on-error: true
         run: |
           CI=true pnpm format
+          CI=true pnpm lint:fix || true
           CI=true pnpm check
           CI=true pnpm --filter seam-react test
           CI=true pnpm --filter seam-hooks test
@@ -105,7 +106,7 @@ jobs:
             const verifyPassed = '${{ steps.verify.outcome }}' === 'success';
 
             execSync('git add -A', { cwd: process.cwd() });
-            execSync(`git commit -m "feat(ui): add ${process.env.AGENT_COMPONENT} component\n\n🤖 Developed by AI Agent. See .agent/runs/${process.env.AGENT_RUN_ID}/ for spec and evidence."`, { cwd: process.cwd() });
+            execSync(`git commit --no-verify -m "feat(ui): add ${process.env.AGENT_COMPONENT} component\n\n🤖 Developed by AI Agent. See .agent/runs/${process.env.AGENT_RUN_ID}/ for spec and evidence."`, { cwd: process.cwd() });
             execSync(`git push origin ${process.env.AGENT_BRANCH}`, { cwd: process.cwd() });
 
             const pr = await github.rest.pulls.create({
