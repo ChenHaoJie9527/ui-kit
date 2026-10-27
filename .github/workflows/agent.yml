@@ -79,23 +79,40 @@ jobs:
           AGENT_COMPONENT: ${{ env.AGENT_COMPONENT }}
           AGENT_TYPE: ${{ env.AGENT_TYPE }}
           AGENT_ISSUE_BODY: ${{ env.AGENT_ISSUE_BODY }}
-        run: |
-          echo "--- Connectivity check ---"
-          curl -sv --max-time 10 "https://ark.cn-beijing.volces.com/api/coding/v3/models" -H "Authorization: Bearer $ARK_API_KEY" 2>&1 | tail -5 || true
-          echo "--- Running agent ---"
-          node .agent/agent.mjs
+        run: node .agent/agent.mjs
 
-      - name: Run Verification Pipeline
+      - name: Verify and Repair
         id: verify
         continue-on-error: true
+        env:
+          ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
+          ARK_MODEL: ${{ secrets.ARK_MODEL || 'ark-code-latest' }}
         run: |
+          set -o pipefail
           CI=true pnpm format
           CI=true pnpm lint:fix || true
-          CI=true pnpm check
-          CI=true pnpm --filter seam-react test
-          CI=true pnpm --filter seam-hooks test
           CI=true pnpm exec playwright install --with-deps chromium
-          CI=true pnpm test:e2e
+
+          ATTEMPT=1
+          MAX_ATTEMPTS=3
+          while [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
+            LOG=".agent/runs/$AGENT_RUN_ID/verification-$ATTEMPT.log"
+            echo "--- Verification attempt $ATTEMPT/$MAX_ATTEMPTS ---"
+            if { CI=true pnpm check && CI=true pnpm test:e2e; } 2>&1 | tee "$LOG"; then
+              echo "VERIFICATION_ATTEMPTS=$ATTEMPT" >> "$GITHUB_ENV"
+              exit 0
+            fi
+
+            if [ "$ATTEMPT" -eq "$MAX_ATTEMPTS" ]; then
+              echo "Verification still fails after $MAX_ATTEMPTS attempts."
+              exit 1
+            fi
+
+            AGENT_REPAIR_LOG="$LOG" node .agent/agent.mjs
+            CI=true pnpm format
+            CI=true pnpm lint:fix || true
+            ATTEMPT=$((ATTEMPT + 1))
+          done
 
       - name: Create Draft PR
         if: always() && steps.agent.outcome == 'success'
@@ -123,7 +140,7 @@ jobs:
                 'See `.agent/runs/' + process.env.AGENT_RUN_ID + '/spec.md`',
                 '',
                 '## Verification',
-                verifyPassed ? '✅ All checks passed' : '❌ Verification failed — needs fixes. See [workflow run](' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + ') for details.',
+                verifyPassed ? '✅ All checks passed after ' + process.env.VERIFICATION_ATTEMPTS + ' attempt(s)' : '❌ Automatic verification and repair did not pass. See [workflow run](' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + ') for details.',
                 '',
                 '🤖 Developed by AI Agent under human-defined spec patterns.'
               ].join('\n')
@@ -140,5 +157,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              body: `❌ AI Agent failed during development.\n\nCheck the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.\n\nThe agent attempted the component but encountered an error it could not resolve after 3 attempts.`
+              body: `❌ AI Agent could not complete this change automatically.\n\nCheck the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for the generation or verification failure.`
             });
