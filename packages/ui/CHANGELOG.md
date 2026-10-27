@@ -1,5 +1,11 @@
 # seam-react
 
+## 0.12.2
+
+### Patch Changes
+
+- b31cd6f: Add useRadioGroup and refine the Radio Group indicator motion and documentation.
+
 ## 0.12.1
 
 ### Patch Changes
