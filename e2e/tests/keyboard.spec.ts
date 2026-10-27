@@ -61,6 +61,26 @@ test.describe("Keyboard navigation", () => {
     expect(after).not.toBe(before);
   });
 
+  test("Radio Group: one tab stop and arrow selection", async ({ page }) => {
+    await page.goto("/#/components/radio-group");
+    await page.waitForLoadState("networkidle");
+
+    const group = page.getByRole("radiogroup", { name: "选择套餐" });
+    const radios = group.getByRole("radio");
+    await expect(radios).toHaveCount(3);
+    await expect(radios.nth(0)).toHaveAttribute("tabindex", "0");
+    await expect(radios.nth(1)).toHaveAttribute("tabindex", "-1");
+    await expect(radios.nth(2)).toHaveAttribute("tabindex", "-1");
+
+    await radios.nth(0).focus();
+    await page.keyboard.press("ArrowDown");
+
+    await expect(radios.nth(1)).toBeChecked();
+    await expect(radios.nth(1)).toBeFocused();
+    await expect(radios.nth(0)).toHaveAttribute("tabindex", "-1");
+    await expect(radios.nth(1)).toHaveAttribute("tabindex", "0");
+  });
+
   test("Focus rings are visible on keyboard navigation", async ({ page }) => {
     await page.goto("/#/components/button");
     await page.waitForLoadState("networkidle");

@@ -1,5 +1,5 @@
 ---
-"seam-react": minor
+"seam-react": patch
 ---
 
 feat(ui): add Radio Group component

@@ -9,6 +9,7 @@ const COMPONENT_PAGES: ComponentPage[] = [
   { name: "button", path: "/#/components/button" },
   { name: "checkbox", path: "/#/components/checkbox" },
   { name: "input", path: "/#/components/input" },
+  { name: "radio-group", path: "/#/components/radio-group" },
   { name: "switch", path: "/#/components/switch" },
   { name: "tabs", path: "/#/components/tabs" },
 ];

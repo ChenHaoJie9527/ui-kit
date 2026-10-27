@@ -1,6 +1,22 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Reduced motion", () => {
+  test("Radio Group: indicator has no spatial movement", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/#/components/radio-group");
+    await page.waitForLoadState("networkidle");
+
+    const group = page.getByRole("radiogroup", { name: "选择套餐" });
+    const secondRadio = group.getByRole("radio").nth(1);
+    await secondRadio.click();
+
+    const indicator = secondRadio
+      .locator("..")
+      .locator(".radio-group-indicator");
+    await expect(indicator).toBeVisible();
+    await expect(indicator).toHaveCSS("transform", "none");
+  });
+
   test("Dialog: no spatial movement under reduced motion", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/#/components/dialog");

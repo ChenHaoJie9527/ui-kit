@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "../RadioGroup";
 
 describe("RadioGroup", () => {
@@ -67,8 +66,8 @@ describe("RadioGroup", () => {
       </RadioGroup>,
     );
     const inputs = document.querySelectorAll("input[type=radio]");
-    expect(inputs[0].id).not.toBe(inputs[1].id);
-    expect(inputs[0].id).toBeTruthy();
+    expect(inputs[0]!.id).not.toBe(inputs[1]!.id);
+    expect(inputs[0]!.id).toBeTruthy();
   });
 
   it("forwards native input props", () => {
@@ -97,8 +96,8 @@ describe("RadioGroup", () => {
       </RadioGroup>,
     );
     const radios = screen.getAllByRole("radio") as HTMLInputElement[];
-    expect(radios[0].checked).toBe(false);
-    expect(radios[1].checked).toBe(true);
+    expect(radios[0]!.checked).toBe(false);
+    expect(radios[1]!.checked).toBe(true);
   });
 
   it("clicking an unselected item updates uncontrolled state", () => {
@@ -109,9 +108,9 @@ describe("RadioGroup", () => {
       </RadioGroup>,
     );
     const radios = screen.getAllByRole("radio") as HTMLInputElement[];
-    fireEvent.click(radios[1]);
-    expect(radios[1].checked).toBe(true);
-    expect(radios[0].checked).toBe(false);
+    fireEvent.click(radios[1]!);
+    expect(radios[1]!.checked).toBe(true);
+    expect(radios[0]!.checked).toBe(false);
   });
 
   it("clicking the selected item does not clear it or emit duplicate change", () => {
@@ -140,7 +139,7 @@ describe("RadioGroup", () => {
       </RadioGroup>,
     );
     let radios = screen.getAllByRole("radio") as HTMLInputElement[];
-    expect(radios[0].checked).toBe(true);
+    expect(radios[0]!.checked).toBe(true);
     rerender(
       <RadioGroup aria-label="Test" value="b">
         <RadioGroupItem value="a" label="A" />
@@ -148,8 +147,8 @@ describe("RadioGroup", () => {
       </RadioGroup>,
     );
     radios = screen.getAllByRole("radio") as HTMLInputElement[];
-    expect(radios[1].checked).toBe(true);
-    expect(radios[0].checked).toBe(false);
+    expect(radios[1]!.checked).toBe(true);
+    expect(radios[0]!.checked).toBe(false);
   });
 
   it("controlled selection calls onValueChange with new value", () => {
@@ -160,7 +159,7 @@ describe("RadioGroup", () => {
         <RadioGroupItem value="b" label="B" />
       </RadioGroup>,
     );
-    fireEvent.click(screen.getAllByRole("radio")[1]);
+    fireEvent.click(screen.getAllByRole("radio")[1]!);
     expect(onValueChange).toHaveBeenCalledWith("b");
   });
 
@@ -172,9 +171,9 @@ describe("RadioGroup", () => {
       </RadioGroup>,
     );
     const radios = screen.getAllByRole("radio") as HTMLInputElement[];
-    fireEvent.click(radios[1]);
-    expect(radios[0].checked).toBe(true);
-    expect(radios[1].checked).toBe(false);
+    fireEvent.click(radios[1]!);
+    expect(radios[0]!.checked).toBe(true);
+    expect(radios[1]!.checked).toBe(false);
   });
 
   it("unmatched default value renders no selected item", () => {
@@ -314,6 +313,51 @@ describe("RadioGroup", () => {
     expect(radios.every((r) => r.disabled)).toBe(true);
   });
 
+  it("keeps one tab stop and skips disabled items when nothing is selected", () => {
+    render(
+      <RadioGroup aria-label="Test">
+        <RadioGroupItem value="a" label="A" disabled />
+        <RadioGroupItem value="b" label="B" />
+        <RadioGroupItem value="c" label="C" />
+      </RadioGroup>,
+    );
+    const radios = screen.getAllByRole("radio") as HTMLInputElement[];
+    expect(radios.map((radio) => radio.tabIndex)).toEqual([-1, 0, -1]);
+  });
+
+  it("makes only the checked enabled item tabbable", () => {
+    render(
+      <RadioGroup aria-label="Test" defaultValue="b">
+        <RadioGroupItem value="a" label="A" />
+        <RadioGroupItem value="b" label="B" />
+        <RadioGroupItem value="c" label="C" />
+      </RadioGroup>,
+    );
+    const radios = screen.getAllByRole("radio") as HTMLInputElement[];
+    expect(radios.map((radio) => radio.tabIndex)).toEqual([-1, 0, -1]);
+  });
+
+  it("moves the tab stop to the first enabled item when the selected item is disabled", () => {
+    const { rerender } = render(
+      <RadioGroup aria-label="Test" defaultValue="b">
+        <RadioGroupItem value="a" label="A" />
+        <RadioGroupItem value="b" label="B" />
+        <RadioGroupItem value="c" label="C" />
+      </RadioGroup>,
+    );
+
+    rerender(
+      <RadioGroup aria-label="Test" defaultValue="b">
+        <RadioGroupItem value="a" label="A" />
+        <RadioGroupItem value="b" label="B" disabled />
+        <RadioGroupItem value="c" label="C" />
+      </RadioGroup>,
+    );
+
+    const radios = screen.getAllByRole("radio") as HTMLInputElement[];
+    expect(radios.map((radio) => radio.tabIndex)).toEqual([0, -1, -1]);
+  });
+
   it("arrow keys move focus and selection together in vertical group", () => {
     const onValueChange = vi.fn<(value: string) => void>();
     render(
@@ -328,8 +372,8 @@ describe("RadioGroup", () => {
       </RadioGroup>,
     );
     const radios = screen.getAllByRole("radio") as HTMLInputElement[];
-    radios[0].focus();
-    fireEvent.keyDown(radios[0], { key: "ArrowDown" });
+    radios[0]!.focus();
+    fireEvent.keyDown(radios[0]!, { key: "ArrowDown" });
     expect(onValueChange).toHaveBeenCalledWith("b");
   });
 
@@ -347,7 +391,7 @@ describe("RadioGroup", () => {
       </RadioGroup>,
     );
     const radios = screen.getAllByRole("radio") as HTMLInputElement[];
-    fireEvent.keyDown(radios[2], { key: "ArrowDown" });
+    fireEvent.keyDown(radios[2]!, { key: "ArrowDown" });
     expect(onValueChange).toHaveBeenCalledWith("a");
   });
 
@@ -365,7 +409,7 @@ describe("RadioGroup", () => {
       </RadioGroup>,
     );
     const radios = screen.getAllByRole("radio") as HTMLInputElement[];
-    fireEvent.keyDown(radios[0], { key: "ArrowDown" });
+    fireEvent.keyDown(radios[0]!, { key: "ArrowDown" });
     expect(onValueChange).toHaveBeenCalledWith("c");
   });
 
@@ -383,7 +427,7 @@ describe("RadioGroup", () => {
       </RadioGroup>,
     );
     const radios = screen.getAllByRole("radio") as HTMLInputElement[];
-    fireEvent.keyDown(radios[0], { key: "ArrowRight" });
+    fireEvent.keyDown(radios[0]!, { key: "ArrowRight" });
     expect(onValueChange).toHaveBeenCalledWith("b");
   });
 
@@ -400,7 +444,7 @@ describe("RadioGroup", () => {
       </RadioGroup>,
     );
     const radios = screen.getAllByRole("radio") as HTMLInputElement[];
-    fireEvent.keyDown(radios[0], { key: "ArrowRight" });
+    fireEvent.keyDown(radios[0]!, { key: "ArrowRight" });
     expect(onValueChange).not.toHaveBeenCalled();
   });
 

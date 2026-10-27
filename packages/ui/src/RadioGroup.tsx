@@ -5,16 +5,13 @@ import {
   useEffect,
   useId,
   useMemo,
-  useRef,
   useState,
   type ChangeEvent,
-  type ForwardRefExoticComponent,
   type HTMLAttributes,
   type InputHTMLAttributes,
   type KeyboardEvent,
   type ReactElement,
   type ReactNode,
-  type RefAttributes,
 } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { useControllableState, useEventCallback } from "seam-hooks";
@@ -79,7 +76,8 @@ interface RadioGroupContextValue {
   orientation: RadioGroupOrientation;
   groupId: string;
   itemCount: number;
-  registerItem: (value: string, id: string) => void;
+  items: ReadonlyArray<{ value: string; id: string; disabled: boolean }>;
+  registerItem: (value: string, id: string, disabled: boolean) => void;
   unregisterItem: (value: string, id: string) => void;
   getEnabledValues: () => string[];
 }
@@ -111,34 +109,58 @@ function RadioGroupRoot({
     defaultValue: defaultValue ?? "",
     onChange: onValueChange,
   });
-  const itemsRef = useRef(new Map<string, string>());
-  const [itemCount, setItemCount] = useState(0);
+  const [items, setItems] = useState<
+    ReadonlyArray<{ value: string; id: string; disabled: boolean }>
+  >([]);
+  const itemCount = items.length;
 
-  const registerItem = useEventCallback((itemValue: string, id: string) => {
-    const map = itemsRef.current;
-    if (process.env.NODE_ENV !== "production") {
-      if (map.has(itemValue)) {
-        console.warn(
-          `RadioGroup: duplicate item value "${itemValue}" detected.`,
-        );
-      }
-      for (const existingId of map.values()) {
-        if (existingId === id) {
-          console.warn(`RadioGroup: duplicate item id "${id}" detected.`);
+  const registerItem = useEventCallback(
+    (itemValue: string, id: string, disabled: boolean) => {
+      setItems((previous) => {
+        const index = previous.findIndex((item) => item.id === id);
+        if (index === -1) {
+          return [...previous, { value: itemValue, id, disabled }];
         }
-      }
-    }
-    map.set(itemValue, id);
-    setItemCount(map.size);
-  });
+
+        const existing = previous[index];
+        if (existing?.value === itemValue && existing.disabled === disabled) {
+          return previous;
+        }
+
+        const next = [...previous];
+        next[index] = { value: itemValue, id, disabled };
+        return next;
+      });
+    },
+  );
 
   const unregisterItem = useEventCallback((itemValue: string, id: string) => {
-    const map = itemsRef.current;
-    if (map.get(itemValue) === id) {
-      map.delete(itemValue);
-      setItemCount(map.size);
-    }
+    setItems((previous) => {
+      const next = previous.filter(
+        (item) => item.id !== id || item.value !== itemValue,
+      );
+      return next.length === previous.length ? previous : next;
+    });
   });
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+
+    const values = new Set<string>();
+    const ids = new Set<string>();
+    for (const item of items) {
+      if (values.has(item.value)) {
+        console.warn(
+          `RadioGroup: duplicate item value "${item.value}" detected.`,
+        );
+      }
+      if (ids.has(item.id)) {
+        console.warn(`RadioGroup: duplicate item id "${item.id}" detected.`);
+      }
+      values.add(item.value);
+      ids.add(item.id);
+    }
+  }, [items]);
 
   const getEnabledValues = useEventCallback(() => {
     const root = document.getElementById(groupId);
@@ -168,6 +190,7 @@ function RadioGroupRoot({
       orientation,
       groupId,
       itemCount,
+      items,
       registerItem,
       unregisterItem,
       getEnabledValues,
@@ -178,6 +201,7 @@ function RadioGroupRoot({
       orientation,
       groupId,
       itemCount,
+      items,
       registerItem,
       unregisterItem,
       getEnabledValues,
@@ -224,14 +248,30 @@ const RadioGroupItem = forwardRef<HTMLInputElement, RadioGroupItemProps>(
     const labelId = `${inputId}-label`;
     const descriptionId = `${inputId}-description`;
     const checked = context.value === value;
+    const { registerItem, unregisterItem } = context;
+    const hasEnabledSelection = context.items.some(
+      (item) => item.value === context.value && !item.disabled,
+    );
+    const firstEnabledValue = hasEnabledSelection
+      ? undefined
+      : context.items.find((item) => !item.disabled)?.value;
+    const tabIndex = disabled
+      ? -1
+      : checked || firstEnabledValue === value
+        ? 0
+        : -1;
     const reduceMotion = useReducedMotion() ?? false;
     const [pressed, setPressed] = useState(false);
     const isSingle = context.itemCount <= 1;
 
     useEffect(() => {
-      context.registerItem(value, inputId);
-      return () => context.unregisterItem(value, inputId);
-    }, [context, inputId, value]);
+      registerItem(value, inputId, disabled);
+    }, [disabled, inputId, registerItem, value]);
+
+    useEffect(
+      () => () => unregisterItem(value, inputId),
+      [inputId, unregisterItem, value],
+    );
 
     useEffect(() => {
       if (process.env.NODE_ENV !== "production") {
@@ -281,10 +321,11 @@ const RadioGroupItem = forwardRef<HTMLInputElement, RadioGroupItemProps>(
           : (currentIndex + direction + enabledValues.length) %
             enabledValues.length;
       const nextValue = enabledValues[nextIndex];
+      if (nextValue === undefined) return;
       const root = document.getElementById(context.groupId);
-      const nextInput = root?.querySelector<HTMLInputElement>(
-        `input[type="radio"][value="${CSS.escape(nextValue)}"]`,
-      );
+      const nextInput = Array.from(
+        root?.querySelectorAll<HTMLInputElement>('input[type="radio"]') ?? [],
+      ).find((input) => input.value === nextValue);
       nextInput?.focus();
       nextInput?.click();
     };
@@ -321,6 +362,7 @@ const RadioGroupItem = forwardRef<HTMLInputElement, RadioGroupItemProps>(
             value={value}
             checked={checked}
             disabled={disabled}
+            tabIndex={tabIndex}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             aria-describedby={describedBy}
