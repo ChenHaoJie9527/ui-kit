@@ -32,6 +32,12 @@ const componentDefinitions: Array<
     tags: ["表单", "错误态"],
   },
   {
+    path: "components/form",
+    name: "Form",
+    summary: "组合式字段注册、校验状态、错误关联与提交流程。",
+    tags: ["表单", "校验", "组合式 API"],
+  },
+  {
     path: "components/checkbox",
     name: "CheckBox",
     summary: "SVG 描边对勾与即时按压反馈，保留原生表单与键盘语义。",
