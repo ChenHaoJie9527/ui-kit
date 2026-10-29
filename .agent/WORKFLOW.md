@@ -73,6 +73,23 @@ Actions Artifacts，不提交到 PR。提交前必须再次格式化所有运行
 `ai-ci-repair-attempted` 标签限制为一次自动尝试，避免失败提交形成循环；人工
 移除该标签后才允许再次尝试。不处理 fork，不自动合并。
 
+## Phase 4.5: Independent Review + Revision
+
+`AI Reviewer` 在 PR 的 `ci` 工作流成功后运行。Reviewer 使用独立上下文，
+只读取 PR、Spec、变更 diff、`AGENTS.md` 与 `DESIGN.md`，不得修改代码、
+推送或合并。审查结果以结构化摘要发布到 PR，并上传为 Actions Artifacts。
+
+- `approve`：添加 `ai-awaiting-review` 与 `ai-review-approved`，等待人工终审。
+- `request_changes`：添加 `ai-revise`，由 Builder 在原分支定向修改。
+- `needs_human`：添加 `ai-review-needs-human`，停止自动修改。
+
+Builder 修改后必须重新通过完整检查和 E2E，才能推回 PR；CI 成功后 Reviewer
+再次审查。自动修改与复审最多两轮，仍未通过则交给人处理。人工也可以留下
+PR/inline review comments 并添加 `ai-revise`，显式要求 Builder 继续修改。
+
+Reviewer 的 approve 不代表自动合并。组件 PR 与 Version Packages PR 始终由人
+决定是否合并。
+
 ## Phase 5: Checkpoint
 
 更新 `checkpoint.md`。

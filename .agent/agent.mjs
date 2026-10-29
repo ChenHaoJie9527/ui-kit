@@ -190,8 +190,9 @@ function getRepairFiles() {
     .slice(0, 16);
 }
 
-async function repairImplementation(logPath) {
-  console.log(`[Agent] Repairing verification failure from ${logPath}...`);
+async function repairImplementation(logPath, mode = "verification") {
+  const isReview = mode === "review";
+  console.log(`[Agent] Repairing ${mode} feedback from ${logPath}...`);
 
   const verificationLog = readFileSync(logPath, "utf-8").slice(-40_000);
   const repairFiles = getRepairFiles();
@@ -208,8 +209,8 @@ async function repairImplementation(logPath) {
   const specPath = join(runDir, "spec.md");
   const spec = existsSync(specPath) ? readFileSync(specPath, "utf-8") : "";
 
-  const systemPrompt = `You are repairing an existing seam-ui change after automated verification failed.
-Make the smallest correct changes that resolve the reported failures. Preserve the public API and existing design decisions unless a failure proves they are incorrect.
+  const systemPrompt = `You are ${isReview ? "revising an existing seam-ui change after independent code review" : "repairing an existing seam-ui change after automated verification failed"}.
+Make the smallest correct changes that resolve the reported ${isReview ? "findings" : "failures"}. Preserve the public API and existing design decisions unless the feedback proves they are incorrect.
 
 ## Component Spec
 ${spec}
@@ -231,9 +232,10 @@ Each file must use this exact format:
 === END FILE ===
 
 You may only return files supplied in the current sources. Do not create files or modify unrelated code.
-Remove unused imports, satisfy strict TypeScript checks including noUncheckedIndexedAccess, and preserve the repository testing conventions.`;
+Remove unused imports, satisfy strict TypeScript checks including noUncheckedIndexedAccess, and preserve the repository testing conventions.
+${isReview ? "Address every actionable reviewer finding. If a finding requires files outside the supplied sources or a product decision, do not guess." : ""}`;
 
-  const userPrompt = `## Verification Log
+  const userPrompt = `## ${isReview ? "Independent Review Feedback" : "Verification Log"}
 ${verificationLog}
 
 ## Current Sources
@@ -475,6 +477,15 @@ async function main() {
   console.log(`[Agent] Component: ${COMPONENT}, Type: ${TYPE}`);
 
   try {
+    if (process.env.AGENT_REVIEW_LOG) {
+      const files = await repairImplementation(
+        process.env.AGENT_REVIEW_LOG,
+        "review",
+      );
+      console.log(`[Agent] Review revision complete: ${files.join(", ")}`);
+      return;
+    }
+
     if (process.env.AGENT_REPAIR_LOG) {
       const files = await repairImplementation(process.env.AGENT_REPAIR_LOG);
       console.log(`[Agent] Repair complete: ${files.join(", ")}`);

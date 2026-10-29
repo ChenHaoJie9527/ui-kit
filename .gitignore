@@ -11,3 +11,6 @@ e2e/results/
 e2e/report/
 .agent/runs/*/repair-raw.md
 .agent/runs/*/verification-*.log
+.agent/runs/*/review-raw.md
+.agent/runs/*/review.json
+.agent/runs/*/review.md
