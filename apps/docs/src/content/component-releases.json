@@ -62,5 +62,21 @@
   "useRadioGroup": {
     "introducedIn": "0.12.2",
     "releasedAt": "2026-10-27T14:05:25.730Z"
+  },
+  "Form": {
+    "introducedIn": "0.12.3",
+    "releasedAt": "2026-10-29T11:30:17.793Z"
+  },
+  "useFieldState": {
+    "introducedIn": "0.12.3",
+    "releasedAt": "2026-10-29T11:30:17.793Z"
+  },
+  "useFormContext": {
+    "introducedIn": "0.12.3",
+    "releasedAt": "2026-10-29T11:30:17.793Z"
+  },
+  "useWatch": {
+    "introducedIn": "0.12.3",
+    "releasedAt": "2026-10-29T11:30:17.793Z"
   }
 }
