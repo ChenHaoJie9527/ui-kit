@@ -541,7 +541,17 @@ export function AppLayout() {
         <div className="mx-auto max-w-[1180px] px-12 max-tablet:px-8 max-phone:px-5">
           <div className="doc-bottom-column">
             <footer className="flex justify-between gap-4 pb-11 text-xs text-faint max-tablet:pb-10 max-phone:flex-col max-phone:pb-9 [&_a]:text-muted [&_a]:no-underline [&_a:hover]:text-accent">
-              <span>MIT License © ChenHaoJie9527</span>
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span>MIT License © ChenHaoJie9527</span>
+                <span aria-hidden="true">·</span>
+                <a
+                  href="https://beian.miit.gov.cn/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  粤ICP备2026167457号-1
+                </a>
+              </span>
               <span>
                 <a href={REPO_URL} target="_blank" rel="noreferrer">
                   GitHub

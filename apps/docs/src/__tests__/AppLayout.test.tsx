@@ -93,3 +93,47 @@ describe("AppLayout page transitions", () => {
     });
   });
 });
+
+describe("AppLayout footer", () => {
+  beforeEach(() => {
+    (
+      globalThis as typeof globalThis & {
+        IS_REACT_ACT_ENVIRONMENT: boolean;
+      }
+    ).IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
+  afterEach(() => {
+    document.body.replaceChildren();
+  });
+
+  it("links the ICP filing number to the MIIT registry", async () => {
+    const router = createMemoryRouter([
+      {
+        path: "/",
+        element: <AppLayout />,
+        children: [
+          { index: true, element: <TestPage>Overview page</TestPage> },
+        ],
+      },
+    ]);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<RouterProvider router={router} />);
+    });
+
+    const icpLink = document.querySelector<HTMLAnchorElement>(
+      'a[href="https://beian.miit.gov.cn/"]',
+    );
+    expect(icpLink?.textContent).toBe("粤ICP备2026167457号-1");
+    expect(icpLink?.target).toBe("_blank");
+    expect(icpLink?.rel).toBe("noreferrer");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+});
