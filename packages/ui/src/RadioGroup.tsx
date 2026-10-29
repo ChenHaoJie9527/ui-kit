@@ -20,6 +20,7 @@ import {
   REDUCED_MOTION_TRANSITION,
   UI_SPRING,
 } from "./motion";
+import { markControl } from "./control-contract";
 import { cx } from "./utils/cx";
 
 export type RadioGroupOrientation = "horizontal" | "vertical";
@@ -409,8 +410,11 @@ const RadioGroupItem = forwardRef<HTMLInputElement, RadioGroupItemProps>(
   },
 );
 
-export const RadioGroup = Object.assign(RadioGroupRoot, {
-  Item: RadioGroupItem,
-});
+export const RadioGroup = markControl(
+  Object.assign(RadioGroupRoot, {
+    Item: RadioGroupItem,
+  }),
+  "value",
+);
 export { RadioGroupItem };
 export type RadioGroupComponent = typeof RadioGroup;

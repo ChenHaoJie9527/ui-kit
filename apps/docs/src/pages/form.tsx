@@ -183,6 +183,20 @@ export function FormPage() {
         />
       </Section>
 
+      <Section
+        title="与现有控件集成"
+        description="Form.Control 会保留控件原有的公开事件契约，同时把值接入表单状态。"
+      >
+        <BulletList
+          items={[
+            "原生 input、textarea、select 与 Input：绑定 value / checked、onChange、disabled 和 ARIA 属性。",
+            "CheckBox 与 Switch：绑定 checked / onCheckedChange，并将布尔值写入字段状态。",
+            "Select 与 RadioGroup：绑定 value / onValueChange，并让 Form.Label 通过 aria-labelledby 提供可访问名称。",
+            "所有控件原有的 onChange、onCheckedChange 或 onValueChange 回调都会继续执行。",
+          ]}
+        />
+      </Section>
+
       <Section title="可访问性">
         <BulletList
           items={[

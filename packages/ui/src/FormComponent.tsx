@@ -1,5 +1,6 @@
 import {
   cloneElement,
+  Children,
   createContext,
   forwardRef,
   isValidElement,
@@ -19,6 +20,7 @@ import {
   type Ref,
 } from "react";
 import { useControllableState, useEventCallback } from "seam-hooks";
+import { getControlKind } from "./control-contract";
 import { cx } from "./utils/cx";
 
 // ============================================================================
@@ -195,6 +197,7 @@ const FieldContext = createContext<{
   descriptionId: string;
   errorId: string;
   state: FieldState;
+  hasLabel: boolean;
   hasDescription: boolean;
   setHasDescription: (has: boolean) => void;
 } | null>(null);
@@ -217,7 +220,7 @@ export function useFieldState(name: string): FieldState {
 export function useWatch<T = unknown>(name: string | string[]): T {
   const context = useFormContext();
   const names = Array.isArray(name) ? name : [name];
-  const values = names.map((n) => context.values[n]);
+  const values = names.map((n) => getNestedValue(context.values, n));
 
   if (Array.isArray(name)) {
     return values as T;
@@ -327,6 +330,7 @@ async function validateFieldRules(
     }
 
     if ("pattern" in rule && typeof value === "string") {
+      rule.pattern.lastIndex = 0;
       if (!rule.pattern.test(value)) {
         return rule.message ?? "Invalid format";
       }
@@ -404,6 +408,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
     formError: null,
   });
   const errorsRef = useRef<Record<string, string>>({});
+  const formLevelErrorsRef = useRef<Record<string, string>>({});
 
   const fieldsRef = useRef<Map<string, FieldConfig>>(new Map());
   const fieldStatesRef = useRef<
@@ -549,11 +554,22 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       formLevelErrors = await validate(values);
     }
 
+    const previousFormLevelErrors = formLevelErrorsRef.current;
     const allErrors = { ...errorsRef.current };
+    Object.keys(previousFormLevelErrors).forEach((key) => {
+      if (allErrors[key] === previousFormLevelErrors[key]) {
+        delete allErrors[key];
+      }
+    });
+    const nextFormLevelErrors: Record<string, string> = {};
     Object.entries(formLevelErrors).forEach(([key, value]) => {
-      if (value) allErrors[key] = value;
+      if (value) {
+        allErrors[key] = value;
+        nextFormLevelErrors[key] = value;
+      }
     });
 
+    formLevelErrorsRef.current = nextFormLevelErrors;
     errorsRef.current = allErrors;
     setFormState((prev) => ({ ...prev, errors: allErrors }));
 
@@ -572,10 +588,10 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       const transformedValue = config?.transform
         ? config.transform(value)
         : value;
-      const newValues = setNestedValue(values, name, transformedValue);
-
       changedFieldRef.current = name;
-      setValuesState(newValues);
+      const newValues = setValuesState((previousValues) =>
+        setNestedValue(previousValues, name, transformedValue),
+      );
       changedFieldRef.current = undefined;
 
       if (options?.touch) {
@@ -621,11 +637,13 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       newValues: Partial<Record<string, unknown>>,
       options?: { validate?: boolean },
     ) => {
-      let updatedValues = { ...values };
-      Object.entries(newValues).forEach(([name, value]) => {
-        updatedValues = setNestedValue(updatedValues, name, value);
+      const updatedValues = setValuesState((previousValues) => {
+        let nextValues = { ...previousValues };
+        Object.entries(newValues).forEach(([name, value]) => {
+          nextValues = setNestedValue(nextValues, name, value);
+        });
+        return nextValues;
       });
-      setValuesState(updatedValues);
 
       if (options?.validate) {
         Object.keys(newValues).forEach((name) =>
@@ -724,13 +742,27 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
         string,
         unknown
       >;
+      let resolvedResetValues = { ...resetValues };
+      fieldsRef.current.forEach((config, fieldName) => {
+        if (
+          config.defaultValue !== undefined &&
+          getNestedValue(resolvedResetValues, fieldName) === undefined
+        ) {
+          resolvedResetValues = setNestedValue(
+            resolvedResetValues,
+            fieldName,
+            config.defaultValue,
+          );
+        }
+      });
       errorsRef.current = {};
-      setValuesState(resetValues);
+      formLevelErrorsRef.current = {};
+      setValuesState(resolvedResetValues);
 
       fieldStatesRef.current.forEach((meta, name) => {
         fieldStatesRef.current.set(name, {
           ...meta,
-          initialValue: getNestedValue(resetValues, name),
+          initialValue: getNestedValue(resolvedResetValues, name),
           touched: false,
           focused: false,
           validating: false,
@@ -756,6 +788,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       clearedValues[key] = undefined;
     });
     errorsRef.current = {};
+    formLevelErrorsRef.current = {};
     setValuesState(clearedValues);
     setFormState((prev) => ({ ...prev, errors: {}, formError: null }));
   });
@@ -771,12 +804,18 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
   const clearErrors = useEventCallback((fields?: string[]) => {
     if (!fields) {
       errorsRef.current = {};
+      formLevelErrorsRef.current = {};
       setFormState((prev) => ({ ...prev, errors: {}, formError: null }));
       return;
     }
 
     const nextErrors = { ...errorsRef.current };
-    fields.forEach((field) => delete nextErrors[field]);
+    const nextFormLevelErrors = { ...formLevelErrorsRef.current };
+    fields.forEach((field) => {
+      delete nextErrors[field];
+      delete nextFormLevelErrors[field];
+    });
+    formLevelErrorsRef.current = nextFormLevelErrors;
     errorsRef.current = nextErrors;
     setFormState((prev) => ({ ...prev, errors: nextErrors }));
   });
@@ -785,10 +824,12 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
     (name: string, config: FieldConfig) => {
       const isNewField = !fieldsRef.current.has(name);
       fieldsRef.current.set(name, config);
+      const currentValue = getNestedValue(values, name);
 
       if (!fieldStatesRef.current.has(name)) {
         fieldStatesRef.current.set(name, {
-          initialValue: getNestedValue(values, name),
+          initialValue:
+            currentValue === undefined ? config.defaultValue : currentValue,
           touched: false,
           focused: false,
           validating: false,
@@ -802,6 +843,10 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       if (meta) {
         fieldStatesRef.current.set(name, {
           ...meta,
+          initialValue:
+            meta.initialValue === undefined && currentValue === undefined
+              ? config.defaultValue
+              : meta.initialValue,
           disabled: config.disabled ?? false,
           readOnly: config.readOnly ?? false,
           hidden: config.hidden ?? false,
@@ -811,10 +856,18 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       if (
         isNewField &&
         config.defaultValue !== undefined &&
-        getNestedValue(values, name) === undefined
+        currentValue === undefined
       ) {
-        setValuesState(setNestedValue(values, name, config.defaultValue));
+        changedFieldRef.current = name;
+        setValuesState((previousValues) =>
+          getNestedValue(previousValues, name) === undefined
+            ? setNestedValue(previousValues, name, config.defaultValue)
+            : previousValues,
+        );
+        changedFieldRef.current = undefined;
       }
+
+      setFormState((previousState) => ({ ...previousState }));
     },
   );
 
@@ -838,6 +891,8 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       abort.abort();
       validationAbortRef.current.delete(name);
     }
+
+    setFormState((previousState) => ({ ...previousState }));
   });
 
   useImperativeHandle(
@@ -997,6 +1052,9 @@ function FormField({
   const descriptionId = `${baseId}-description`;
   const errorId = `${baseId}-error`;
   const [hasDescription, setHasDescription] = useState(false);
+  const hasLabel = Children.toArray(children).some(
+    (child) => isValidElement(child) && child.type === FormLabel,
+  );
 
   const { registerField, unregisterField } = formContext;
 
@@ -1038,6 +1096,7 @@ function FormField({
       descriptionId,
       errorId,
       state: fieldState,
+      hasLabel,
       hasDescription,
       setHasDescription,
     }),
@@ -1048,6 +1107,7 @@ function FormField({
       descriptionId,
       errorId,
       fieldState,
+      hasLabel,
       hasDescription,
     ],
   );
@@ -1104,8 +1164,16 @@ const FormLabel = forwardRef<HTMLLabelElement, FormLabelProps>(
 function FormControl({ children }: FormControlProps): ReactElement {
   const fieldContext = useFieldContext("Form.Control");
   const formContext = useFormContext();
-  const { name, fieldId, descriptionId, errorId, state, hasDescription } =
-    fieldContext;
+  const {
+    name,
+    fieldId,
+    labelId,
+    descriptionId,
+    errorId,
+    state,
+    hasLabel,
+    hasDescription,
+  } = fieldContext;
 
   if (!isValidElement(children)) {
     throw new Error("<Form.Control> expects a single valid React element");
@@ -1125,9 +1193,16 @@ function FormControl({ children }: FormControlProps): ReactElement {
     ]
       .filter(Boolean)
       .join(" ") || undefined;
-  const isCheckbox = childProps.type === "checkbox";
+  const labelledBy =
+    [childProps["aria-labelledby"], hasLabel ? labelId : null]
+      .filter(Boolean)
+      .join(" ") || undefined;
+  const controlKind = getControlKind(child.type);
+  const isBooleanControl = controlKind === "boolean";
+  const isNativeCheckbox = childProps.type === "checkbox";
+  const isCompositeControl = controlKind === "value";
 
-  const injectedProps: Record<string, unknown> = {
+  const sharedProps: Record<string, unknown> = {
     id: fieldId,
     name,
     ref: childRef,
@@ -1139,34 +1214,6 @@ function FormControl({ children }: FormControlProps): ReactElement {
     "aria-busy": state.validating || undefined,
     disabled: state.disabled || childProps.disabled,
     readOnly: state.readOnly || childProps.readOnly,
-    value: isCheckbox ? childProps.value : (state.value ?? ""),
-    checked: isCheckbox ? Boolean(state.value) : childProps.checked,
-    onChange: (event: unknown) => {
-      const originalOnChange = childProps.onChange as
-        | ((event: unknown) => void)
-        | undefined;
-      originalOnChange?.(event);
-
-      let value: unknown;
-      if (event && typeof event === "object" && "target" in event) {
-        const target = (event as { target: unknown }).target;
-        if (
-          target &&
-          typeof target === "object" &&
-          "type" in target &&
-          (target as { type: unknown }).type === "checkbox" &&
-          "checked" in target
-        ) {
-          value = (target as { checked: unknown }).checked;
-        } else if (target && typeof target === "object" && "value" in target) {
-          value = (target as { value: unknown }).value;
-        }
-      } else {
-        value = event;
-      }
-
-      formContext.setValue(name, value);
-    },
     onBlur: (event: unknown) => {
       const originalOnBlur = childProps.onBlur as
         | ((event: unknown) => void)
@@ -1184,7 +1231,75 @@ function FormControl({ children }: FormControlProps): ReactElement {
     },
   };
 
-  return cloneElement(child, injectedProps);
+  if (isCompositeControl) {
+    sharedProps["aria-labelledby"] = labelledBy;
+  }
+
+  if (isBooleanControl) {
+    const originalOnCheckedChange = childProps.onCheckedChange as
+      | ((checked: boolean) => void)
+      | undefined;
+
+    return cloneElement(child, {
+      ...sharedProps,
+      checked: Boolean(state.value),
+      onCheckedChange: (checked: boolean) => {
+        originalOnCheckedChange?.(checked);
+        formContext.setValue(name, checked);
+      },
+    });
+  }
+
+  if (isCompositeControl) {
+    const originalOnValueChange = childProps.onValueChange as
+      | ((value: string | string[]) => void)
+      | undefined;
+
+    return cloneElement(child, {
+      ...sharedProps,
+      value: state.value as string | readonly string[] | null | undefined,
+      onValueChange: (value: string | string[]) => {
+        originalOnValueChange?.(value);
+        formContext.setValue(name, value);
+      },
+    });
+  }
+
+  return cloneElement(child, {
+    ...sharedProps,
+    value: isNativeCheckbox ? childProps.value : (state.value ?? ""),
+    checked: isNativeCheckbox ? Boolean(state.value) : childProps.checked,
+    onChange: (event: unknown) => {
+      const originalOnChange = childProps.onChange as
+        | ((event: unknown) => void)
+        | undefined;
+      originalOnChange?.(event);
+
+      let value: unknown;
+      if (event && typeof event === "object" && "target" in event) {
+        const target = (event as { target: unknown }).target;
+        if (target && typeof target === "object") {
+          if ("selectedOptions" in target && childProps.multiple) {
+            value = Array.from(
+              target.selectedOptions as ArrayLike<HTMLOptionElement>,
+            ).map((option) => option.value);
+          } else if (
+            "type" in target &&
+            (target as { type: unknown }).type === "checkbox" &&
+            "checked" in target
+          ) {
+            value = (target as { checked: unknown }).checked;
+          } else if ("value" in target) {
+            value = (target as { value: unknown }).value;
+          }
+        }
+      } else {
+        value = event;
+      }
+
+      formContext.setValue(name, value);
+    },
+  });
 }
 
 // ============================================================================
@@ -1225,18 +1340,17 @@ const FormErrorMessage = forwardRef<
   const fieldContext = useFieldContext("Form.ErrorMessage");
   const error = fieldContext.state.error;
 
-  if (!error) return null;
-
   return (
     <p
       {...rest}
       ref={ref}
       id={fieldContext.errorId}
-      role="alert"
+      role={error ? "alert" : undefined}
       aria-live="polite"
+      data-state={error ? "visible" : "hidden"}
       className={cx("uk-form__error", className)}
     >
-      {children ? children(error) : error}
+      {error ? (children ? children(error) : error) : null}
     </p>
   );
 });

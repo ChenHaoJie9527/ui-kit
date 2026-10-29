@@ -16,6 +16,7 @@ import {
   useReducedMotion,
 } from "motion/react";
 import { useControllableState } from "seam-hooks";
+import { markControl } from "./control-contract";
 import { UI_SPRING } from "./motion";
 import { cx } from "./utils/cx";
 
@@ -39,7 +40,7 @@ export interface SwitchProps extends Omit<
  * 底层是原生 checkbox（role="switch"），所以表单提交、键盘操作和
  * 屏幕阅读器语义都是免费的；视觉部分由 track / thumb 两个 span 承担。
  */
-export const Switch: ForwardRefExoticComponent<
+const SwitchComponent: ForwardRefExoticComponent<
   SwitchProps & RefAttributes<HTMLInputElement>
 > = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
   {
@@ -200,3 +201,5 @@ export const Switch: ForwardRefExoticComponent<
     </label>
   );
 });
+
+export const Switch = markControl(SwitchComponent, "boolean");
