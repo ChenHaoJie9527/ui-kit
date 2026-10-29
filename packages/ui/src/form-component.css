@@ -1,0 +1,113 @@
+@layer uk.components {
+  .uk-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--uk-space-5);
+    font-family: var(--uk-font-sans);
+  }
+
+  .uk-form__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--uk-space-2);
+  }
+
+  .uk-form__field[data-disabled="true"] {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .uk-form__field[data-readonly="true"] {
+    background: var(--uk-surface);
+  }
+
+  .uk-form__label {
+    font-size: var(--uk-text-md);
+    font-weight: 500;
+    color: var(--uk-text);
+    display: flex;
+    align-items: center;
+    gap: var(--uk-space-1);
+  }
+
+  .uk-form__required {
+    color: var(--uk-danger);
+    font-size: var(--uk-text-lg);
+    line-height: 1;
+  }
+
+  .uk-form__description {
+    font-size: var(--uk-text-sm);
+    color: var(--uk-text-muted);
+    margin: 0;
+  }
+
+  .uk-form__error {
+    font-size: var(--uk-text-sm);
+    color: var(--uk-danger);
+    margin: 0;
+    min-height: 1.25rem;
+    transition: opacity var(--uk-duration-fast) var(--uk-ease-out);
+  }
+
+  .uk-form__error[data-state="hidden"] {
+    opacity: 0;
+  }
+
+  .uk-form__error-summary {
+    padding: var(--uk-space-3) var(--uk-space-4);
+    background: light-dark(rgb(185 28 28 / 0.08), rgb(252 165 165 / 0.12));
+    border: 1px solid var(--uk-danger);
+    border-radius: var(--uk-radius-md);
+    color: var(--uk-danger);
+    font-size: var(--uk-text-md);
+  }
+
+  .uk-form__actions {
+    display: flex;
+    gap: var(--uk-space-3);
+    justify-content: flex-end;
+    padding-top: var(--uk-space-2);
+  }
+
+  .uk-form__field[data-invalid="true"] :is(input, textarea, select) {
+    border-color: var(--uk-danger);
+  }
+
+  .uk-form__field[data-invalid="true"] :is(input, textarea, select):focus {
+    box-shadow: 0 0 0 2px var(--uk-danger);
+  }
+
+  .uk-form__field[data-validating="true"]::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0.875rem;
+    height: 0.875rem;
+    border: 2px solid var(--uk-border);
+    border-top-color: var(--uk-primary);
+    border-radius: var(--uk-radius-full);
+    animation: uk-form-spin 0.6s linear infinite;
+  }
+
+  .uk-form__field {
+    position: relative;
+  }
+
+  @keyframes uk-form-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .uk-form__error {
+      transition: none;
+    }
+
+    .uk-form__field[data-validating="true"]::after {
+      animation: none;
+    }
+  }
+}

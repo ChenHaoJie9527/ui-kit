@@ -28,6 +28,7 @@ import {
 } from "motion/react";
 import { createPortal } from "react-dom";
 import { useControllableState, useEventCallback } from "seam-hooks";
+import { markControl } from "./control-contract";
 import {
   DISCLOSURE_TRANSITION,
   INDICATOR_SPRING,
@@ -1266,51 +1267,53 @@ type SelectInternalProps = SelectBaseProps & {
   onValueChange?: (value: string | Array<string>) => void;
 };
 
-const Select = forwardRef<HTMLDivElement, SelectInternalProps>(function Select(
-  {
-    options,
-    multiple,
-    value,
-    defaultValue,
-    onValueChange,
-    placeholder,
-    size = "md",
-    clear,
-    disabled,
-    invalid,
-    emptyText = "暂无可选项",
-    loading = false,
-    loadingText = "加载中...",
-    className,
-    ...rest
+const SelectComponent = forwardRef<HTMLDivElement, SelectInternalProps>(
+  function Select(
+    {
+      options,
+      multiple,
+      value,
+      defaultValue,
+      onValueChange,
+      placeholder,
+      size = "md",
+      clear,
+      disabled,
+      invalid,
+      emptyText = "暂无可选项",
+      loading = false,
+      loadingText = "加载中...",
+      className,
+      ...rest
+    },
+    ref,
+  ) {
+    return (
+      <SelectRoot
+        options={options}
+        loading={loading}
+        multiple={multiple}
+        value={value}
+        defaultValue={defaultValue}
+        onValueChange={onValueChange}
+      >
+        <SelectTrigger
+          {...rest}
+          ref={ref}
+          placeholder={placeholder}
+          size={size}
+          clear={clear}
+          loadingText={loadingText}
+          disabled={disabled}
+          aria-invalid={invalid || undefined}
+          data-size={size}
+          className={className}
+        />
+        <SelectPresence emptyText={emptyText} />
+      </SelectRoot>
+    );
   },
-  ref,
-) {
-  return (
-    <SelectRoot
-      options={options}
-      loading={loading}
-      multiple={multiple}
-      value={value}
-      defaultValue={defaultValue}
-      onValueChange={onValueChange}
-    >
-      <SelectTrigger
-        {...rest}
-        ref={ref}
-        placeholder={placeholder}
-        size={size}
-        clear={clear}
-        loadingText={loadingText}
-        disabled={disabled}
-        aria-invalid={invalid || undefined}
-        data-size={size}
-        className={className}
-      />
-      <SelectPresence emptyText={emptyText} />
-    </SelectRoot>
-  );
-}) as {
+) as {
   (
     props: SelectSingleProps & RefAttributes<HTMLDivElement>,
   ): ReactElement | null;
@@ -1318,6 +1321,8 @@ const Select = forwardRef<HTMLDivElement, SelectInternalProps>(function Select(
     props: SelectMultipleProps & RefAttributes<HTMLDivElement>,
   ): ReactElement | null;
 };
+
+export const Select = markControl(SelectComponent, "value");
 
 function SelectPresence({ emptyText }: { emptyText: string }): ReactElement {
   const context = useSelectContext("Select.Content");
@@ -1330,5 +1335,3 @@ function SelectPresence({ emptyText }: { emptyText: string }): ReactElement {
     </AnimatePresence>
   );
 }
-
-export { Select };

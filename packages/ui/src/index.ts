@@ -28,6 +28,24 @@ export type {
 export { Input } from "./Input";
 export type { InputProps, InputSize } from "./Input";
 
+export { Form, useFieldState, useFormContext, useWatch } from "./FormComponent";
+export type {
+  FieldRule,
+  FieldState,
+  FormActionsProps,
+  FormComponent,
+  FormContextValue,
+  FormControlProps,
+  FormDescriptionProps,
+  FormErrorMessageProps,
+  FormErrors,
+  FormFieldProps,
+  FormLabelProps,
+  FormRef,
+  FormRootProps,
+  FormState,
+} from "./FormComponent";
+
 export { Switch } from "./Switch";
 export type { SwitchProps } from "./Switch";
 

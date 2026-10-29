@@ -6,6 +6,7 @@ import { ButtonPage } from "./pages/button";
 import { CheckBoxPage } from "./pages/checkbox";
 import { CustomizingPage } from "./pages/customizing";
 import { DialogPage } from "./pages/dialog";
+import { FormPage } from "./pages/form";
 import { HookPage } from "./pages/hook";
 import { InputPage } from "./pages/input";
 import { MarqueePage } from "./pages/marquee";
@@ -23,6 +24,7 @@ import { UsagePage } from "./pages/usage";
 const componentPages: Record<string, ComponentType> = {
   button: ButtonPage,
   input: InputPage,
+  form: FormPage,
   checkbox: CheckBoxPage,
   "radio-group": RadioGroupPage,
   select: SelectPage,

@@ -7,6 +7,7 @@ import {
   type RefAttributes,
 } from "react";
 import { useControllableState } from "seam-hooks";
+import { markControl } from "./control-contract";
 import { cx } from "./utils/cx";
 
 export interface CheckBoxProps extends Omit<
@@ -29,7 +30,7 @@ export interface CheckBoxProps extends Omit<
  * 保留原生 checkbox 的表单、键盘和读屏语义；方框内的对勾用 SVG 描边
  * 展示状态转换，按压时的轻微缩放提供即时的触觉反馈。
  */
-export const CheckBox: ForwardRefExoticComponent<
+const CheckBoxComponent: ForwardRefExoticComponent<
   CheckBoxProps & RefAttributes<HTMLInputElement>
 > = forwardRef<HTMLInputElement, CheckBoxProps>(function CheckBox(
   {
@@ -93,4 +94,5 @@ export const CheckBox: ForwardRefExoticComponent<
   );
 });
 
+export const CheckBox = markControl(CheckBoxComponent, "boolean");
 CheckBox.displayName = "CheckBox";
