@@ -7,7 +7,7 @@
  *
  * Requires env:
  *   ARK_API_KEY     - Volcano Ark API key
- *   ARK_MODEL       - Model endpoint ID (e.g. ep-2024xxxx-xxxxx)
+ *   ARK_MODEL       - Coding Plan model slug (e.g. kimi-k3.1-pro)
  *   AGENT_COMPONENT - Component name
  *   AGENT_TYPE      - new-component | enhancement | bugfix | deprecation
  *   AGENT_ISSUE_BODY - Issue description text (optional)
@@ -27,11 +27,15 @@ const ARK_BASE_URL =
 const COMPONENT = process.env.AGENT_COMPONENT;
 const TYPE = process.env.AGENT_TYPE || "new-component";
 const ISSUE_BODY = process.env.AGENT_ISSUE_BODY || "";
+const SPEC_ONLY = process.env.AGENT_SPEC_ONLY === "true";
+const SPEC_APPROVED = process.env.AGENT_SPEC_APPROVED === "true";
 
-const COMPONENT_PASCAL = COMPONENT.replace(/(?:^|\s+)([a-zA-Z])/g, (_, char) =>
-  char.toUpperCase(),
-).replace(/\s+/g, "");
-const COMPONENT_KEBAB = COMPONENT.toLowerCase().replace(/\s+/g, "-");
+function isSafeRunId(value) {
+  return (
+    /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value) &&
+    !value.split(/[\\/]/).includes("..")
+  );
+}
 
 if (!ARK_API_KEY) {
   console.error("Error: ARK_API_KEY is required.");
@@ -43,11 +47,36 @@ if (!COMPONENT) {
   process.exit(1);
 }
 
+if (/[\\/]/.test(COMPONENT) || COMPONENT.includes("..")) {
+  console.error(
+    "Error: AGENT_COMPONENT cannot contain path separators or '..'.",
+  );
+  process.exit(1);
+}
+
+if (!/^[\p{L}\p{N} ._-]+$/u.test(COMPONENT)) {
+  console.error(
+    "Error: AGENT_COMPONENT may only contain letters, numbers, spaces, dots, underscores, and hyphens.",
+  );
+  process.exit(1);
+}
+
+const COMPONENT_PASCAL = COMPONENT.replace(/(?:^|\s+)([a-zA-Z])/g, (_, char) =>
+  char.toUpperCase(),
+).replace(/\s+/g, "");
+const COMPONENT_KEBAB = COMPONENT.toLowerCase().replace(/\s+/g, "-");
+
 // ─── Scaffold run directory ───────────────────────────────────────────────
 const date = new Date().toISOString().slice(0, 10);
-const runId =
-  process.env.AGENT_RUN_ID ||
-  `${COMPONENT.toLowerCase().replace(/\s+/g, "-")}-${date}`;
+const fallbackRunId =
+  COMPONENT.toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "component";
+const runId = process.env.AGENT_RUN_ID || `${fallbackRunId}-${date}`;
+if (!isSafeRunId(runId)) {
+  console.error("Error: AGENT_RUN_ID must be a safe single path segment.");
+  process.exit(1);
+}
 const runDir = join(__dirname, "runs", runId);
 const repoDir = join(__dirname, "..");
 
@@ -92,6 +121,33 @@ const motionTokens = readFileSync(motionPath, "utf-8");
 
 const indexPath = join(srcDir, "index.ts");
 const currentExports = readFileSync(indexPath, "utf-8");
+
+const docsPageReferencePath = join(
+  repoDir,
+  "apps",
+  "docs",
+  "src",
+  "pages",
+  "switch.tsx",
+);
+const docsRoutesPath = join(repoDir, "apps", "docs", "src", "routes.tsx");
+const docsContentPath = join(
+  repoDir,
+  "apps",
+  "docs",
+  "src",
+  "content",
+  "components.ts",
+);
+const docsPageReference = existsSync(docsPageReferencePath)
+  ? readFileSync(docsPageReferencePath, "utf-8")
+  : "";
+const docsRoutes = existsSync(docsRoutesPath)
+  ? readFileSync(docsRoutesPath, "utf-8")
+  : "";
+const docsContent = existsSync(docsContentPath)
+  ? readFileSync(docsContentPath, "utf-8")
+  : "";
 
 // ─── Call Ark API ─────────────────────────────────────────────────────────
 function httpsPost(urlString, headers, body) {
@@ -336,12 +392,54 @@ Write a complete spec.md covering:
   return spec;
 }
 
+function readApprovedSpec() {
+  const specPath = join(runDir, "spec.md");
+  if (!existsSync(specPath)) {
+    throw new Error(
+      `Approved spec is missing at .agent/runs/${runId}/spec.md.`,
+    );
+  }
+  const spec = readFileSync(specPath, "utf-8").trim();
+  if (spec === "") {
+    throw new Error(`Approved spec is empty at .agent/runs/${runId}/spec.md.`);
+  }
+  return `${spec}\n`;
+}
+
 // ─── Phase 3: Generate Implementation ─────────────────────────────────────
 async function generateImplementation(spec) {
   console.log(`[Agent] Phase 3: Generating implementation for ${COMPONENT}...`);
 
   // Write reference component code to a temp context for the LLM
   const references = referenceComponents.slice(0, 3).join("\n\n---\n\n");
+  const docsFiles =
+    TYPE === "new-component"
+      ? `
+5. apps/docs/src/pages/${COMPONENT_KEBAB}.tsx - Documentation page
+6. apps/docs/src/routes.tsx - Import the new page and register its slug
+7. apps/docs/src/content/components.ts - Add the component metadata to the catalog
+`
+      : "";
+  const docsInstructions =
+    TYPE === "new-component"
+      ? `
+For the new component, also create the user-facing docs page and register it:
+- The page must export ${COMPONENT_PASCAL}Page and follow the supplied docs reference.
+- Include an import CodeBlock, a live Demo, an API PropsTable, and accessibility notes.
+- Update routes.tsx with the import and componentPages entry.
+- Update components.ts with a path, name, summary, and tags entry.
+- Do not add a separate demo file unless the reference page requires one.
+
+## Documentation Reference
+${docsPageReference}
+
+## Current Routes
+${docsRoutes}
+
+## Current Component Catalog
+${docsContent}
+`
+      : "";
 
   const systemPrompt = `You are a senior React component library engineer working on seam-ui.
 You have written a spec and now must implement the component.
@@ -359,15 +457,20 @@ ${motionTokens}
 ${references}
 
 Output format: You must output separate files, each starting with a marker line:
-=== FILE: <relative-path-from-packages/ui/src/> ===
+=== FILE: <path> ===
 <file content>
 === END FILE ===
+
+For files 1-4, use paths relative to \`packages/ui/src/\`. For docs files 5-7,
+use repository-relative paths under \`apps/docs/src/\`. Always output complete files.
 
 Files to generate:
 1. ${COMPONENT_PASCAL}.tsx - Component implementation
 2. ${COMPONENT_KEBAB}.css - Component styles
 3. __tests__/${COMPONENT_PASCAL}.test.tsx - Tests
 4. Update to src/index.ts - Export addition
+${docsFiles}
+${docsInstructions}
 
 Rules:
 - Use existing hooks from seam-hooks
@@ -401,6 +504,23 @@ Generate the implementation files following the output format specified above.`;
 
   // Parse the file markers and write files
   const fileRegex = /=== FILE: (.+?) ===\n([\s\S]*?)=== END FILE ===/g;
+  const allowedFiles = new Map([
+    [`${COMPONENT_PASCAL}.tsx`, join(srcDir, `${COMPONENT_PASCAL}.tsx`)],
+    [`${COMPONENT_KEBAB}.css`, join(srcDir, `${COMPONENT_KEBAB}.css`)],
+    [
+      `__tests__/${COMPONENT_PASCAL}.test.tsx`,
+      join(srcDir, "__tests__", `${COMPONENT_PASCAL}.test.tsx`),
+    ],
+    ["index.ts", join(srcDir, "index.ts")],
+  ]);
+  if (TYPE === "new-component") {
+    allowedFiles.set(
+      `apps/docs/src/pages/${COMPONENT_KEBAB}.tsx`,
+      join(repoDir, "apps", "docs", "src", "pages", `${COMPONENT_KEBAB}.tsx`),
+    );
+    allowedFiles.set("apps/docs/src/routes.tsx", docsRoutesPath);
+    allowedFiles.set("apps/docs/src/content/components.ts", docsContentPath);
+  }
   let match;
   const filesWritten = [];
 
@@ -409,22 +529,49 @@ Generate the implementation files following the output format specified above.`;
     const fileContent = match[2].trim();
 
     const cleanPath = filePath
+      .replace(/^\.\//, "")
       .replace(/^packages\/ui\/src\//, "")
       .replace(/^src\//, "");
-    const absPath = join(srcDir, cleanPath);
+    const absPath = allowedFiles.get(cleanPath);
+    if (!absPath) {
+      throw new Error(
+        `Agent attempted to write an unsupported source file: ${filePath}`,
+      );
+    }
     const absDir = dirname(absPath);
     mkdirSync(absDir, { recursive: true });
     writeFileSync(absPath, fileContent + "\n");
-    filesWritten.push(filePath);
+    filesWritten.push(cleanPath);
     console.log(`[Agent] Wrote: ${absPath}`);
   }
 
   if (filesWritten.length === 0) {
-    console.warn(
-      "[Agent] Warning: No files were parsed from the implementation output.",
-    );
-    // Save raw output for debugging
     writeFileSync(join(runDir, "implementation-raw.md"), implementation);
+    throw new Error(
+      "Implementation response did not contain any parseable file changes.",
+    );
+  }
+
+  const requiredFiles =
+    TYPE === "new-component"
+      ? [
+          `${COMPONENT_PASCAL}.tsx`,
+          `${COMPONENT_KEBAB}.css`,
+          `__tests__/${COMPONENT_PASCAL}.test.tsx`,
+          "index.ts",
+          `apps/docs/src/pages/${COMPONENT_KEBAB}.tsx`,
+          "apps/docs/src/routes.tsx",
+          "apps/docs/src/content/components.ts",
+        ]
+      : [];
+  const missingFiles = requiredFiles.filter(
+    (file) => !filesWritten.includes(file),
+  );
+  if (missingFiles.length > 0) {
+    writeFileSync(join(runDir, "implementation-raw.md"), implementation);
+    throw new Error(
+      `Agent implementation omitted required files: ${missingFiles.join(", ")}.`,
+    );
   }
 
   const cssFileName = `${COMPONENT_KEBAB}.css`;
@@ -456,11 +603,15 @@ async function generateChangeset() {
   console.log(`[Agent] Phase 4: Generating Changeset...`);
 
   const bumpType = TYPE === "new-component" ? "minor" : "patch";
+  const summary =
+    TYPE === "new-component"
+      ? `feat(ui): add ${COMPONENT} component`
+      : `fix(ui): update ${COMPONENT}`;
   const changesetContent = `---
 "seam-react": ${bumpType}
 ---
 
-feat(ui): add ${COMPONENT} component
+${summary}
 
 🤖 Developed by AI Agent (Volcano Ark) under human-defined spec patterns.
 `;
@@ -492,7 +643,14 @@ async function main() {
       return;
     }
 
-    const spec = await generateSpec();
+    if (SPEC_ONLY) {
+      const spec = await generateSpec();
+      console.log(`[Agent] Spec-only run complete: ${join(runDir, "spec.md")}`);
+      console.log(`[Agent] Spec characters: ${spec.length}`);
+      return;
+    }
+
+    const spec = SPEC_APPROVED ? readApprovedSpec() : await generateSpec();
     const files = await generateImplementation(spec);
     await generateChangeset();
 

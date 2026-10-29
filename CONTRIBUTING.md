@@ -52,3 +52,58 @@ echo "feat(ui): 新增 Badge 组件" | pnpm exec commitlint
 pnpm changeset status    # 查看待发布的版本变化
 pnpm version-packages    # 应用版本号与 CHANGELOG（通常由 CI 执行）
 ```
+
+## AI 组件流水线
+
+AI 自动化只负责生成、验证和审查证据，不自动合并、发布或部署。Draft PR
+仍需要人工终审；AI Review 不是人工 approval，Bot approval 也不能代替人工
+approval。
+
+### 一次性配置
+
+在仓库 **Settings → Secrets and variables → Actions** 中配置：
+
+| Secret               | 用途                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------ |
+| `ARK_API_KEY`        | 调用火山方舟 Coding Plan 的 API Key                                                              |
+| `ARK_MODEL`          | Builder / Finder 的 Coding Plan 模型 slug，例如 `kimi-k3.1-pro`（控制台显示为 `Kimi-K3.1-Pro`）  |
+| `ARK_VERIFIER_MODEL` | 可选的独立 Verifier 模型 slug；未配置时使用 `ARK_MODEL`                                          |
+| `AI_PIPELINE_TOKEN`  | 可选的 fine-grained PAT 或 GitHub App token，需有本仓库 contents / pull requests / issues 写权限 |
+
+`AI_PIPELINE_TOKEN` 可选。配置后，Bot 的 push 会像普通 push 一样触发下游
+CI；未配置时，流水线会用内置 `GITHUB_TOKEN` 显式 `workflow_dispatch` 一次
+`ci.yml` 作为备用触发。不要给该 token Actions administration、合并或发布权限。
+
+首次使用前，确保 Issues 中已经存在 `ai-develop` 标签。其余流水线标签由
+工作流创建。对 `main` 启用 branch protection，至少要求现有 `CI` 检查通过，
+并保留人工 approval；不要允许 Bot 自动合并。
+
+### 从 Issue 到 Draft PR
+
+1. 创建描述需求和验收条件的 Issue。
+2. 人工添加 **`ai-develop`**。新组件先只生成 Spec，并推送
+   `codex/<component>` 分支，添加 **`ai-spec-ready`**。
+3. 人工检查 Spec 中的 API、状态、键盘、无障碍、Motion Gate 和测试计划；
+   可以直接在分支修正 `.agent/runs/<run-id>/spec.md`。
+4. 人工添加 **`spec-approved`** 后，工作流才读取这份已确认 Spec 并生成实现。
+   普通 `fix:` / `修复` Issue 可以跳过 Spec 审批，直接进入实现。
+5. Builder 生成组件、样式、测试、导出、文档页/路由/组件目录和 Changeset，
+   再依次执行格式化、`pnpm check`、`pnpm test:e2e`、`pnpm build`、独立 Review Loop。
+   Finder 先产生 findings，Verifier 再逐项确认、驳回或交给人；只有
+   `confirmed`、由本 PR 引入且非低严重度的问题可以触发最多两轮自动修订。
+6. 验证和审查结束后创建或更新 Draft PR，并标记
+   `ai-ready-for-human` 或 `ai-needs-human`，以及 `risk:low` /
+   `risk:medium` / `risk:high`。
+
+上下文或 diff 被截断、低置信度的阻断 finding、产品判断、跨范围修改和达到
+修订上限都会停止自动修订并交给人工。
+
+### PR 复审
+
+人工读完 Draft PR 后，留下普通评论、review 或 inline comment，再添加
+**`ai-revise`**。工作流只读取最近一次 AI Review 之后的人工反馈；没有新反馈
+时会失败并要求补评论。Builder 修改后必须重新通过完整验证和 Review Loop 才能
+推回分支。
+
+Agent 自己添加的 `ai-revise` 不触发复审，避免循环。合并、Changesets 发布和
+npm 发布仍按本文档前面的常规人工流程执行。

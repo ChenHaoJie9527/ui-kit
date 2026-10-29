@@ -5,100 +5,235 @@ on:
     types: [labeled]
 
 permissions:
+  actions: write
   contents: write
   issues: write
   pull-requests: write
 
+concurrency:
+  group: ai-agent-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
 jobs:
   develop:
-    if: github.event.label.name == 'ai-develop'
+    if: >-
+      github.event.label.name == 'ai-develop' ||
+      github.event.label.name == 'spec-approved'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - name: Parse Issue and Initialize Run
+      - name: Parse Issue and Select Pipeline
         id: init
         uses: actions/github-script@v7
         with:
           script: |
             const title = context.payload.issue.title;
             const body = context.payload.issue.body || '';
+            const eventLabel = context.payload.label.name;
 
-            // Strip conventional commit prefix (support both : and ：)
-            let name = title.replace(/^(?:feat|fix|enhance|refactor|chore|docs)\s*[:：]\s*/i, '');
-
-            // Strip common verbs (English and Chinese)
+            let name = title.replace(/^(?:feat|fix|enhance|refactor|chore|docs)(?:\([^)]*\))?\s*[:：]\s*/i, '');
             name = name.replace(/^(?:add|improve|create|add new)\s+/i, '');
             name = name.replace(/^(?:添加|新增|创建|修复)\s*/g, '');
             name = name.replace(/^组件\s*/g, '');
 
             const component = name.trim();
-
-            // Branch-safe slug: ASCII only, spaces to hyphens
             const slug = component
               .replace(/[^a-zA-Z0-9\s-]/g, '')
               .replace(/\s+/g, '-')
               .toLowerCase() || 'component';
-
-            const isBug = title.toLowerCase().startsWith('fix');
+            const isBug =
+              /^fix(?:\([^)]*\))?\s*[:：]/i.test(title) ||
+              title.startsWith('修复');
             const type = isBug ? 'bugfix' : 'new-component';
-            const runId = `${slug}-${new Date().toISOString().slice(0, 10)}`;
+            const runId = `${slug}-issue-${context.payload.issue.number}`;
+            const specApproved = eventLabel === 'spec-approved' && !isBug;
+            const specOnly = eventLabel === 'ai-develop' && type === 'new-component';
 
+            core.setOutput('component', component);
+            core.setOutput('slug', slug);
+            core.setOutput('type', type);
+            core.setOutput('run_id', runId);
+            core.setOutput('branch', `codex/${slug}`);
+            core.setOutput('spec_only', String(specOnly));
+            core.setOutput('spec_approved', String(specApproved));
             core.exportVariable('AGENT_COMPONENT', component);
             core.exportVariable('AGENT_SLUG', slug);
             core.exportVariable('AGENT_TYPE', type);
             core.exportVariable('AGENT_RUN_ID', runId);
             core.exportVariable('AGENT_ISSUE_BODY', body);
+            core.exportVariable('AGENT_SPEC_ONLY', String(specOnly));
+            core.exportVariable('AGENT_SPEC_APPROVED', String(specApproved));
 
-            console.log(`Component: ${component}, Slug: ${slug}, Type: ${type}, RunId: ${runId}`);
+            console.log(
+              `Component: ${component}; type: ${type}; branch: codex/${slug}; run: ${runId}; specOnly: ${specOnly}; specApproved: ${specApproved}`,
+            );
 
-      - name: Create Work Branch
+      - name: Ensure Pipeline Labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.AI_PIPELINE_TOKEN || github.token }}
+          script: |
+            const labels = [
+              ['ai-develop', '5319e7', 'Run the AI component pipeline'],
+              ['ai-revise', 'd4c5f9', 'Revise this PR from human feedback'],
+              ['ai-spec-ready', '1d76db', 'Spec is ready for human approval'],
+              ['spec-approved', '0e8a16', 'Human approved the spec'],
+              ['ai-ready-for-human', '0e8a16', 'Automated verification and AI review completed'],
+              ['ai-needs-human', 'd93f0b', 'Automation needs human judgment'],
+              [
+                'ai-ci-repair-attempted',
+                'f9d0c4',
+                'One automatic CI repair attempt was made',
+              ],
+              ['risk:low', 'c2e0c6', 'Low review risk'],
+              ['risk:medium', 'fbca04', 'Medium review risk'],
+              ['risk:high', 'b60205', 'High review risk'],
+            ];
+            for (const [name, color, description] of labels) {
+              try {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name,
+                  color,
+                  description,
+                });
+              } catch (error) {
+                if (error.status !== 422) throw error;
+              }
+            }
+
+      - name: Check Out Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.AI_PIPELINE_TOKEN || github.token }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Prepare Work Branch
+        env:
+          BRANCH: ${{ steps.init.outputs.branch }}
+          SPEC_APPROVED: ${{ steps.init.outputs.spec_approved }}
+          SPEC_ONLY: ${{ steps.init.outputs.spec_only }}
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          BRANCH="codex/${AGENT_SLUG}"
-          git checkout -b "$BRANCH"
-          echo "AGENT_BRANCH=$BRANCH" >> "$GITHUB_ENV"
+          git fetch origin main
+          git fetch origin "$BRANCH" || true
+          if [ "$SPEC_APPROVED" = "true" ] || { [ "$SPEC_ONLY" = "true" ] && git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; }; then
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -B "$BRANCH" origin/main
+          fi
 
-      - name: Run AI Agent
-        id: agent
+      - name: Warn About Automation Token
+        env:
+          AI_PIPELINE_TOKEN: ${{ secrets.AI_PIPELINE_TOKEN }}
+        run: |
+          if [ -z "$AI_PIPELINE_TOKEN" ]; then
+            echo "::warning::AI_PIPELINE_TOKEN is not configured. PR creation and later pushes use GITHUB_TOKEN and may not trigger downstream CI workflows."
+          fi
+
+      - name: Generate Spec For Human Approval
+        if: steps.init.outputs.spec_only == 'true'
         env:
           ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
           ARK_MODEL: ${{ secrets.ARK_MODEL || 'ark-code-latest' }}
-          AGENT_COMPONENT: ${{ env.AGENT_COMPONENT }}
-          AGENT_TYPE: ${{ env.AGENT_TYPE }}
-          AGENT_ISSUE_BODY: ${{ env.AGENT_ISSUE_BODY }}
+        run: node .agent/agent.mjs
+
+      - name: Commit And Push Spec
+        if: steps.init.outputs.spec_only == 'true'
+        env:
+          BRANCH: ${{ steps.init.outputs.branch }}
+          PIPELINE_TOKEN: ${{ secrets.AI_PIPELINE_TOKEN || github.token }}
+          RUN_ID: ${{ steps.init.outputs.run_id }}
+        run: |
+          git add ".agent/runs/${RUN_ID}/spec.md"
+          if ! git diff --cached --quiet; then
+            git commit --no-verify -m "docs(agent): add ${AGENT_COMPONENT} spec"
+          fi
+          git push "https://x-access-token:${PIPELINE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${BRANCH}"
+
+      - name: Request Spec Approval
+        if: steps.init.outputs.spec_only == 'true'
+        env:
+          SPEC_FILE: .agent/runs/${{ steps.init.outputs.run_id }}/spec.md
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const issue_number = context.payload.issue.number;
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              labels: ['ai-spec-ready'],
+            });
+            const spec = fs.readFileSync(process.env.SPEC_FILE, 'utf8').slice(0, 50_000);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              body: [
+                '📝 **Spec ready for human approval**',
+                '',
+                `Branch: \`${{ steps.init.outputs.branch }}\``,
+                `File: \`.agent/runs/${{ steps.init.outputs.run_id }}/spec.md\``,
+                '',
+                'Review the scope, API, keyboard, accessibility, motion, and open questions. You may edit the spec on the branch.',
+                '',
+                'When it is ready, add the **`spec-approved`** label. No implementation will run before that label is present.',
+                '',
+                '<details><summary>Spec</summary>',
+                '',
+                spec,
+                '',
+                '</details>',
+              ].join('\n'),
+            });
+
+      - uses: pnpm/action-setup@v4
+        if: steps.init.outputs.spec_only != 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.init.outputs.spec_only != 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install Dependencies
+        if: steps.init.outputs.spec_only != 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Browser
+        if: steps.init.outputs.spec_only != 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run AI Agent
+        id: agent
+        if: steps.init.outputs.spec_only != 'true'
+        env:
+          ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
+          ARK_MODEL: ${{ secrets.ARK_MODEL || 'ark-code-latest' }}
         run: node .agent/agent.mjs
 
       - name: Verify and Repair
         id: verify
+        if: steps.agent.outcome == 'success' && steps.init.outputs.spec_only != 'true'
         continue-on-error: true
         env:
           ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
           ARK_MODEL: ${{ secrets.ARK_MODEL || 'ark-code-latest' }}
         run: |
           set -o pipefail
-          CI=true pnpm format
-          CI=true pnpm lint:fix || true
-          CI=true pnpm exec playwright install --with-deps chromium
+          env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm format
+          env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm lint:fix || true
 
           ATTEMPT=1
           MAX_ATTEMPTS=3
           while [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
             LOG=".agent/runs/$AGENT_RUN_ID/verification-$ATTEMPT.log"
             echo "--- Verification attempt $ATTEMPT/$MAX_ATTEMPTS ---"
-            if { CI=true pnpm check && CI=true pnpm test:e2e; } 2>&1 | tee "$LOG"; then
+            if { env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm check && env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm test:e2e && env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm build; } 2>&1 | tee "$LOG"; then
               echo "VERIFICATION_ATTEMPTS=$ATTEMPT" >> "$GITHUB_ENV"
               exit 0
             fi
@@ -112,63 +247,277 @@ jobs:
               echo "Agent repair completed."
             else
               REPAIR_STATUS=$?
-              CI=true pnpm format
+              env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm format
               exit "$REPAIR_STATUS"
             fi
-            CI=true pnpm format
-            CI=true pnpm lint:fix || true
+            env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm format
+            env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm lint:fix || true
             ATTEMPT=$((ATTEMPT + 1))
           done
 
       - name: Format Generated Files
-        if: always() && steps.agent.outcome == 'success'
-        run: CI=true pnpm format
+        if: always() && steps.agent.outcome == 'success' && steps.init.outputs.spec_only != 'true'
+        run: env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm format
 
-      - name: Upload Verification Logs
-        if: always() && steps.agent.outcome == 'success'
+      - name: Commit Checked Implementation
+        id: commit
+        if: always() && steps.agent.outcome == 'success' && steps.init.outputs.spec_only != 'true'
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No implementation changes were generated."
+            exit 1
+          fi
+          git commit --no-verify -m "feat(ui): implement ${AGENT_COMPONENT}"
+
+      - name: Run Independent Review Loop
+        id: review
+        if: steps.verify.outcome == 'success' && steps.init.outputs.spec_only != 'true'
+        continue-on-error: true
+        env:
+          ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
+          ARK_MODEL: ${{ secrets.ARK_MODEL || 'ark-code-latest' }}
+          ARK_VERIFIER_MODEL: ${{ secrets.ARK_VERIFIER_MODEL || secrets.ARK_MODEL || 'ark-code-latest' }}
+          AGENT_BASE_REF: origin/main
+          AGENT_MAX_REVISIONS: "2"
+          AGENT_PR_TITLE: ${{ github.event.issue.title }}
+          AGENT_PR_BODY: ${{ github.event.issue.body }}
+        run: node .agent/review-loop.mjs
+
+      - name: Discard Unverified Review Repair
+        if: steps.review.outcome == 'failure'
+        run: |
+          git reset --hard HEAD
+          git clean -fd -- packages apps e2e .changeset
+
+      - name: Select Review Outcome
+        id: gate
+        if: steps.init.outputs.spec_only != 'true'
+        env:
+          REVIEW_ACTION: ${{ steps.review.outputs.action }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          REVIEW_OUTCOME: ${{ steps.review.outcome }}
+        run: |
+          if [ "$VERIFY_OUTCOME" = "success" ] && [ "$REVIEW_OUTCOME" = "success" ]; then
+            echo "action=$REVIEW_ACTION" >> "$GITHUB_OUTPUT"
+          else
+            echo "action=needs-human" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Classify Change Risk
+        id: risk
+        if: steps.init.outputs.spec_only != 'true'
+        env:
+          TYPE: ${{ steps.init.outputs.type }}
+        run: |
+          CHANGED=$(git diff --name-only origin/main...HEAD)
+          LEVEL=medium
+          if [ "$TYPE" = "new-component" ]; then
+            LEVEL=high
+          fi
+          if printf '%s\n' "$CHANGED" | rg -q '^(\.github/workflows/|scripts/|packages/ui/src/index\.ts|packages/ui/src/styles/tokens\.css|packages/ui/src/motion\.ts|package\.json|pnpm-lock\.yaml)'; then
+            LEVEL=high
+          fi
+          if [ "$LEVEL" != "high" ] && [ -n "$CHANGED" ] && ! printf '%s\n' "$CHANGED" | rg -qv '^(README\.md|docs/|apps/docs/.+\.md$|\.agent/.+\.md$|REVIEW\.md$)'; then
+            LEVEL=low
+          fi
+          echo "level=$LEVEL" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Verification And Review Logs
+        if: always() && steps.init.outputs.spec_only != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: agent-verification-${{ env.AGENT_RUN_ID }}
+          name: agent-pipeline-${{ steps.init.outputs.run_id }}
           if-no-files-found: ignore
           path: |
-            .agent/runs/${{ env.AGENT_RUN_ID }}/verification-*.log
-            .agent/runs/${{ env.AGENT_RUN_ID }}/repair-raw.md
+            .agent/runs/${{ steps.init.outputs.run_id }}/verification-*.log
+            .agent/runs/${{ steps.init.outputs.run_id }}/review-verification-*.log
+            .agent/runs/${{ steps.init.outputs.run_id }}/review-finder.json
+            .agent/runs/${{ steps.init.outputs.run_id }}/review-finder-round-*.json
+            .agent/runs/${{ steps.init.outputs.run_id }}/review.json
+            .agent/runs/${{ steps.init.outputs.run_id }}/review-round-*.json
+            .agent/runs/${{ steps.init.outputs.run_id }}/review.md
+            .agent/runs/${{ steps.init.outputs.run_id }}/review-repair.md
+            .agent/runs/${{ steps.init.outputs.run_id }}/review-loop-result.json
+            .agent/runs/${{ steps.init.outputs.run_id }}/repair-raw.md
+            .agent/runs/${{ steps.init.outputs.run_id }}/review-raw.md
 
-      - name: Create Draft PR
-        if: always() && steps.agent.outcome == 'success'
+      - name: Create Or Update Draft PR
+        if: always() && steps.commit.outcome == 'success' && steps.init.outputs.spec_only != 'true'
         uses: actions/github-script@v7
+        env:
+          PIPELINE_TOKEN: ${{ secrets.AI_PIPELINE_TOKEN || github.token }}
+          AUTOMATION_TOKEN: ${{ secrets.AI_PIPELINE_TOKEN }}
+          COMPONENT: ${{ steps.init.outputs.component }}
         with:
+          github-token: ${{ secrets.AI_PIPELINE_TOKEN || github.token }}
           script: |
-            const { execSync } = require('child_process');
-            const verifyPassed = '${{ steps.verify.outcome }}' === 'success';
+            const fs = require('fs');
+            const { execFileSync } = require('child_process');
+            const branch = '${{ steps.init.outputs.branch }}';
+            const runId = '${{ steps.init.outputs.run_id }}';
+            const component = process.env.COMPONENT || 'component';
+            const action = '${{ steps.gate.outputs.action }}' || 'needs-human';
+            const risk = '${{ steps.risk.outputs.level }}' || 'medium';
+            const verifyOutcome = '${{ steps.verify.outcome }}';
+            const reviewOutcome = '${{ steps.review.outcome }}';
+            const reviewFile = `.agent/runs/${runId}/review.md`;
+            const loopResultFile = `.agent/runs/${runId}/review-loop-result.json`;
+            const review = fs.existsSync(reviewFile)
+              ? fs.readFileSync(reviewFile, 'utf8')
+              : reviewOutcome === 'skipped'
+                ? 'Automatic review was skipped because verification did not pass.'
+                : 'The independent review did not complete. Human review is required.';
+            const loopResult = fs.existsSync(loopResultFile)
+              ? JSON.parse(fs.readFileSync(loopResultFile, 'utf8'))
+              : null;
 
-            execSync('git add -A', { cwd: process.cwd() });
-            execSync(`git commit --no-verify -m "feat(ui): add ${process.env.AGENT_COMPONENT} component\n\n🤖 Developed by AI Agent. See .agent/runs/${process.env.AGENT_RUN_ID}/ for spec and evidence."`, { cwd: process.cwd() });
-            execSync(`git push origin ${process.env.AGENT_BRANCH}`, { cwd: process.cwd() });
-
-            const pr = await github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `feat(ui): ${process.env.AGENT_COMPONENT}`,
-              head: process.env.AGENT_BRANCH,
-              base: 'main',
-              draft: true,
-              body: [
-                `Closes #${context.payload.issue.number}`,
-                '',
-                '## Spec',
-                'See `.agent/runs/' + process.env.AGENT_RUN_ID + '/spec.md`',
-                '',
-                '## Verification',
-                verifyPassed ? '✅ All checks passed after ' + process.env.VERIFICATION_ATTEMPTS + ' attempt(s)' : '❌ Automatic verification and repair did not pass. See [workflow run](' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + ') for details.',
-                '',
-                '🤖 Developed by AI Agent under human-defined spec patterns.'
-              ].join('\n')
+            const remote = `https://x-access-token:${process.env.PIPELINE_TOKEN}@github.com/${context.repo.owner}/${context.repo.repo}.git`;
+            execFileSync('git', ['remote', 'set-url', 'origin', remote], {
+              cwd: process.cwd(),
+              stdio: 'inherit',
+            });
+            execFileSync('git', ['push', '--force-with-lease', 'origin', `HEAD:${branch}`], {
+              cwd: process.cwd(),
+              stdio: 'inherit',
             });
 
-            console.log(`Draft PR created: ${pr.data.html_url}`);
+            const title = `${'${{ steps.init.outputs.type }}' === 'bugfix' ? 'fix' : 'feat'}(ui): ${component}`;
+            const body = [
+              `Closes #${context.payload.issue.number}`,
+              '',
+              '## Pipeline outcome',
+              `- Risk: **${risk}**`,
+              `- Verification: **${verifyOutcome}**`,
+              `- AI review: **${action}**`,
+              `- Spec: \`.agent/runs/${runId}/spec.md\``,
+              '',
+              '> AI review is evidence for a human decision, not an approval. This PR is never auto-merged.',
+              '',
+              '## Human review brief',
+              '- Check the change against the linked issue and spec.',
+              '- Inspect public API, keyboard, focus, ARIA, motion, tokens, and docs when affected.',
+              '- Read the verifier result and any remaining risk before merging.',
+              ...(loopResult?.reason
+                ? [`- Review loop stopped because: ${loopResult.reason}`]
+                : []),
+              '',
+              review,
+            ].join('\n');
 
-      - name: Comment on Failure
+            const pulls = await github.paginate(github.rest.pulls.list, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:${branch}`,
+              per_page: 100,
+            });
+            let pr = pulls[0];
+            if (pr) {
+              const updated = await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                title,
+                body,
+              });
+              pr = updated.data;
+            } else {
+              const created = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                head: branch,
+                base: 'main',
+                draft: true,
+                body,
+              });
+              pr = created.data;
+            }
+
+            const reviewMarker = '<!-- ai-review:latest -->';
+            const reviewCommentBody = [
+              reviewMarker,
+              '## Automated review evidence',
+              '',
+              review,
+            ].join('\n');
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              per_page: 100,
+            });
+            const markerComments = comments
+              .filter((comment) => comment.body?.includes(reviewMarker))
+              .reverse();
+            let reviewCommentUpdated = false;
+            for (const comment of markerComments) {
+              try {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: comment.id,
+                  body: reviewCommentBody,
+                });
+                reviewCommentUpdated = true;
+                break;
+              } catch (error) {
+                if (error.status !== 403 && error.status !== 404) throw error;
+              }
+            }
+            if (!reviewCommentUpdated) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: reviewCommentBody,
+              });
+            }
+
+            const labels = [
+              action === 'awaiting-human-review' ? 'ai-ready-for-human' : 'ai-needs-human',
+              `risk:${risk}`,
+            ];
+            for (const name of [
+              'ai-ready-for-human',
+              'ai-needs-human',
+              'ai-awaiting-review',
+              'ai-review-approved',
+              'ai-review-needs-human',
+              'ai-revise',
+              'risk:low',
+              'risk:medium',
+              'risk:high',
+            ]) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  name,
+                });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
+            }
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels,
+            });
+
+            if (!process.env.AUTOMATION_TOKEN) {
+              execFileSync('gh', ['workflow', 'run', 'ci.yml', '--ref', branch], {
+                env: { ...process.env, GH_TOKEN: process.env.PIPELINE_TOKEN },
+                stdio: 'inherit',
+              });
+              console.log('Dispatched CI because no automation token is configured.');
+            }
+            console.log(`Draft PR ready: ${pr.html_url}`);
+
+      - name: Comment On Pipeline Failure
         if: failure()
         uses: actions/github-script@v7
         with:
@@ -177,5 +526,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              body: `❌ AI Agent could not complete this change automatically.\n\nCheck the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for the generation or verification failure.`
+              body: `❌ The AI component pipeline could not complete. Check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for logs. No unverified work was pushed as a revision.`,
             });

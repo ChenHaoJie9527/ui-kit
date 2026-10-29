@@ -5,6 +5,7 @@ on:
     types: [labeled]
 
 permissions:
+  actions: write
   contents: write
   issues: write
   pull-requests: write
@@ -17,6 +18,7 @@ jobs:
   revise:
     if: >-
       github.event.label.name == 'ai-revise' &&
+      github.event.sender.type != 'Bot' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       startsWith(github.event.pull_request.head.ref, 'codex/')
     runs-on: ubuntu-latest
@@ -27,16 +29,13 @@ jobs:
         with:
           script: |
             const pr = context.payload.pull_request;
-            const previousRounds = pr.labels.filter((label) =>
-              /^ai-revision-\d+$/.test(label.name)
-            ).length;
-            const revisionRound = previousRounds + 1;
             const issue_number = pr.number;
-
             for (const name of [
               'ai-revise',
-              'ai-review-approved',
+              'ai-ready-for-human',
+              'ai-needs-human',
               'ai-awaiting-review',
+              'ai-review-approved',
               'ai-review-needs-human',
             ]) {
               try {
@@ -50,28 +49,48 @@ jobs:
                 if (error.status !== 404) throw error;
               }
             }
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number,
-              labels: [`ai-revision-${revisionRound}`],
-            });
 
             core.setOutput('branch', pr.head.ref);
             core.setOutput('sha', pr.head.sha);
-            core.setOutput('round', String(revisionRound));
             core.setOutput(
               'component',
               pr.title.replace(/^(?:feat|fix|enhance|refactor|chore|docs)(?:\([^)]+\))?\s*[:：]\s*/i, ''),
             );
 
+      - name: Ensure Pipeline Labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.AI_PIPELINE_TOKEN || github.token }}
+          script: |
+            const labels = [
+              ['ai-ready-for-human', '0e8a16', 'Automated verification and AI review completed'],
+              ['ai-needs-human', 'd93f0b', 'Automation needs human judgment'],
+            ];
+            for (const [name, color, description] of labels) {
+              try {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name,
+                  color,
+                  description,
+                });
+              } catch (error) {
+                if (error.status !== 422) throw error;
+              }
+            }
+
       - name: Check Out Pull Request
         uses: actions/checkout@v4
         with:
+          token: ${{ secrets.AI_PIPELINE_TOKEN || github.token }}
+          persist-credentials: false
           ref: ${{ steps.init.outputs.sha }}
           fetch-depth: 0
 
       - name: Prepare Revision Branch
+        env:
+          COMPONENT: ${{ steps.init.outputs.component }}
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
@@ -82,8 +101,19 @@ jobs:
             echo "Unable to locate the Agent run directory for this pull request."
             exit 1
           fi
-          echo "AGENT_BRANCH=${{ steps.init.outputs.branch }}" >> "$GITHUB_ENV"
-          echo "AGENT_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+          printf 'AGENT_BRANCH=%s\n' "${{ steps.init.outputs.branch }}" >> "$GITHUB_ENV"
+          printf 'AGENT_RUN_ID=%s\n' "$RUN_ID" >> "$GITHUB_ENV"
+          printf 'AGENT_COMPONENT=%s\n' "$COMPONENT" >> "$GITHUB_ENV"
+          printf 'AGENT_TYPE=bugfix\n' >> "$GITHUB_ENV"
+          printf 'AGENT_BASE_REF=origin/main\n' >> "$GITHUB_ENV"
+
+      - name: Warn About Automation Token
+        env:
+          AI_PIPELINE_TOKEN: ${{ secrets.AI_PIPELINE_TOKEN }}
+        run: |
+          if [ -z "$AI_PIPELINE_TOKEN" ]; then
+            echo "::warning::AI_PIPELINE_TOKEN is not configured. This revision may not trigger a new CI workflow after it is pushed."
+          fi
 
       - uses: pnpm/action-setup@v4
 
@@ -98,7 +128,7 @@ jobs:
       - name: Install Browser
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Collect Review Feedback
+      - name: Collect Human Review Feedback
         env:
           FEEDBACK_FILE: ${{ runner.temp }}/review-feedback.md
         uses: actions/github-script@v7
@@ -126,38 +156,46 @@ jobs:
               }),
             ]);
             const sections = [];
-            const reviewerFeedback = conversation
+            const latestReviewComment = conversation
               .filter((comment) =>
-                comment.body?.includes('<!-- ai-reviewer:request_changes -->')
+                comment.body?.includes('<!-- ai-review:latest -->') ||
+                comment.body?.includes('<!-- ai-reviewer:')
               )
               .at(-1);
-            if (reviewerFeedback) {
-              sections.push(`## Independent Reviewer\n${reviewerFeedback.body}`);
-            }
-
+            const cutoff = latestReviewComment?.created_at
+              ? new Date(
+                  latestReviewComment.updated_at || latestReviewComment.created_at,
+                )
+              : null;
+            const afterCutoff = (value) =>
+              !cutoff || (value && new Date(value) > cutoff);
             const humanConversation = conversation.filter((comment) =>
               comment.body &&
               !comment.body.includes('<!-- ai-reviewer:') &&
-              comment.user?.type !== 'Bot'
+              !comment.body.includes('<!-- ai-review:latest -->') &&
+              comment.user?.type !== 'Bot' &&
+              afterCutoff(comment.created_at)
             );
             for (const comment of humanConversation.slice(-10)) {
               sections.push(`## Human PR Comment\n${comment.body}`);
             }
             for (const review of reviews.filter((review) =>
-              review.body && review.user?.type !== 'Bot'
+              review.body &&
+              review.user?.type !== 'Bot' &&
+              afterCutoff(review.submitted_at)
             )) {
               sections.push(`## Human ${review.state} Review\n${review.body}`);
             }
             for (const comment of inlineComments.filter((comment) =>
-              comment.user?.type !== 'Bot'
+              comment.user?.type !== 'Bot' &&
+              afterCutoff(comment.created_at)
             )) {
               sections.push(
                 `## Inline Review: ${comment.path}:${comment.line || comment.original_line || ''}\n${comment.body}`,
               );
             }
-
             if (sections.length === 0) {
-              core.setFailed('No Reviewer or human review feedback was found.');
+              core.setFailed('No human review feedback was found. Add a PR comment or inline review before applying ai-revise.');
               return;
             }
             fs.writeFileSync(process.env.FEEDBACK_FILE, sections.join('\n\n'));
@@ -166,10 +204,6 @@ jobs:
         env:
           ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
           ARK_MODEL: ${{ secrets.ARK_MODEL || 'ark-code-latest' }}
-          AGENT_COMPONENT: ${{ steps.init.outputs.component }}
-          AGENT_RUN_ID: ${{ env.AGENT_RUN_ID }}
-          AGENT_TYPE: bugfix
-          AGENT_BASE_REF: origin/main
           AGENT_REVIEW_LOG: ${{ runner.temp }}/review-feedback.md
         run: node .agent/agent.mjs
 
@@ -178,7 +212,7 @@ jobs:
           set -o pipefail
           CI=true pnpm format
           CI=true pnpm lint:fix || true
-          { CI=true pnpm check && CI=true pnpm test:e2e; } 2>&1 | tee "$RUNNER_TEMP/revision-verification.log"
+          { CI=true pnpm check && CI=true pnpm test:e2e && CI=true pnpm build; } 2>&1 | tee "$RUNNER_TEMP/revision-verification.log"
 
       - name: Commit Verified Revision
         id: commit
@@ -188,32 +222,185 @@ jobs:
             exit 1
           fi
           git add -A
-          git commit --no-verify -m "fix(ui): address AI review feedback"
-          git push origin "HEAD:${AGENT_BRANCH}"
+          git commit --no-verify -m "fix(ui): address human review feedback"
+
+      - name: Run Independent Review Loop
+        id: review
+        if: steps.commit.outcome == 'success'
+        continue-on-error: true
+        env:
+          ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
+          ARK_MODEL: ${{ secrets.ARK_MODEL || 'ark-code-latest' }}
+          ARK_VERIFIER_MODEL: ${{ secrets.ARK_VERIFIER_MODEL || secrets.ARK_MODEL || 'ark-code-latest' }}
+          AGENT_MAX_REVISIONS: "2"
+          AGENT_PR_TITLE: ${{ github.event.pull_request.title }}
+          AGENT_PR_BODY: ${{ github.event.pull_request.body }}
+        run: node .agent/review-loop.mjs
+
+      - name: Discard Unverified Review Repair
+        if: steps.review.outcome == 'failure'
+        run: |
+          git reset --hard HEAD
+          git clean -fd -- packages apps e2e .changeset
+
+      - name: Select Review Outcome
+        id: gate
+        if: steps.commit.outcome == 'success'
+        env:
+          REVIEW_ACTION: ${{ steps.review.outputs.action }}
+          REVIEW_OUTCOME: ${{ steps.review.outcome }}
+        run: |
+          if [ "$REVIEW_OUTCOME" = "success" ]; then
+            echo "action=$REVIEW_ACTION" >> "$GITHUB_OUTPUT"
+          else
+            echo "action=needs-human" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push Reviewed Revision
+        id: push
+        if: >-
+          steps.commit.outcome == 'success' &&
+          steps.review.outcome == 'success' &&
+          steps.gate.outputs.action == 'awaiting-human-review'
+        env:
+          PIPELINE_TOKEN: ${{ secrets.AI_PIPELINE_TOKEN || github.token }}
+        run: |
+          git push "https://x-access-token:${PIPELINE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${AGENT_BRANCH}"
           echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger CI When No Automation Token
+        if: steps.push.outputs.pushed == 'true'
+        env:
+          AI_PIPELINE_TOKEN: ${{ secrets.AI_PIPELINE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$AI_PIPELINE_TOKEN" ]; then
+            gh workflow run ci.yml --ref "$AGENT_BRANCH"
+            echo "Dispatched CI because no automation token is configured."
+          fi
+
+      - name: Publish Current Review
+        if: steps.commit.outcome == 'success'
+        env:
+          REVIEW_ACTION: ${{ steps.gate.outputs.action }}
+          REVIEW_OUTCOME: ${{ steps.review.outcome }}
+          PUSHED: ${{ steps.push.outputs.pushed || 'false' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.AI_PIPELINE_TOKEN || github.token }}
+          script: |
+            const fs = require('fs');
+            const issue_number = context.payload.pull_request.number;
+            const action = process.env.REVIEW_ACTION;
+            const reviewOutcome = process.env.REVIEW_OUTCOME;
+            const pushed = process.env.PUSHED === 'true';
+            const reviewFile = `.agent/runs/${process.env.AGENT_RUN_ID}/review.md`;
+            const loopResultFile = `.agent/runs/${process.env.AGENT_RUN_ID}/review-loop-result.json`;
+            const review = reviewOutcome === 'success' && fs.existsSync(reviewFile)
+              ? fs.readFileSync(reviewFile, 'utf8')
+              : 'The independent review did not complete. Human review is required.';
+            const loopResult = fs.existsSync(loopResultFile)
+              ? JSON.parse(fs.readFileSync(loopResultFile, 'utf8'))
+              : null;
+            const marker = '<!-- ai-review:latest -->';
+            const body = [
+              marker,
+              action === 'awaiting-human-review' && pushed
+                ? '## ✅ Revision reviewed and pushed'
+                : '## ⚠️ Revision needs human attention',
+              '',
+              ...(pushed
+                ? ['The reviewed revision was pushed to the pull request.']
+                : ['The revision was not pushed because the review did not reach `awaiting-human-review`.']),
+              '',
+              ...(loopResult?.reason
+                ? [`Review loop stopped because: ${loopResult.reason}`, '']
+                : []),
+              review,
+            ].join('\n');
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              per_page: 100,
+            });
+            const markerComments = comments
+              .filter((comment) => comment.body?.includes(marker))
+              .reverse();
+            let reviewCommentUpdated = false;
+            for (const comment of markerComments) {
+              try {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: comment.id,
+                  body,
+                });
+                reviewCommentUpdated = true;
+                break;
+              } catch (error) {
+                if (error.status !== 403 && error.status !== 404) throw error;
+              }
+            }
+            if (!reviewCommentUpdated) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number,
+                body,
+              });
+            }
+
+            const labels = [
+              action === 'awaiting-human-review' && pushed
+                ? 'ai-ready-for-human'
+                : 'ai-needs-human',
+            ];
+            for (const name of [
+              'ai-ready-for-human',
+              'ai-needs-human',
+              'ai-awaiting-review',
+              'ai-review-approved',
+              'ai-review-needs-human',
+              'ai-revise',
+            ]) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number,
+                  name,
+                });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
+            }
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              labels,
+            });
 
       - name: Upload Revision Logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ai-revision-${{ github.event.pull_request.number }}-${{ steps.init.outputs.round }}
+          name: ai-revision-${{ github.event.pull_request.number }}-${{ github.run_id }}
           if-no-files-found: ignore
           path: |
             ${{ runner.temp }}/review-feedback.md
             ${{ runner.temp }}/revision-verification.log
+            .agent/runs/${{ env.AGENT_RUN_ID }}/review-verification-*.log
+            .agent/runs/${{ env.AGENT_RUN_ID }}/review-finder.json
+            .agent/runs/${{ env.AGENT_RUN_ID }}/review-finder-round-*.json
+            .agent/runs/${{ env.AGENT_RUN_ID }}/review.json
+            .agent/runs/${{ env.AGENT_RUN_ID }}/review-round-*.json
+            .agent/runs/${{ env.AGENT_RUN_ID }}/review.md
+            .agent/runs/${{ env.AGENT_RUN_ID }}/review-repair.md
+            .agent/runs/${{ env.AGENT_RUN_ID }}/review-loop-result.json
             .agent/runs/${{ env.AGENT_RUN_ID }}/repair-raw.md
-
-      - name: Comment On Success
-        if: success() && steps.commit.outputs.pushed == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body: `🔧 Builder addressed the review feedback and passed all checks. The independent Reviewer will review the new commit after CI succeeds.`,
-            });
+            .agent/runs/${{ env.AGENT_RUN_ID }}/review-raw.md
 
       - name: Require Human On Failure
         if: failure()
@@ -225,11 +412,11 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number,
-              labels: ['ai-review-needs-human'],
+              labels: ['ai-needs-human'],
             });
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number,
-              body: `⚠️ The review revision did not pass all checks, so no unverified revision was pushed. Human review is required. See the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for logs.`,
+              body: `⚠️ The human-triggered revision did not pass every gate, so unverified changes were not pushed. Human review is required. See the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for logs.`,
             });
