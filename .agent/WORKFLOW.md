@@ -58,7 +58,20 @@ CI=true pnpm test:e2e
 全部通过后更新 `evidence.json`；仍失败则保留 Draft PR、验证日志和失败状态，
 交给人处理。
 
+`repair-raw.md` 与 `verification-*.log` 是临时诊断文件，只上传为
+Actions Artifacts，不提交到 PR。提交前必须再次格式化所有运行文档。
+
 **停止条件：同一错误修复 3 次仍失败 → 停止并报告。**
+
+## CI 失败后的自动修复
+
+`AI CI Repair` 在 PR 的 `ci` 工作流失败后运行，仅处理同仓库的
+`codex/*` 分支。先执行格式化与可自动修复的 lint，再运行完整检查；仍失败时，
+将失败日志和相对 `origin/main` 的变更文件交给 Agent 修复。
+
+只有 `pnpm check` 与 `pnpm test:e2e` 全部通过后才推回原 PR。每个 PR 通过
+`ai-ci-repair-attempted` 标签限制为一次自动尝试，避免失败提交形成循环；人工
+移除该标签后才允许再次尝试。不处理 fork，不自动合并。
 
 ## Phase 5: Checkpoint
 

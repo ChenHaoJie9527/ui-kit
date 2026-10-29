@@ -45,7 +45,9 @@ if (!COMPONENT) {
 
 // ─── Scaffold run directory ───────────────────────────────────────────────
 const date = new Date().toISOString().slice(0, 10);
-const runId = `${COMPONENT.toLowerCase().replace(/\s+/g, "-")}-${date}`;
+const runId =
+  process.env.AGENT_RUN_ID ||
+  `${COMPONENT.toLowerCase().replace(/\s+/g, "-")}-${date}`;
 const runDir = join(__dirname, "runs", runId);
 const repoDir = join(__dirname, "..");
 
@@ -162,13 +164,24 @@ async function callArk(systemPrompt, userPrompt) {
 function getRepairFiles() {
   const options = { cwd: repoDir, encoding: "utf-8" };
   const tracked = execFileSync("git", ["diff", "--name-only"], options);
+  const baseRef = process.env.AGENT_BASE_REF || "origin/main";
+  let committed = "";
+  try {
+    committed = execFileSync(
+      "git",
+      ["diff", "--name-only", `${baseRef}...HEAD`],
+      options,
+    );
+  } catch {
+    console.warn(`[Agent] Base ref ${baseRef} is unavailable for repair diff.`);
+  }
   const untracked = execFileSync(
     "git",
     ["ls-files", "--others", "--exclude-standard"],
     options,
   );
 
-  return [...new Set(`${tracked}\n${untracked}`.split("\n"))]
+  return [...new Set(`${tracked}\n${committed}\n${untracked}`.split("\n"))]
     .map((file) => file.trim())
     .filter((file) =>
       /^(?:packages|apps|e2e)\/.+\.(?:ts|tsx|css|md)$/.test(file),
@@ -211,6 +224,7 @@ ${tokens}
 ${motionTokens}
 
 Return ONLY complete files that require changes. Do not return explanations, diffs, or code fences around the entire response.
+Start with the first file marker and do not describe your analysis or plan.
 Each file must use this exact format:
 === FILE: <existing-repository-relative-path> ===
 <complete file content>

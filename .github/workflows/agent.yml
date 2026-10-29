@@ -108,11 +108,31 @@ jobs:
               exit 1
             fi
 
-            AGENT_REPAIR_LOG="$LOG" node .agent/agent.mjs
+            if AGENT_REPAIR_LOG="$LOG" node .agent/agent.mjs; then
+              echo "Agent repair completed."
+            else
+              REPAIR_STATUS=$?
+              CI=true pnpm format
+              exit "$REPAIR_STATUS"
+            fi
             CI=true pnpm format
             CI=true pnpm lint:fix || true
             ATTEMPT=$((ATTEMPT + 1))
           done
+
+      - name: Format Generated Files
+        if: always() && steps.agent.outcome == 'success'
+        run: CI=true pnpm format
+
+      - name: Upload Verification Logs
+        if: always() && steps.agent.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-verification-${{ env.AGENT_RUN_ID }}
+          if-no-files-found: ignore
+          path: |
+            .agent/runs/${{ env.AGENT_RUN_ID }}/verification-*.log
+            .agent/runs/${{ env.AGENT_RUN_ID }}/repair-raw.md
 
       - name: Create Draft PR
         if: always() && steps.agent.outcome == 'success'
