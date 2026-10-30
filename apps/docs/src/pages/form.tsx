@@ -12,6 +12,29 @@ import {
   PropsTable,
   Section,
 } from "../components/docs";
+import { Demo as DialogFormDemo } from "../demos/components/form/dialog";
+import { Demo as LoginFormDemo } from "../demos/components/form/login";
+import { Demo as OrganizationFormDemo } from "../demos/components/form/organization";
+import { Demo as RegisterFormDemo } from "../demos/components/form/register";
+
+const formDemoSources = import.meta.glob<string>(
+  "../demos/components/form/*.tsx",
+  {
+    eager: true,
+    query: "?raw",
+    import: "default",
+  },
+);
+
+function getFormDemoSource(name: string): string {
+  const source = formDemoSources[`../demos/components/form/${name}.tsx`];
+
+  if (!source) {
+    throw new Error(`未找到 Form 示例源码：${name}`);
+  }
+
+  return source;
+}
 
 function BasicDemo() {
   const [submittedEmail, setSubmittedEmail] = useState("");
@@ -105,7 +128,7 @@ export function FormPage() {
       kind="组件"
       title="Form"
       description="组合式表单状态与校验层。保留原生 form、label 和控件语义，并统一字段状态、错误关联和提交流程。"
-      tags={["组合式 API", "同步 / 异步校验", "受控 / 非受控", "错误关联"]}
+      tags={["组合式 API", "Valibot", "业务配方", "受控 / 非受控", "错误关联"]}
     >
       <Section title="引入">
         <CodeBlock code={'import { Form } from "seam-react";'} />
@@ -201,6 +224,47 @@ const LoginSchema = v.object({
           使用 Valibot 校验时安装 <code>valibot</code>。主入口
           <code>seam-react</code> 不会加载 Valibot；只有导入
           <code>seam-react/valibot</code> 时才需要它。
+        </Callout>
+      </Section>
+
+      <Section
+        title="业务配方：登录"
+        description="组合 Form、Input、CheckBox 和 Button。异步提交期间按钮进入 loading，成功后由 Form 状态播报结果；邮箱填写 blocked@example.com 可预览服务端失败态。仅用于 UI 示例，不代表真实认证安全实现。"
+      >
+        <Demo code={getFormDemoSource("login")} label="login.tsx">
+          <LoginFormDemo />
+        </Demo>
+      </Section>
+
+      <Section
+        title="业务配方：企业注册"
+        description="注册表单演示双列表单布局、确认密码与条款校验。密码同时校验长度、字母和数字；使用 blocked@example.com 可预览服务端字段错误与表单级错误。示例仅用于 UI 演示，不会发送真实账号或密码。"
+      >
+        <Demo code={getFormDemoSource("register")} label="register.tsx">
+          <RegisterFormDemo />
+        </Demo>
+      </Section>
+
+      <Section
+        title="业务配方：企业信息"
+        description="企业认证场景组合 Input、Select、RadioGroup 和 Switch，并拆成“企业资料”和“团队与通知”两个 fieldset 语义分区。统一社会信用代码填写 000000 可预览服务端失败态。"
+      >
+        <Demo code={getFormDemoSource("organization")} label="organization.tsx">
+          <OrganizationFormDemo />
+        </Demo>
+      </Section>
+
+      <Section
+        title="业务配方：Dialog 内嵌表单"
+        description="表单放在 Dialog.Body 中，提交按钮通过 form 属性与表单关联，因此 Dialog.Footer 仍可使用标准底部操作区。打开后焦点直接进入姓名输入框；服务端失败时保留 Dialog 并聚焦错误字段，成功后关闭并显示结果。"
+      >
+        <Demo code={getFormDemoSource("dialog")} label="dialog.tsx">
+          <DialogFormDemo />
+        </Demo>
+        <Callout title="接入真实接口" tone="info">
+          示例使用延迟函数模拟请求。接入业务接口时保留 onSubmit 的 Promise
+          合约，并在请求失败时抛出带可读消息的 Error，Form
+          会自动显示表单级错误并恢复提交按钮。
         </Callout>
       </Section>
 
