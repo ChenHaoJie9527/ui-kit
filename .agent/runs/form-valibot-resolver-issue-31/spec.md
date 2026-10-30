@@ -13,7 +13,7 @@ import { valibotResolver } from "seam-react/valibot";
   onSubmit={handleSubmit}
 >
   {/* 现有 Form.Field 组合保持不变 */}
-</Form.Root>
+</Form.Root>;
 ```
 
 本改造只新增独立子入口和 resolver，不创建第二套 Form、表单状态系统或校验协议。现有 `rules`、异步校验、`setError`、`setFormError`、服务端错误映射、错误清除和失败提交聚焦行为均保持不变。
@@ -34,16 +34,16 @@ Resolver 只负责把 schema 校验结果转换为现有 `FormErrors<T>`：
 
 复用现有能力：
 
-| 需求 | 来源 |
-| --- | --- |
-| 表单值、校验和提交状态 | 现有 `Form.Root` |
-| 字段注册和点分隔路径 | 现有 `Form.Field` |
-| 字段规则 | 现有 `rules` |
-| 错误展示 | 现有 `Form.ErrorMessage` |
-| 表单级错误 | 现有 `setFormError` 与 `_form` 处理 |
-| 服务端错误 | 现有 `setError` / `setFormError` |
-| 提交失败处理 | 现有 `onSubmitFailed` |
-| 错误字段聚焦 | 现有 Form 提交失败聚焦逻辑 |
+| 需求                   | 来源                                |
+| ---------------------- | ----------------------------------- |
+| 表单值、校验和提交状态 | 现有 `Form.Root`                    |
+| 字段注册和点分隔路径   | 现有 `Form.Field`                   |
+| 字段规则               | 现有 `rules`                        |
+| 错误展示               | 现有 `Form.ErrorMessage`            |
+| 表单级错误             | 现有 `setFormError` 与 `_form` 处理 |
+| 服务端错误             | 现有 `setError` / `setFormError`    |
+| 提交失败处理           | 现有 `onSubmitFailed`               |
+| 错误字段聚焦           | 现有 Form 提交失败聚焦逻辑          |
 
 不引入 overlay、navigation 或 Motion 模式。Resolver 是无 UI 的纯适配层，不新增 hooks、context、DOM、CSS 类或设计 token。
 
@@ -51,15 +51,15 @@ Resolver 只负责把 schema 校验结果转换为现有 `FormErrors<T>`：
 
 Resolver 自身不持有状态，也不创建 React 状态。以下状态全部由现有 Form 管理：
 
-| 状态 | 行为 |
-| --- | --- |
-| idle | 尚未校验；Form 保持现有初始行为 |
-| validating | `validate` 返回 Promise 时沿用现有异步校验状态 |
-| valid | schema 成功，resolver 返回 `{}`；不阻断提交 |
-| field-invalid | issue 映射到点分隔字段路径；每个字段保留首个错误 |
-| form-invalid | 无可用路径的 issue 写入 `_form`；提交失败并进入 `onSubmitFailed` |
-| stale-error-cleared | 后续校验或字段更新按现有 Form 规则清除旧错误 |
-| server-error | 继续通过 `setError` / `setFormError` 写入，不与 resolver 建立第二套状态 |
+| 状态                | 行为                                                                    |
+| ------------------- | ----------------------------------------------------------------------- |
+| idle                | 尚未校验；Form 保持现有初始行为                                         |
+| validating          | `validate` 返回 Promise 时沿用现有异步校验状态                          |
+| valid               | schema 成功，resolver 返回 `{}`；不阻断提交                             |
+| field-invalid       | issue 映射到点分隔字段路径；每个字段保留首个错误                        |
+| form-invalid        | 无可用路径的 issue 写入 `_form`；提交失败并进入 `onSubmitFailed`        |
+| stale-error-cleared | 后续校验或字段更新按现有 Form 规则清除旧错误                            |
+| server-error        | 继续通过 `setError` / `setFormError` 写入，不与 resolver 建立第二套状态 |
 
 字段 `rules` 与 resolver 同时存在时，沿用当前 Form 的校验执行和错误合并顺序。本功能不增加优先级、覆盖规则或新的合并状态。
 
@@ -76,11 +76,7 @@ import { valibotResolver } from "seam-react/valibot";
 ### 4.2 TypeScript 接口
 
 ```ts
-import type {
-  GenericSchema,
-  GenericSchemaAsync,
-  InferInput,
-} from "valibot";
+import type { GenericSchema, GenericSchemaAsync, InferInput } from "valibot";
 import type { FormErrors } from "seam-react";
 
 export type ValibotSchema = GenericSchema | GenericSchemaAsync;
@@ -151,19 +147,19 @@ Resolver 不渲染元素，因此不新增 role、ARIA 属性或 live region。
 
 ## 7. Failure States
 
-| 失败场景 | 规定行为 |
-| --- | --- |
-| 单字段校验失败 | 返回该字段路径到第一条 issue message 的映射 |
-| 同字段多个 issue | 只保留按 Valibot issues 顺序出现的第一条 |
-| 嵌套字段失败 | 映射为现有 Form 可识别的点分隔路径 |
-| 根级 object/refinement issue 无可用路径 | 映射为 `_form`，不得返回空错误或静默成功 |
-| 多个根级 issue | `_form` 保留第一条 |
-| 异步 schema 失败 | 与同步 schema 使用相同映射规则 |
-| schema 带输出变换 | 仅校验输入；可见 values 和提交 values 不被 resolver 替换 |
-| 字段 rules 与 resolver 均失败 | 按现有 Form 合并顺序处理，不新增优先级 |
-| 服务端错误随后写入 | 继续使用 `setError` / `setFormError`；后续清除行为由现有 Form 决定 |
-| 无法定位字段的错误 | 保留在错误对象中；仅第一个可定位字段参与现有聚焦流程 |
-| Valibot 未安装 | 主入口仍可导入；只有实际导入 `seam-react/valibot` 时才要求消费者安装可选 peer |
+| 失败场景                                | 规定行为                                                                      |
+| --------------------------------------- | ----------------------------------------------------------------------------- |
+| 单字段校验失败                          | 返回该字段路径到第一条 issue message 的映射                                   |
+| 同字段多个 issue                        | 只保留按 Valibot issues 顺序出现的第一条                                      |
+| 嵌套字段失败                            | 映射为现有 Form 可识别的点分隔路径                                            |
+| 根级 object/refinement issue 无可用路径 | 映射为 `_form`，不得返回空错误或静默成功                                      |
+| 多个根级 issue                          | `_form` 保留第一条                                                            |
+| 异步 schema 失败                        | 与同步 schema 使用相同映射规则                                                |
+| schema 带输出变换                       | 仅校验输入；可见 values 和提交 values 不被 resolver 替换                      |
+| 字段 rules 与 resolver 均失败           | 按现有 Form 合并顺序处理，不新增优先级                                        |
+| 服务端错误随后写入                      | 继续使用 `setError` / `setFormError`；后续清除行为由现有 Form 决定            |
+| 无法定位字段的错误                      | 保留在错误对象中；仅第一个可定位字段参与现有聚焦流程                          |
+| Valibot 未安装                          | 主入口仍可导入；只有实际导入 `seam-react/valibot` 时才要求消费者安装可选 peer |
 
 不在 resolver 内捕获并改写非校验异常为字段错误。Promise rejection 继续遵循现有 `Form.Root.validate` 的异常处理约定。
 

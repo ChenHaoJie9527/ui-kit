@@ -9,6 +9,9 @@ const hooksEntry = fileURLToPath(
 const uiEntry = fileURLToPath(
   new URL("../../packages/ui/src/index.ts", import.meta.url),
 );
+const uiValibotEntry = fileURLToPath(
+  new URL("../../packages/ui/src/valibot.ts", import.meta.url),
+);
 
 export default defineConfig({
   // 提供 React Fast Refresh：改组件时保留状态，而不是整页刷新。
@@ -17,6 +20,7 @@ export default defineConfig({
     // 直接指向源码，开发时改 hooks / 组件会立刻热更新，无需先构建 dist。
     alias: {
       "seam-hooks": hooksEntry,
+      "seam-react/valibot": uiValibotEntry,
       "seam-react": uiEntry,
     },
   },

@@ -10,11 +10,16 @@ export default defineConfig({
       entry: {
         index: fileURLToPath(new URL("./src/build-entry.ts", import.meta.url)),
         styles: fileURLToPath(new URL("./src/SeamStyles.tsx", import.meta.url)),
+        valibot: fileURLToPath(new URL("./src/valibot.ts", import.meta.url)),
       },
       formats: ["es", "cjs"],
       fileName: (format, entryName) => {
         if (entryName === "styles") {
           return format === "es" ? "styles.js" : "styles.cjs";
+        }
+
+        if (entryName === "valibot") {
+          return format === "es" ? "valibot.js" : "valibot.cjs";
         }
 
         return format === "es" ? "index.js" : "index.cjs";
@@ -27,6 +32,7 @@ export default defineConfig({
         "react-dom",
         "react/jsx-runtime",
         "seam-hooks",
+        "valibot",
         "motion",
         "motion/react",
         "motion/react-m",
