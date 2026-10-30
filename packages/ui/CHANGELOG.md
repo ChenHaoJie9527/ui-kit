@@ -1,5 +1,11 @@
 # seam-react
 
+## 0.12.4
+
+### Patch Changes
+
+- aa66d77: Add an optional `seam-react/valibot` resolver for Form schema validation.
+
 ## 0.12.3
 
 ### Patch Changes
