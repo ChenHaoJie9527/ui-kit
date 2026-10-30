@@ -21,3 +21,31 @@ test("Radio Group shows the New release badge", async ({ page }) => {
   const navLink = page.getByRole("link", { name: /Radio Group/ });
   await expect(navLink.getByText("New", { exact: true })).toBeVisible();
 });
+
+test("Form Valibot example validates and submits", async ({ page }) => {
+  await page.goto("/#/components/form");
+  await page.waitForLoadState("networkidle");
+
+  const section = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "Valibot 校验" }),
+  });
+  const email = section.getByRole("textbox", { name: "邮箱" });
+  const password = section.getByLabel("密码");
+  const submit = section.getByRole("button", { name: "登录" });
+
+  await expect(section.locator("pre")).toBeVisible();
+  await submit.click();
+  await expect(section.getByText("请输入邮箱", { exact: true })).toBeVisible();
+  await expect(email).toHaveAttribute("aria-invalid", "true");
+
+  await email.fill("member@example.com");
+  await password.fill("short");
+  await submit.click();
+  await expect(
+    section.getByText("密码至少 8 位", { exact: true }),
+  ).toBeVisible();
+
+  await password.fill("password8");
+  await submit.click();
+  await expect(section.getByText("校验通过，已提交登录。")).toBeVisible();
+});

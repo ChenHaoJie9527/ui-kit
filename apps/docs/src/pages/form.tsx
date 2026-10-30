@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Button, Form, Input } from "seam-react";
+import { valibotResolver } from "seam-react/valibot";
+import * as v from "valibot";
 import {
   BulletList,
   Callout,
   CodeBlock,
   Demo,
+  InlineCode,
   Page,
   PropsTable,
   Section,
@@ -51,6 +54,51 @@ function BasicDemo() {
   );
 }
 
+const LoginSchema = v.object({
+  email: v.pipe(
+    v.string(),
+    v.nonEmpty("请输入邮箱"),
+    v.email("请输入有效邮箱"),
+  ),
+  password: v.pipe(v.string(), v.minLength(8, "密码至少 8 位")),
+});
+
+function ValibotDemo() {
+  const [signedIn, setSignedIn] = useState(false);
+
+  return (
+    <div className="flex w-full max-w-[440px] flex-col gap-4">
+      <Form.Root
+        defaultValues={{ email: "", password: "" }}
+        validate={valibotResolver(LoginSchema)}
+        onSubmit={() => setSignedIn(true)}
+      >
+        <Form.Field name="email">
+          <Form.Label>邮箱</Form.Label>
+          <Form.Control>
+            <Input type="email" autoComplete="email" />
+          </Form.Control>
+          <Form.ErrorMessage />
+        </Form.Field>
+        <Form.Field name="password">
+          <Form.Label>密码</Form.Label>
+          <Form.Control>
+            <Input type="password" autoComplete="current-password" />
+          </Form.Control>
+          <Form.Description>至少 8 位字符。</Form.Description>
+          <Form.ErrorMessage />
+        </Form.Field>
+        <Form.Actions>
+          <Button type="submit">登录</Button>
+        </Form.Actions>
+      </Form.Root>
+      <p className="m-0 min-h-5 text-[12.5px] text-muted" aria-live="polite">
+        {signedIn ? "校验通过，已提交登录。" : "填写后提交以验证 schema。"}
+      </p>
+    </div>
+  );
+}
+
 export function FormPage() {
   return (
     <Page
@@ -88,6 +136,72 @@ export function FormPage() {
         >
           <BasicDemo />
         </Demo>
+      </Section>
+
+      <Section
+        title="Valibot 校验"
+        description="使用独立的 valibotResolver 子入口，把 Valibot schema 直接接入 Form.Root 的 validate 合约。"
+      >
+        <Demo
+          code={`import * as v from "valibot";
+import { Form, Input, Button } from "seam-react";
+import { valibotResolver } from "seam-react/valibot";
+
+const LoginSchema = v.object({
+  email: v.pipe(v.string(), v.nonEmpty("请输入邮箱"), v.email("请输入有效邮箱")),
+  password: v.pipe(v.string(), v.minLength(8, "密码至少 8 位")),
+});
+
+<Form.Root
+  defaultValues={{ email: "", password: "" }}
+  validate={valibotResolver(LoginSchema)}
+  onSubmit={handleSubmit}
+>
+  <Form.Field name="email">
+    <Form.Label>邮箱</Form.Label>
+    <Form.Control><Input type="email" /></Form.Control>
+    <Form.ErrorMessage />
+  </Form.Field>
+  <Form.Field name="password">
+    <Form.Label>密码</Form.Label>
+    <Form.Control><Input type="password" /></Form.Control>
+    <Form.ErrorMessage />
+  </Form.Field>
+  <Form.Actions><Button type="submit">登录</Button></Form.Actions>
+</Form.Root>`}
+        >
+          <ValibotDemo />
+        </Demo>
+        <BulletList
+          items={[
+            <>
+              <InlineCode>valibotResolver(schema)</InlineCode>{" "}
+              返回异步校验函数； 输入类型取自{" "}
+              <InlineCode>InferInput</InlineCode>，不会误用 schema 输出类型。
+            </>,
+            <>
+              嵌套路径转换为点分隔字段名；同一字段只保留第一条
+              issue。无可用路径的根级 issue 写入 <InlineCode>_form</InlineCode>
+              ，也可通过
+              <InlineCode>onSubmitFailed</InlineCode> 读取。
+            </>,
+            <>
+              schema 输出变换不会回写表单值；需要转换结果时，在
+              <InlineCode>onSubmit</InlineCode> 内显式 parse。
+            </>,
+            <>
+              现有 <InlineCode>rules</InlineCode>、异步校验、
+              <InlineCode>setError</InlineCode> 与
+              <InlineCode>setFormError</InlineCode> 继续可用；合并顺序沿用 Form
+              当前行为。
+            </>,
+          ]}
+        />
+        <Callout title="可选依赖" tone="info">
+          使用 Valibot 校验时安装 <code>valibot</code>。主入口
+          <code>seam-react</code> 不会加载 Valibot；只有导入
+          <code>seam-react/valibot</code> 时才需要它。
+        </Callout>
       </Section>
 
       <Section title="Form.Root API">

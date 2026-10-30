@@ -1026,7 +1026,9 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       </form>
     </FormContext.Provider>
   );
-});
+}) as <T extends Record<string, unknown> = Record<string, unknown>>(
+  props: FormRootProps<T> & { ref?: Ref<FormRef> },
+) => ReactElement | null;
 
 // ============================================================================
 // Form.Field

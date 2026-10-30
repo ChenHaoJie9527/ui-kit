@@ -7,7 +7,8 @@
     "types": ["react", "react-dom", "node"],
     "paths": {
       "seam-hooks": ["../../packages/hooks/src/index.ts"],
-      "seam-react": ["../../packages/ui/src/index.ts"]
+      "seam-react": ["../../packages/ui/src/index.ts"],
+      "seam-react/valibot": ["../../packages/ui/src/valibot.ts"]
     }
   },
   "include": ["src", "vite.config.ts", "../../packages/ui/src/css.d.ts"]
