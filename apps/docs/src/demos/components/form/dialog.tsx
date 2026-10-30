@@ -1,5 +1,13 @@
 import { useId, useRef, useState } from "react";
-import { Button, Dialog, Form, Input, Select, Switch } from "seam-react";
+import {
+  Button,
+  Dialog,
+  Form,
+  Input,
+  Select,
+  Switch,
+  type FormRef,
+} from "seam-react";
 import { valibotResolver } from "seam-react/valibot";
 import * as v from "valibot";
 
@@ -27,6 +35,7 @@ export function Demo() {
   const [pending, setPending] = useState(false);
   const [lastInvite, setLastInvite] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<FormRef<InviteValues>>(null);
   const formId = useId();
 
   return (
@@ -75,6 +84,7 @@ export function Demo() {
 
         <Dialog.Body>
           <Form.Root<InviteValues>
+            ref={formRef}
             id={formId}
             defaultValues={{
               name: "",
@@ -91,7 +101,14 @@ export function Demo() {
                 await new Promise((resolve) => window.setTimeout(resolve, 900));
 
                 if (email === "blocked@example.com") {
-                  throw new Error("该用户已在其他企业空间，暂时无法邀请。");
+                  formRef.current?.setError(
+                    "email",
+                    "该用户已属于其他企业空间",
+                  );
+                  window.requestAnimationFrame(() => {
+                    formRef.current?.focusFirstError();
+                  });
+                  throw new Error("邀请发送失败，请检查标记字段后重试。");
                 }
 
                 setLastInvite(email);
@@ -153,7 +170,9 @@ export function Demo() {
 
         <Dialog.Footer>
           <Dialog.Close>
-            <Button variant="outline">取消</Button>
+            <Button type="button" variant="outline">
+              取消
+            </Button>
           </Dialog.Close>
           <Button type="submit" form={formId} loading={pending}>
             发送邀请

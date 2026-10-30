@@ -98,6 +98,10 @@ export function Demo() {
             </Form.Control>
           </Form.Field>
 
+          <p className="m-0 rounded-lg bg-surface-2 px-3 py-2 text-[11px] leading-[1.55] text-muted">
+            仅用于 UI 示例，不代表真实认证安全实现；示例不会发送真实账号或密码。
+          </p>
+
           <Form.Actions>
             <SubmitButton />
           </Form.Actions>

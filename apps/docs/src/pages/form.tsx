@@ -229,7 +229,7 @@ const LoginSchema = v.object({
 
       <Section
         title="业务配方：登录"
-        description="组合 Form、Input、CheckBox 和 Button。异步提交期间按钮进入 loading，成功后由 Form 状态播报结果；邮箱填写 blocked@example.com 可预览服务端失败态。"
+        description="组合 Form、Input、CheckBox 和 Button。异步提交期间按钮进入 loading，成功后由 Form 状态播报结果；邮箱填写 blocked@example.com 可预览服务端失败态。仅用于 UI 示例，不代表真实认证安全实现。"
       >
         <Demo code={getFormDemoSource("login")} label="login.tsx">
           <LoginFormDemo />
@@ -238,7 +238,7 @@ const LoginSchema = v.object({
 
       <Section
         title="业务配方：企业注册"
-        description="注册表单演示双列表单布局、Select 与条款确认。密码同时校验长度、字母和数字，提交期间保留全部输入并阻止重复提交。"
+        description="注册表单演示双列表单布局、确认密码与条款校验。密码同时校验长度、字母和数字；使用 blocked@example.com 可预览服务端字段错误与表单级错误。示例仅用于 UI 演示，不会发送真实账号或密码。"
       >
         <Demo code={getFormDemoSource("register")} label="register.tsx">
           <RegisterFormDemo />
@@ -247,7 +247,7 @@ const LoginSchema = v.object({
 
       <Section
         title="业务配方：企业信息"
-        description="企业认证场景组合 Input、Select、RadioGroup 和 Switch。统一社会信用代码填写 000000 可预览服务端失败态。"
+        description="企业认证场景组合 Input、Select、RadioGroup 和 Switch，并拆成“企业资料”和“团队与通知”两个 fieldset 语义分区。统一社会信用代码填写 000000 可预览服务端失败态。"
       >
         <Demo code={getFormDemoSource("organization")} label="organization.tsx">
           <OrganizationFormDemo />
@@ -256,7 +256,7 @@ const LoginSchema = v.object({
 
       <Section
         title="业务配方：Dialog 内嵌表单"
-        description="表单放在 Dialog.Body 中，提交按钮通过 form 属性与表单关联，因此 Dialog.Footer 仍可使用标准底部操作区；打开后焦点直接进入姓名输入框，关闭后回到触发器。"
+        description="表单放在 Dialog.Body 中，提交按钮通过 form 属性与表单关联，因此 Dialog.Footer 仍可使用标准底部操作区。打开后焦点直接进入姓名输入框；服务端失败时保留 Dialog 并聚焦错误字段，成功后关闭并显示结果。"
       >
         <Demo code={getFormDemoSource("dialog")} label="dialog.tsx">
           <DialogFormDemo />

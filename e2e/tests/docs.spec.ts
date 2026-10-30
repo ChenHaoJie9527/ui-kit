@@ -99,7 +99,7 @@ test("Form login recipe exposes async loading and server failure", async ({
   await expect(section.getByText("登录成功，正在进入工作台。")).toBeVisible();
 });
 
-test("Form registration recipe composes Select and CheckBox", async ({
+test("Form registration recipe validates passwords and server field errors", async ({
   page,
 }) => {
   await page.goto("/#/components/form");
@@ -110,11 +110,12 @@ test("Form registration recipe composes Select and CheckBox", async ({
   });
 
   await section.getByLabel("姓名").fill("张明");
-  await section.getByLabel("公司名称").fill("Seam Labs");
-  await section.getByLabel("工作邮箱").fill("team@example.com");
+  const email = section.getByLabel("工作邮箱");
+  const confirmPassword = section.getByLabel("确认密码");
+
+  await email.fill("blocked@example.com");
   await section.getByLabel("设置密码").fill("seam2026");
-  await section.getByRole("combobox", { name: "团队规模" }).click();
-  await page.getByRole("option", { name: "11–50 人" }).click();
+  await confirmPassword.fill("seam2027");
   await section
     .getByText(
       "我已阅读并同意服务条款与隐私政策，并确认拥有创建企业空间的权限。",
@@ -126,7 +127,62 @@ test("Form registration recipe composes Select and CheckBox", async ({
     .click();
 
   await expect(
+    section.getByText("两次输入的密码不一致", { exact: true }),
+  ).toBeVisible();
+
+  await confirmPassword.fill("seam2026");
+  await section
+    .getByRole("button", { name: "创建企业账号", exact: true })
+    .click();
+  await expect(
+    section
+      .getByRole("alert")
+      .filter({ hasText: "该邮箱已被其他企业空间占用" }),
+  ).toBeVisible();
+  await expect(
+    section.getByRole("alert").filter({ hasText: "注册失败，请检查标记字段" }),
+  ).toBeVisible();
+  await expect(email).toBeFocused();
+
+  await email.fill("team@example.com");
+  await section
+    .getByRole("button", { name: "创建企业账号", exact: true })
+    .click();
+  await expect(
     section.getByText("企业账号已创建，邀请邮件已发送。"),
+  ).toBeVisible();
+});
+
+test("Form organization recipe exposes two semantic sections and server failure", async ({
+  page,
+}) => {
+  await page.goto("/#/components/form");
+  await page.waitForLoadState("networkidle");
+
+  const section = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "业务配方：企业信息" }),
+  });
+
+  await expect(section.locator("fieldset")).toHaveCount(2);
+  await section.getByLabel("公司名称").fill("Seam Labs");
+  await section.getByLabel("统一社会信用代码").fill("000000");
+  await section.getByLabel("管理员邮箱").fill("admin@example.com");
+  await section.getByRole("combobox", { name: "所属行业" }).click();
+  await page.getByRole("option", { name: "金融科技" }).click();
+  await section.getByRole("radio", { name: "51–200 人" }).check();
+
+  const submit = section.getByRole("button", { name: "提交认证" });
+  await submit.click();
+
+  await expect(submit).toHaveAttribute("aria-busy", "true");
+  await expect(
+    section.getByRole("alert").filter({ hasText: "企业信息校验未通过" }),
+  ).toBeVisible();
+
+  await section.getByLabel("统一社会信用代码").fill("91310000SEAM");
+  await submit.click();
+  await expect(
+    section.getByText("资料已提交，审核结果会发送到管理员邮箱。"),
   ).toBeVisible();
 });
 
@@ -146,7 +202,8 @@ test("Form Dialog recipe keeps focus and async submit inside the modal", async (
 
   await expect(name).toBeFocused();
   await name.fill("李敏");
-  await dialog.getByLabel("邮箱").fill("member@example.com");
+  const email = dialog.getByLabel("邮箱");
+  await email.fill("blocked@example.com");
   await dialog.getByRole("combobox", { name: "成员角色" }).click();
   await page.getByRole("option", { name: "设计师" }).click();
   await dialog.getByRole("button", { name: "发送邀请" }).click();
@@ -154,6 +211,14 @@ test("Form Dialog recipe keeps focus and async submit inside the modal", async (
   await expect(
     dialog.getByRole("button", { name: "发送邀请" }),
   ).toHaveAttribute("aria-busy", "true");
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole("alert").filter({ hasText: "该用户已属于其他企业空间" }),
+  ).toBeVisible();
+  await expect(email).toBeFocused();
+
+  await email.fill("member@example.com");
+  await dialog.getByRole("button", { name: "发送邀请" }).click();
   await expect(dialog).toBeHidden();
   await expect(section.getByText("member@example.com")).toBeVisible();
 });

@@ -19,7 +19,7 @@ const industries = [
 ];
 
 const OrganizationSchema = v.object({
-  legalName: v.pipe(v.string(), v.nonEmpty("请输入企业全称")),
+  companyName: v.pipe(v.string(), v.nonEmpty("请输入公司名称")),
   creditCode: v.pipe(
     v.string(),
     v.nonEmpty("请输入统一社会信用代码"),
@@ -29,13 +29,13 @@ const OrganizationSchema = v.object({
     ["saas", "finance", "commerce", "other"],
     "请选择所属行业",
   ),
-  companySize: v.picklist(["small", "medium", "large"], "请选择公司规模"),
-  contactEmail: v.pipe(
+  companySize: v.picklist(["small", "medium", "large"], "请选择团队规模"),
+  adminEmail: v.pipe(
     v.string(),
-    v.nonEmpty("请输入联系人邮箱"),
+    v.nonEmpty("请输入管理员邮箱"),
     v.email("请输入有效邮箱"),
   ),
-  productUpdates: v.boolean(),
+  securityNotifications: v.boolean(),
 });
 
 type OrganizationValues = v.InferInput<typeof OrganizationSchema>;
@@ -48,7 +48,7 @@ function SubmitStatus() {
       {state.submitting
         ? "正在提交企业认证资料…"
         : state.submitSucceeded
-          ? "资料已提交，审核结果会发送到联系人邮箱。"
+          ? "资料已提交，审核结果会发送到管理员邮箱。"
           : "统一社会信用代码填写 000000 可预览服务端失败态。"}
     </output>
   );
@@ -66,7 +66,7 @@ function SubmitButton() {
 
 export function Demo() {
   return (
-    <div className="w-full max-w-[640px]">
+    <div className="w-full max-w-[660px]">
       <div className="rounded-[18px] border border-line bg-surface p-5 shadow-[0_18px_48px_-32px_rgb(15_23_42/0.45)] phone:p-6">
         <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -84,12 +84,12 @@ export function Demo() {
 
         <Form.Root<OrganizationValues>
           defaultValues={{
-            legalName: "",
+            companyName: "",
             creditCode: "",
             industry: "saas",
             companySize: "small",
-            contactEmail: "",
-            productUpdates: true,
+            adminEmail: "",
+            securityNotifications: true,
           }}
           validate={valibotResolver(OrganizationSchema)}
           onSubmit={async ({ creditCode }) => {
@@ -97,22 +97,45 @@ export function Demo() {
 
             if (creditCode === "000000") {
               throw new Error(
-                "企业信息校验未通过，请核对名称与统一社会信用代码。",
+                "企业信息校验未通过，请核对公司名称与统一社会信用代码。",
               );
             }
           }}
         >
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Form.Field name="legalName">
-              <Form.Label>企业全称</Form.Label>
-              <Form.Control>
-                <Input
-                  autoComplete="organization"
-                  placeholder="与营业执照保持一致"
-                />
-              </Form.Control>
-              <Form.ErrorMessage />
-            </Form.Field>
+          <fieldset className="m-0 min-w-0 rounded-xl border border-line bg-surface-2/40 p-4">
+            <legend className="px-1 text-[12px] font-semibold tracking-[0.04em] text-muted">
+              企业资料
+            </legend>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Form.Field name="companyName">
+                <Form.Label>公司名称</Form.Label>
+                <Form.Control>
+                  <Input
+                    autoComplete="organization"
+                    placeholder="与营业执照保持一致"
+                  />
+                </Form.Control>
+                <Form.Description>
+                  请使用营业执照上的法定名称，审核通过后需要走变更流程。
+                </Form.Description>
+                <Form.ErrorMessage />
+              </Form.Field>
+
+              <Form.Field name="industry">
+                <Form.Label>所属行业</Form.Label>
+                <Form.Control>
+                  <Select
+                    options={industries}
+                    placeholder="请选择行业"
+                    aria-label="所属行业"
+                  />
+                </Form.Control>
+                <Form.Description>
+                  用于匹配合规模板、行业基准与可用集成。
+                </Form.Description>
+                <Form.ErrorMessage />
+              </Form.Field>
+            </div>
 
             <Form.Field name="creditCode">
               <Form.Label>统一社会信用代码</Form.Label>
@@ -122,56 +145,53 @@ export function Demo() {
                   placeholder="例如 91310000XXXX"
                 />
               </Form.Control>
+              <Form.Description>
+                仅用于企业身份核验，不会公开展示。
+              </Form.Description>
               <Form.ErrorMessage />
             </Form.Field>
-          </div>
+          </fieldset>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Form.Field name="industry">
-              <Form.Label>所属行业</Form.Label>
+          <fieldset className="m-0 min-w-0 rounded-xl border border-line bg-surface-2/40 p-4">
+            <legend className="px-1 text-[12px] font-semibold tracking-[0.04em] text-muted">
+              团队与通知
+            </legend>
+            <Form.Field name="companySize">
+              <Form.Label>团队规模</Form.Label>
               <Form.Control>
-                <Select
-                  options={industries}
-                  placeholder="请选择行业"
-                  aria-label="所属行业"
-                />
+                <RadioGroup orientation="horizontal">
+                  <RadioGroupItem value="small" label="1–50 人" />
+                  <RadioGroupItem value="medium" label="51–200 人" />
+                  <RadioGroupItem value="large" label="201 人以上" />
+                </RadioGroup>
               </Form.Control>
               <Form.ErrorMessage />
             </Form.Field>
 
-            <Form.Field name="contactEmail">
-              <Form.Label>联系人邮箱</Form.Label>
+            <Form.Field name="adminEmail">
+              <Form.Label>管理员邮箱</Form.Label>
               <Form.Control>
                 <Input
                   type="email"
                   autoComplete="email"
-                  placeholder="finance@company.com"
+                  placeholder="admin@company.com"
                 />
               </Form.Control>
+              <Form.Description>
+                审核结果、合同变更与管理员安全通知会发送到这里。
+              </Form.Description>
               <Form.ErrorMessage />
             </Form.Field>
-          </div>
 
-          <Form.Field name="companySize">
-            <Form.Label>公司规模</Form.Label>
-            <Form.Control>
-              <RadioGroup orientation="horizontal">
-                <RadioGroupItem value="small" label="1–50 人" />
-                <RadioGroupItem value="medium" label="51–200 人" />
-                <RadioGroupItem value="large" label="201 人以上" />
-              </RadioGroup>
-            </Form.Control>
-            <Form.ErrorMessage />
-          </Form.Field>
-
-          <Form.Field name="productUpdates">
-            <Form.Control>
-              <Switch>接收产品更新与合规通知</Switch>
-            </Form.Control>
-            <Form.Description>
-              安全事件、合同变更与账单通知不受此选项影响。
-            </Form.Description>
-          </Form.Field>
+            <Form.Field name="securityNotifications">
+              <Form.Control>
+                <Switch>接收安全通知</Switch>
+              </Form.Control>
+              <Form.Description>
+                包括新设备登录、管理员变更与异常访问提醒；关闭后仍会收到无法退订的安全事件。
+              </Form.Description>
+            </Form.Field>
+          </fieldset>
 
           <Form.Actions>
             <SubmitButton />
