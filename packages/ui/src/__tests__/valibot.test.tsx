@@ -165,6 +165,58 @@ describe("valibotResolver", () => {
     });
   });
 
+  it("waits for an async schema before submitting", async () => {
+    const onSubmit = vi.fn<(values: Record<string, unknown>) => void>();
+    const checkStarted = vi.fn<() => void>();
+    let releaseCheck!: () => void;
+    const pendingCheck = new Promise<void>((resolve) => {
+      releaseCheck = resolve;
+    });
+    const AsyncEmailSchema = v.objectAsync({
+      email: v.pipeAsync(
+        v.string(),
+        v.checkAsync(async (value) => {
+          checkStarted();
+          await pendingCheck;
+          return value === "team@example.com";
+        }, "邮箱不可用"),
+      ),
+    });
+
+    render(
+      <Form.Root
+        defaultValues={{ email: "team@example.com" }}
+        validate={valibotResolver(AsyncEmailSchema)}
+        onSubmit={onSubmit}
+      >
+        <Form.Field name="email">
+          <Form.Label>邮箱</Form.Label>
+          <Form.Control>
+            <input type="email" />
+          </Form.Control>
+          <Form.ErrorMessage />
+        </Form.Field>
+        <button type="submit">登录</button>
+      </Form.Root>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "登录" }));
+
+    await waitFor(() => expect(checkStarted).toHaveBeenCalledOnce());
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await act(async () => {
+      releaseCheck();
+      await pendingCheck;
+    });
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith({
+        email: "team@example.com",
+      });
+    });
+  });
+
   it("blocks submit and reports reserved form errors through onSubmitFailed", async () => {
     const onSubmit = vi.fn<(values: Record<string, unknown>) => void>();
     const onSubmitFailed =

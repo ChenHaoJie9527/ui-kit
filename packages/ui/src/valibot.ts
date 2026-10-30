@@ -9,7 +9,7 @@ type FormErrorsFor<TSchema extends ValibotSchema> =
     ? FormErrors<InferInput<TSchema>>
     : FormErrors;
 
-export type ValibotResolver<TSchema extends ValibotSchema> = (
+export type ValibotValidate<TSchema extends ValibotSchema> = (
   values: InferInput<TSchema>,
 ) => Promise<FormErrorsFor<TSchema>>;
 
@@ -21,7 +21,7 @@ export type ValibotResolver<TSchema extends ValibotSchema> = (
  */
 export function valibotResolver<const TSchema extends ValibotSchema>(
   schema: TSchema,
-): ValibotResolver<TSchema> {
+): ValibotValidate<TSchema> {
   if (schema === null || typeof schema !== "object") {
     throw new TypeError("valibotResolver expects a Valibot schema.");
   }
