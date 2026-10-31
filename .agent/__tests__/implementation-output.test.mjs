@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
-import { parseFileBlocks, planFileBatches } from "../implementation-output.mjs";
+import {
+  parseFileBlocks,
+  planFileBatches,
+  writeValidatedFile,
+} from "../implementation-output.mjs";
 
 test("parses complete file blocks", () => {
   const output = `Analysis that must be ignored.
@@ -67,4 +74,44 @@ test("batches by file count and estimated output size", () => {
     ["styles.css", "index.ts", "test.tsx"],
     ["page.tsx", "new.tsx"],
   ]);
+});
+
+test("restores an existing file when generated content is invalid", () => {
+  const dir = mkdtempSync(join(tmpdir(), "ui-kit-output-"));
+  const file = join(dir, "existing.tsx");
+  writeFileSync(file, "export const existing = true;\n");
+
+  const result = writeValidatedFile(file, "export const broken = (\n", () => {
+    throw new Error("invalid syntax");
+  });
+
+  assert.equal(result.written, false);
+  assert.equal(result.error.message, "invalid syntax");
+  assert.equal(readFileSync(file, "utf-8"), "export const existing = true;\n");
+});
+
+test("removes a new file when generated content is invalid", () => {
+  const dir = mkdtempSync(join(tmpdir(), "ui-kit-output-"));
+  const file = join(dir, "new.tsx");
+
+  const result = writeValidatedFile(file, "export const broken = (\n", () => {
+    throw new Error("invalid syntax");
+  });
+
+  assert.equal(result.written, false);
+  assert.equal(existsSync(file), false);
+});
+
+test("keeps formatted content when validation succeeds", () => {
+  const dir = mkdtempSync(join(tmpdir(), "ui-kit-output-"));
+  const file = join(dir, "valid.tsx");
+
+  const result = writeValidatedFile(
+    file,
+    "export const valid = true;\n",
+    () => {},
+  );
+
+  assert.equal(result.written, true);
+  assert.equal(readFileSync(file, "utf-8"), "export const valid = true;\n");
 });

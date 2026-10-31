@@ -30,7 +30,11 @@ import {
   isRetryableArkError,
   positiveInteger,
 } from "./ark-retry.mjs";
-import { parseFileBlocks, planFileBatches } from "./implementation-output.mjs";
+import {
+  parseFileBlocks,
+  planFileBatches,
+  writeValidatedFile,
+} from "./implementation-output.mjs";
 import {
   buildEnhancementContext,
   extractImplementationFilePlan,
@@ -100,6 +104,25 @@ if (!isSafeRunId(runId)) {
 }
 const runDir = join(__dirname, "runs", runId);
 const repoDir = join(__dirname, "..");
+
+function validateGeneratedSource(absPath) {
+  if (!/\.(?:ts|tsx|js|jsx|mjs|cjs)$/.test(absPath)) return;
+
+  try {
+    execFileSync("pnpm", ["exec", "oxfmt", absPath], {
+      cwd: repoDir,
+      stdio: "pipe",
+    });
+  } catch (error) {
+    const detail = error.stderr?.toString().trim();
+    throw new Error(
+      `Generated source is not syntactically valid: ${absPath}${
+        detail ? `\n${detail}` : ""
+      }`,
+      { cause: error },
+    );
+  }
+}
 
 mkdirSync(runDir, { recursive: true });
 
@@ -620,7 +643,18 @@ Generate every requested file in this batch following the output format specifie
       if (filesWritten.includes(filePath)) continue;
       const absolutePath = allowedFiles.get(filePath);
       mkdirSync(dirname(absolutePath), { recursive: true });
-      writeFileSync(absolutePath, `${fileContent}\n`);
+      const result = writeValidatedFile(
+        absolutePath,
+        `${fileContent}\n`,
+        validateGeneratedSource,
+      );
+      if (!result.written) {
+        console.warn(
+          `[Agent] Discarded invalid output for ${filePath}; retrying it separately.`,
+        );
+        console.warn(`[Agent] ${result.error.message.split("\n")[0]}`);
+        continue;
+      }
       filesWritten.push(filePath);
       console.log(`[Agent] Wrote: ${absolutePath}`);
     }
