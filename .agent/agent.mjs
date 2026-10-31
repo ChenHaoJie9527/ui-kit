@@ -17,6 +17,13 @@ import { join, dirname, resolve as resolvePath, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import https from "node:https";
+import {
+  buildEnhancementContext,
+  extractImplementationFilePlan,
+  normalizePlannedPath,
+  readPlannedFileContext,
+  resolvePlannedFile,
+} from "./enhancement-plan.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -339,6 +346,28 @@ Repair the failures and rerun-ready source files.`;
 async function generateSpec() {
   console.log(`[Agent] Phase 1: Generating spec for ${COMPONENT}...`);
 
+  const isEnhancement = TYPE === "enhancement";
+  const enhancementContext = isEnhancement
+    ? buildEnhancementContext(repoDir, COMPONENT_PASCAL, COMPONENT_KEBAB)
+    : "";
+  const enhancementInstructions = isEnhancement
+    ? `
+This is an enhancement to an existing component. Modify the current implementation instead of creating a parallel component or a second state model.
+
+End the spec with a machine-readable implementation file plan in this exact form:
+<!-- agent-files
+packages/ui/src/ExistingComponent.tsx
+packages/ui/src/__tests__/ExistingComponent.test.tsx
+apps/docs/src/pages/existing-component.tsx
+-->
+
+The plan must list every existing file to modify and every new file to add. Use one repository-relative path per line. Allowed roots are packages/ui/src/, packages/hooks/src/, apps/docs/src/, and e2e/tests/. Allowed extensions are .ts, .tsx, .css, and .md. Include implementation, tests, and documentation files. Do not include .github, .agent, package manifests, or build configuration.
+
+## Existing Enhancement Context
+${enhancementContext}
+`
+    : "";
+
   const systemPrompt = `You are a senior React component library engineer working on seam-ui.
 You MUST follow the pattern files and design tokens exactly. Do not invent new patterns.
 
@@ -366,6 +395,8 @@ ${motionTokens}
 ## Existing Component Exports
 ${currentExports}
 
+${enhancementInstructions}
+
 You are writing a spec.md file. Output ONLY the spec content in Markdown, no code fences around the entire output.`;
 
   const userPrompt = `Generate a spec for the component: ${COMPONENT}
@@ -384,10 +415,16 @@ Write a complete spec.md covering:
 7. Failure states
 8. Motion Gate (frequency, purpose, implementation, token)
 9. Test plan
-10. Open questions (if any)`;
+10. Compatibility and migration impact
+11. Open questions (if any)
+${isEnhancement ? "12. Implementation File Plan using the required agent-files comment" : ""}`;
 
   const spec = await callArk(systemPrompt, userPrompt);
   writeFileSync(join(runDir, "spec.md"), spec);
+  if (isEnhancement) {
+    const files = extractImplementationFilePlan(spec);
+    console.log(`[Agent] Enhancement file plan: ${files.join(", ")}`);
+  }
   console.log(`[Agent] Spec written to ${join(runDir, "spec.md")}`);
   return spec;
 }
@@ -410,18 +447,27 @@ function readApprovedSpec() {
 async function generateImplementation(spec) {
   console.log(`[Agent] Phase 3: Generating implementation for ${COMPONENT}...`);
 
-  // Write reference component code to a temp context for the LLM
+  const isEnhancement = TYPE === "enhancement";
+  const isNewComponent = TYPE === "new-component";
   const references = referenceComponents.slice(0, 3).join("\n\n---\n\n");
-  const docsFiles =
-    TYPE === "new-component"
-      ? `
+  const plannedFiles = isEnhancement ? extractImplementationFilePlan(spec) : [];
+  const plannedContext = isEnhancement
+    ? readPlannedFileContext(repoDir, plannedFiles)
+    : "";
+  const docsFiles = isNewComponent
+    ? `
 5. apps/docs/src/pages/${COMPONENT_KEBAB}.tsx - Documentation page
 6. apps/docs/src/routes.tsx - Import the new page and register its slug
 7. apps/docs/src/content/components.ts - Add the component metadata to the catalog
 `
-      : "";
-  const docsInstructions =
-    TYPE === "new-component"
+    : "";
+  const docsInstructions = isEnhancement
+    ? `
+This is an enhancement to an existing component. Modify the existing implementation and preserve public behavior unless the approved Spec explicitly changes it. Do not create a parallel component, a second form/state system, or unrelated refactors.
+
+Only return files listed in the approved implementation file plan. Update the existing documentation and demos in place. Do not add routes or catalog entries unless the plan explicitly includes those files.
+`
+    : isNewComponent
       ? `
 For the new component, also create the user-facing docs page and register it:
 - The page must export ${COMPONENT_PASCAL}Page and follow the supplied docs reference.
@@ -440,9 +486,19 @@ ${docsRoutes}
 ${docsContent}
 `
       : "";
+  const pathsInstructions = isEnhancement
+    ? "Use the exact repository-relative paths from the approved implementation file plan. Always output complete files."
+    : "For files 1-4, use paths relative to `packages/ui/src/`. For docs files 5-7, use repository-relative paths under `apps/docs/src/`. Always output complete files.";
+  const filesToGenerate = isEnhancement
+    ? plannedFiles.map((file, index) => `${index + 1}. ${file}`).join("\n")
+    : `1. ${COMPONENT_PASCAL}.tsx - Component implementation
+2. ${COMPONENT_KEBAB}.css - Component styles
+3. __tests__/${COMPONENT_PASCAL}.test.tsx - Tests
+4. Update to src/index.ts - Export addition
+${docsFiles}`;
 
   const systemPrompt = `You are a senior React component library engineer working on seam-ui.
-You have written a spec and now must implement the component.
+You have written a spec and now must implement ${isEnhancement ? "the existing component enhancement" : "the component"}.
 
 ## Pattern Files (for reference)
 ${patternGuide}
@@ -461,15 +517,10 @@ Output format: You must output separate files, each starting with a marker line:
 <file content>
 === END FILE ===
 
-For files 1-4, use paths relative to \`packages/ui/src/\`. For docs files 5-7,
-use repository-relative paths under \`apps/docs/src/\`. Always output complete files.
+${pathsInstructions}
 
 Files to generate:
-1. ${COMPONENT_PASCAL}.tsx - Component implementation
-2. ${COMPONENT_KEBAB}.css - Component styles
-3. __tests__/${COMPONENT_PASCAL}.test.tsx - Tests
-4. Update to src/index.ts - Export addition
-${docsFiles}
+${filesToGenerate}
 ${docsInstructions}
 
 Rules:
@@ -490,7 +541,7 @@ Testing conventions (MUST follow exactly):
 - Use expect(screen.queryByRole("...")).toBeNull() instead of not.toBeInTheDocument
 - Use expect((el as HTMLButtonElement).disabled).toBe(true) instead of toBeDisabled`;
 
-  const userPrompt = `Implement the component: ${COMPONENT}
+  const userPrompt = `Implement ${isEnhancement ? "the existing component enhancement" : "the component"}: ${COMPONENT}
 
 ## Spec:
 ${spec}
@@ -498,21 +549,26 @@ ${spec}
 ## Existing index.ts exports:
 ${currentExports}
 
+${isEnhancement ? `## Existing implementation files\n${plannedContext}\n` : ""}
+
 Generate the implementation files following the output format specified above.`;
 
   const implementation = await callArk(systemPrompt, userPrompt);
 
-  // Parse the file markers and write files
   const fileRegex = /=== FILE: (.+?) ===\n([\s\S]*?)=== END FILE ===/g;
-  const allowedFiles = new Map([
-    [`${COMPONENT_PASCAL}.tsx`, join(srcDir, `${COMPONENT_PASCAL}.tsx`)],
-    [`${COMPONENT_KEBAB}.css`, join(srcDir, `${COMPONENT_KEBAB}.css`)],
-    [
-      `__tests__/${COMPONENT_PASCAL}.test.tsx`,
-      join(srcDir, "__tests__", `${COMPONENT_PASCAL}.test.tsx`),
-    ],
-    ["index.ts", join(srcDir, "index.ts")],
-  ]);
+  const allowedFiles = isEnhancement
+    ? new Map(
+        plannedFiles.map((file) => [file, resolvePlannedFile(repoDir, file)]),
+      )
+    : new Map([
+        [`${COMPONENT_PASCAL}.tsx`, join(srcDir, `${COMPONENT_PASCAL}.tsx`)],
+        [`${COMPONENT_KEBAB}.css`, join(srcDir, `${COMPONENT_KEBAB}.css`)],
+        [
+          `__tests__/${COMPONENT_PASCAL}.test.tsx`,
+          join(srcDir, "__tests__", `${COMPONENT_PASCAL}.test.tsx`),
+        ],
+        ["index.ts", join(srcDir, "index.ts")],
+      ]);
   if (TYPE === "new-component") {
     allowedFiles.set(
       `apps/docs/src/pages/${COMPONENT_KEBAB}.tsx`,
@@ -528,14 +584,21 @@ Generate the implementation files following the output format specified above.`;
     const filePath = match[1].trim();
     const fileContent = match[2].trim();
 
-    const cleanPath = filePath
-      .replace(/^\.\//, "")
-      .replace(/^packages\/ui\/src\//, "")
-      .replace(/^src\//, "");
+    const cleanPath = isEnhancement
+      ? normalizePlannedPath(filePath)
+      : filePath
+          .replace(/^\.\//, "")
+          .replace(/^packages\/ui\/src\//, "")
+          .replace(/^src\//, "");
     const absPath = allowedFiles.get(cleanPath);
     if (!absPath) {
       throw new Error(
         `Agent attempted to write an unsupported source file: ${filePath}`,
+      );
+    }
+    if (filesWritten.includes(cleanPath)) {
+      throw new Error(
+        `Agent returned the same file more than once: ${filePath}`,
       );
     }
     const absDir = dirname(absPath);
@@ -552,8 +615,9 @@ Generate the implementation files following the output format specified above.`;
     );
   }
 
-  const requiredFiles =
-    TYPE === "new-component"
+  const requiredFiles = isEnhancement
+    ? plannedFiles
+    : TYPE === "new-component"
       ? [
           `${COMPONENT_PASCAL}.tsx`,
           `${COMPONENT_KEBAB}.css`,
@@ -574,21 +638,23 @@ Generate the implementation files following the output format specified above.`;
     );
   }
 
-  const cssFileName = `${COMPONENT_KEBAB}.css`;
-  const cssImportLine = `@import "./${cssFileName}";`;
-  const stylesCssPath = join(srcDir, "styles.css");
-  if (existsSync(stylesCssPath)) {
-    const stylesContent = readFileSync(stylesCssPath, "utf-8");
-    if (
-      !stylesContent.includes(cssImportLine) &&
-      filesWritten.some((f) => f.endsWith(".css"))
-    ) {
-      const updated = stylesContent.replace(
-        '@import "./styles/tokens.css";',
-        `@import "./styles/tokens.css";\n${cssImportLine}`,
-      );
-      writeFileSync(stylesCssPath, updated);
-      console.log(`[Agent] Registered ${cssFileName} in styles.css`);
+  if (!isEnhancement) {
+    const cssFileName = `${COMPONENT_KEBAB}.css`;
+    const cssImportLine = `@import "./${cssFileName}";`;
+    const stylesCssPath = join(srcDir, "styles.css");
+    if (existsSync(stylesCssPath)) {
+      const stylesContent = readFileSync(stylesCssPath, "utf-8");
+      if (
+        !stylesContent.includes(cssImportLine) &&
+        filesWritten.some((f) => f.endsWith(".css"))
+      ) {
+        const updated = stylesContent.replace(
+          '@import "./styles/tokens.css";',
+          `@import "./styles/tokens.css";\n${cssImportLine}`,
+        );
+        writeFileSync(stylesCssPath, updated);
+        console.log(`[Agent] Registered ${cssFileName} in styles.css`);
+      }
     }
   }
 
@@ -602,11 +668,14 @@ Generate the implementation files following the output format specified above.`;
 async function generateChangeset() {
   console.log(`[Agent] Phase 4: Generating Changeset...`);
 
-  const bumpType = TYPE === "new-component" ? "minor" : "patch";
+  const bumpType =
+    TYPE === "new-component" || TYPE === "enhancement" ? "minor" : "patch";
   const summary =
     TYPE === "new-component"
       ? `feat(ui): add ${COMPONENT} component`
-      : `fix(ui): update ${COMPONENT}`;
+      : TYPE === "enhancement"
+        ? `feat(ui): enhance ${COMPONENT}`
+        : `fix(ui): update ${COMPONENT}`;
   const changesetContent = `---
 "seam-react": ${bumpType}
 ---

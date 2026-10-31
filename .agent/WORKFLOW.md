@@ -11,12 +11,21 @@ node .agent/scaffold.mjs <ComponentName> <type>
 
 填写 `task.md`。如果需求不明确，停下来问。
 
+对既有组件的增强 Issue 使用 `enhance(Component): ...` 标题。Agent 从标题
+括号中的 scope 识别目标组件，先进入 Spec，不进入新组件脚手架。例如：
+
+```text
+enhance(Form): validation timing, layout and label wrapping
+```
+
 ## Phase 1: Baseline + Spec（只读，不写代码）
 
 1. 选择模式：读 `.agent/patterns/` 找到最匹配的模式
 2. 读取该模式的完整文件
 3. 读取最相近的现有组件源码、测试和 CSS
 4. 填写 `spec.md`，只记录该组件相对模式的差异
+5. enhancement Spec 必须包含 `<!-- agent-files ... -->` 文件计划；计划中只列
+   真正需要修改或新增的源码、测试和文档文件
 
 **硬性规则：此阶段禁止修改任何代码文件。**
 **停止条件：将 spec.md 呈现给用户确认。**
@@ -37,6 +46,10 @@ spec 确认后，写 `decisions.md`，记录每个设计决策（编号、原因
 4. 文档（docs 页面、路由与组件目录）
 5. 导出（`index.ts`）
 6. Changeset（`pnpm changeset`）
+
+enhancement 只能写入已批准 Spec 文件计划中的路径。允许的路径根为
+`packages/ui/src/`、`packages/hooks/src/`、`apps/docs/src/` 和
+`e2e/tests/`；工作流、Agent 配置、包清单和构建配置不在自动修改范围内。
 
 规则：
 

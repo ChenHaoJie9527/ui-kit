@@ -21,38 +21,38 @@ jobs:
       github.event.label.name == 'spec-approved'
     runs-on: ubuntu-latest
     steps:
+      - name: Check Out Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.AI_PIPELINE_TOKEN || github.token }}
+          persist-credentials: false
+          fetch-depth: 0
+
       - name: Parse Issue and Select Pipeline
         id: init
         uses: actions/github-script@v7
         with:
           script: |
+            const path = require('path');
+            const { pathToFileURL } = require('url');
+            const workspace = process.env.GITHUB_WORKSPACE || process.cwd();
+            const issuePlanUrl = pathToFileURL(
+              path.join(workspace, '.agent', 'issue-plan.mjs'),
+            ).href;
+            const { parseIssuePlan } = await import(issuePlanUrl);
             const title = context.payload.issue.title;
             const body = context.payload.issue.body || '';
             const eventLabel = context.payload.label.name;
-
-            let name = title.replace(/^(?:feat|fix|enhance|refactor|chore|docs)(?:\([^)]*\))?\s*[:：]\s*/i, '');
-            name = name.replace(/^(?:add|improve|create|add new)\s+/i, '');
-            name = name.replace(/^(?:添加|新增|创建|修复)\s*/g, '');
-            name = name.replace(/^组件\s*/g, '');
-
-            const component = name.trim();
-            const slug = component
-              .replace(/[^a-zA-Z0-9\s-]/g, '')
-              .replace(/\s+/g, '-')
-              .toLowerCase() || 'component';
-            const isBug =
-              /^fix(?:\([^)]*\))?\s*[:：]/i.test(title) ||
-              title.startsWith('修复');
-            const type = isBug ? 'bugfix' : 'new-component';
-            const runId = `${slug}-issue-${context.payload.issue.number}`;
-            const specApproved = eventLabel === 'spec-approved' && !isBug;
-            const specOnly = eventLabel === 'ai-develop' && type === 'new-component';
+            const plan = parseIssuePlan(title, context.payload.issue.number);
+            const { component, slug, type, runId, branch } = plan;
+            const specApproved = eventLabel === 'spec-approved' && plan.requiresSpec;
+            const specOnly = eventLabel === 'ai-develop' && plan.requiresSpec;
 
             core.setOutput('component', component);
             core.setOutput('slug', slug);
             core.setOutput('type', type);
             core.setOutput('run_id', runId);
-            core.setOutput('branch', `codex/${slug}`);
+            core.setOutput('branch', branch);
             core.setOutput('spec_only', String(specOnly));
             core.setOutput('spec_approved', String(specApproved));
             core.exportVariable('AGENT_COMPONENT', component);
@@ -64,7 +64,7 @@ jobs:
             core.exportVariable('AGENT_SPEC_APPROVED', String(specApproved));
 
             console.log(
-              `Component: ${component}; type: ${type}; branch: codex/${slug}; run: ${runId}; specOnly: ${specOnly}; specApproved: ${specApproved}`,
+              `Component: ${component}; type: ${type}; branch: ${branch}; run: ${runId}; specOnly: ${specOnly}; specApproved: ${specApproved}`,
             );
 
       - name: Ensure Pipeline Labels
@@ -101,13 +101,6 @@ jobs:
                 if (error.status !== 422) throw error;
               }
             }
-
-      - name: Check Out Repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.AI_PIPELINE_TOKEN || github.token }}
-          persist-credentials: false
-          fetch-depth: 0
 
       - name: Prepare Work Branch
         env:
@@ -312,7 +305,7 @@ jobs:
         run: |
           CHANGED=$(git diff --name-only origin/main...HEAD)
           LEVEL=medium
-          if [ "$TYPE" = "new-component" ]; then
+          if [ "$TYPE" = "new-component" ] || [ "$TYPE" = "enhancement" ]; then
             LEVEL=high
           fi
           if printf '%s\n' "$CHANGED" | rg -q '^(\.github/workflows/|scripts/|packages/ui/src/index\.ts|packages/ui/src/styles/tokens\.css|packages/ui/src/motion\.ts|package\.json|pnpm-lock\.yaml)'; then

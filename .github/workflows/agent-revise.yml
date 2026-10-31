@@ -52,9 +52,13 @@ jobs:
 
             core.setOutput('branch', pr.head.ref);
             core.setOutput('sha', pr.head.sha);
+            const enhancement = pr.title.match(
+              /^enhance(?:ment)?\(([^)]+)\)\s*[:：]/i,
+            );
             core.setOutput(
               'component',
-              pr.title.replace(/^(?:feat|fix|enhance|refactor|chore|docs)(?:\([^)]+\))?\s*[:：]\s*/i, ''),
+              enhancement?.[1]?.trim() ||
+                pr.title.replace(/^(?:feat|fix|enhance|refactor|chore|docs)(?:\([^)]+\))?\s*[:：]\s*/i, ''),
             );
 
       - name: Ensure Pipeline Labels
