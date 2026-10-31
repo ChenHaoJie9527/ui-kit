@@ -12,13 +12,25 @@
  *   AGENT_TYPE      - new-component | enhancement | bugfix | deprecation
  *   AGENT_ISSUE_BODY - Issue description text (optional)
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import {
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+  statSync,
+} from "node:fs";
 import { join, dirname, resolve as resolvePath, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import https from "node:https";
 import { Readable } from "node:stream";
 import { readArkStream } from "./ark-stream.mjs";
+import {
+  getArkRetryDelay,
+  isRetryableArkError,
+  positiveInteger,
+} from "./ark-retry.mjs";
+import { parseFileBlocks, planFileBatches } from "./implementation-output.mjs";
 import {
   buildEnhancementContext,
   extractImplementationFilePlan,
@@ -159,17 +171,14 @@ const docsContent = existsSync(docsContentPath)
   : "";
 
 // ─── Call Ark API ─────────────────────────────────────────────────────────
-function isRetryableArkError(error) {
-  const message = error instanceof Error ? error.message : String(error);
-  return /ECONNRESET|ETIMEDOUT|EPIPE|socket hang up|terminated|other side closed|Ark returned empty content/i.test(
-    message,
-  );
-}
-
 function httpsPostStream(urlString, headers, body) {
   return new Promise((resolve, reject) => {
     const url = new URL(urlString);
     const payload = JSON.stringify(body);
+    const connectTimeoutMs = positiveInteger(
+      process.env.ARK_CONNECT_TIMEOUT_MS,
+      45_000,
+    );
     const request = https.request(
       {
         hostname: url.hostname,
@@ -205,7 +214,22 @@ function httpsPostStream(urlString, headers, body) {
       },
     );
 
-    request.on("error", reject);
+    const connectTimer = setTimeout(() => {
+      request.destroy(
+        new Error(`Ark connection timed out after ${connectTimeoutMs}ms.`),
+      );
+    }, connectTimeoutMs);
+    const clearConnectTimer = () => clearTimeout(connectTimer);
+
+    request.on("socket", (socket) => {
+      if (socket.connecting) socket.once("connect", clearConnectTimer);
+      else clearConnectTimer();
+    });
+    request.on("close", clearConnectTimer);
+    request.on("error", (error) => {
+      clearConnectTimer();
+      reject(error);
+    });
     request.on("timeout", () => {
       request.destroy(new Error("Request timed out"));
     });
@@ -244,17 +268,19 @@ async function callArkOnce(systemPrompt, userPrompt) {
 }
 
 async function callArk(systemPrompt, userPrompt) {
+  const maxAttempts = positiveInteger(process.env.ARK_MAX_ATTEMPTS, 5);
   let lastError;
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       return await callArkOnce(systemPrompt, userPrompt);
     } catch (error) {
       lastError = error;
-      if (attempt === 2 || !isRetryableArkError(error)) throw error;
+      if (attempt === maxAttempts || !isRetryableArkError(error)) throw error;
+      const delayMs = getArkRetryDelay(attempt);
       console.warn(
-        `[Agent] Ark request failed (${error.message}); retrying once.`,
+        `[Agent] Ark request failed (${error.message}); retry ${attempt}/${maxAttempts} in ${delayMs}ms.`,
       );
-      await new Promise((resolve) => setTimeout(resolve, 2_000));
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
   throw lastError;
@@ -343,12 +369,11 @@ ${sources}
 Repair the failures and rerun-ready source files.`;
 
   const implementation = await callArk(systemPrompt, userPrompt);
-  const fileRegex = /=== FILE: (.+?) ===\n([\s\S]*?)=== END FILE ===/g;
+  const parsedFiles = parseFileBlocks(implementation);
   const filesWritten = [];
-  let match;
 
-  while ((match = fileRegex.exec(implementation)) !== null) {
-    let filePath = match[1].trim().replace(/^\.\//, "");
+  for (const file of parsedFiles) {
+    let filePath = file.path.replace(/^\.\//, "");
     if (filePath.startsWith("src/")) {
       filePath = `packages/ui/${filePath}`;
     }
@@ -363,7 +388,7 @@ Repair the failures and rerun-ready source files.`;
       throw new Error(`Repair path escapes the repository: ${filePath}`);
     }
 
-    writeFileSync(absPath, `${match[2].trim()}\n`);
+    writeFileSync(absPath, `${file.content}\n`);
     filesWritten.push(filePath);
     console.log(`[Agent] Repaired: ${filePath}`);
   }
@@ -480,6 +505,182 @@ function readApprovedSpec() {
 }
 
 // ─── Phase 3: Generate Implementation ─────────────────────────────────────
+async function generateEnhancementImplementation(
+  spec,
+  plannedFiles,
+  references,
+) {
+  const allowedFiles = new Map(
+    plannedFiles.map((file) => [file, resolvePlannedFile(repoDir, file)]),
+  );
+  const filesWritten = [];
+  const rawOutputs = [];
+  const batches = planFileBatches(
+    plannedFiles.map((file) => {
+      const absolutePath = resolvePlannedFile(repoDir, file);
+      return {
+        path: file,
+        characters: existsSync(absolutePath)
+          ? statSync(absolutePath).size
+          : undefined,
+      };
+    }),
+  );
+
+  console.log(
+    `[Agent] Enhancement files will be generated in ${batches.length} batches.`,
+  );
+
+  const generateBatch = async (batch, label, allowSingleRetry = true) => {
+    const filesToGenerate = batch
+      .map((file, index) => `${index + 1}. ${file}`)
+      .join("\n");
+    const plannedContext = readPlannedFileContext(repoDir, plannedFiles);
+    const systemPrompt = `You are a senior React component library engineer working on seam-ui.
+You have written a spec and now must implement part of an existing component enhancement.
+
+## Pattern Files (for reference)
+${patternGuide}
+
+## Design Tokens (CSS)
+${tokens}
+
+## Motion Tokens (TypeScript)
+${motionTokens}
+
+## Reference Components (for code style)
+${references}
+
+Output format: You must output separate complete files, each starting with a marker line:
+=== FILE: <repository-relative path> ===
+<complete file content>
+=== END FILE ===
+
+Only return files from the list below. Use their exact repository-relative paths. Do not return explanations, diffs, partial files, or code fences around the entire response.
+Every requested file in this batch must be complete and include its closing marker.
+
+Files to generate in this batch:
+${filesToGenerate}
+
+This is an enhancement to an existing component. Modify the existing implementation and preserve public behavior unless the approved Spec explicitly changes it. Do not create a parallel component, a second form/state system, or unrelated refactors.
+
+Rules:
+- Use existing hooks from seam-hooks
+- Use CSS tokens (--uk-*) from tokens.css
+- Use Motion tokens from motion.ts
+- Follow the code style of existing components
+- Include comprehensive tests where the requested batch contains tests
+
+Testing conventions (MUST follow exactly):
+- Import from "vitest": import { describe, expect, it, vi } from "vitest";
+- Use vi.fn<() => void>() (with type parameter), NEVER jest.fn()
+- Use fireEvent from "@testing-library/react", NEVER userEvent
+- Do NOT import jest-axe or @testing-library/jest-dom
+- Use plain DOM assertions: el.getAttribute("..."), el.classList.contains("..."), etc.
+- Do NOT use toHaveAttribute, toBeInTheDocument, toBeDisabled, toHaveAccessibleName
+- Use expect(el.getAttribute("data-variant")).toBe("...") instead of toHaveAttribute
+- Use expect(screen.queryByRole("...")).toBeNull() instead of not.toBeInTheDocument
+- Use expect((el as HTMLButtonElement).disabled).toBe(true) instead of toBeDisabled`;
+
+    const userPrompt = `Implement these existing component enhancement files: ${batch.join(", ")}
+
+## Spec:
+${spec}
+
+## Existing index.ts exports:
+${currentExports}
+
+## Existing implementation files
+${plannedContext}
+
+Generate every requested file in this batch following the output format specified above.`;
+
+    console.log(`[Agent] Implementation batch ${label}: ${batch.join(", ")}`);
+    const implementation = await callArk(systemPrompt, userPrompt);
+    rawOutputs.push(`# Batch ${label}\n\n${implementation}`);
+    const parsedFiles = parseFileBlocks(implementation);
+    const normalizedFiles = new Map();
+
+    for (const file of parsedFiles) {
+      const filePath = normalizePlannedPath(file.path);
+      if (!allowedFiles.has(filePath)) {
+        throw new Error(
+          `Agent attempted to write an unsupported source file: ${filePath}`,
+        );
+      }
+      if (normalizedFiles.has(filePath)) {
+        throw new Error(
+          `Agent returned the same file more than once: ${filePath}`,
+        );
+      }
+      normalizedFiles.set(filePath, file.content);
+    }
+
+    for (const [filePath, fileContent] of normalizedFiles) {
+      if (filesWritten.includes(filePath)) continue;
+      const absolutePath = allowedFiles.get(filePath);
+      mkdirSync(dirname(absolutePath), { recursive: true });
+      writeFileSync(absolutePath, `${fileContent}\n`);
+      filesWritten.push(filePath);
+      console.log(`[Agent] Wrote: ${absolutePath}`);
+    }
+
+    const missingFiles = batch.filter((file) => !filesWritten.includes(file));
+    if (missingFiles.length === 0) return;
+
+    if (missingFiles.length === 1) {
+      if (allowSingleRetry) {
+        console.warn(
+          `[Agent] Batch ${label} omitted ${missingFiles[0]}; retrying that file alone.`,
+        );
+        await generateBatch(missingFiles, `${label}.1`, false);
+        return;
+      }
+      writeFileSync(
+        join(runDir, "implementation-raw.md"),
+        rawOutputs.join("\n\n"),
+      );
+      throw new Error(
+        `Agent implementation omitted required file: ${missingFiles[0]}.`,
+      );
+    }
+    const midpoint = Math.ceil(missingFiles.length / 2);
+    console.warn(
+      `[Agent] Batch ${label} omitted ${missingFiles.join(", ")}; splitting the remaining files.`,
+    );
+    await generateBatch(missingFiles.slice(0, midpoint), `${label}.1`);
+    await generateBatch(missingFiles.slice(midpoint), `${label}.2`);
+  };
+
+  try {
+    for (const [index, batch] of batches.entries()) {
+      await generateBatch(batch, String(index + 1));
+    }
+  } catch (error) {
+    if (rawOutputs.length > 0) {
+      writeFileSync(
+        join(runDir, "implementation-raw.md"),
+        `${rawOutputs.join("\n\n")}\n`,
+      );
+    }
+    throw error;
+  }
+
+  const missingFiles = plannedFiles.filter(
+    (file) => !filesWritten.includes(file),
+  );
+  if (missingFiles.length > 0) {
+    throw new Error(
+      `Agent implementation omitted required files: ${missingFiles.join(", ")}.`,
+    );
+  }
+
+  console.log(
+    `[Agent] Enhancement implementation complete. ${filesWritten.length} files written.`,
+  );
+  return filesWritten;
+}
+
 async function generateImplementation(spec) {
   console.log(`[Agent] Phase 3: Generating implementation for ${COMPONENT}...`);
 
@@ -490,6 +691,10 @@ async function generateImplementation(spec) {
   const plannedContext = isEnhancement
     ? readPlannedFileContext(repoDir, plannedFiles)
     : "";
+
+  if (isEnhancement) {
+    return generateEnhancementImplementation(spec, plannedFiles, references);
+  }
   const docsFiles = isNewComponent
     ? `
 5. apps/docs/src/pages/${COMPONENT_KEBAB}.tsx - Documentation page
@@ -591,7 +796,6 @@ Generate the implementation files following the output format specified above.`;
 
   const implementation = await callArk(systemPrompt, userPrompt);
 
-  const fileRegex = /=== FILE: (.+?) ===\n([\s\S]*?)=== END FILE ===/g;
   const allowedFiles = isEnhancement
     ? new Map(
         plannedFiles.map((file) => [file, resolvePlannedFile(repoDir, file)]),
@@ -613,12 +817,12 @@ Generate the implementation files following the output format specified above.`;
     allowedFiles.set("apps/docs/src/routes.tsx", docsRoutesPath);
     allowedFiles.set("apps/docs/src/content/components.ts", docsContentPath);
   }
-  let match;
+  const parsedFiles = parseFileBlocks(implementation);
   const filesWritten = [];
 
-  while ((match = fileRegex.exec(implementation)) !== null) {
-    const filePath = match[1].trim();
-    const fileContent = match[2].trim();
+  for (const file of parsedFiles) {
+    const filePath = file.path;
+    const fileContent = file.content;
 
     const cleanPath = isEnhancement
       ? normalizePlannedPath(filePath)

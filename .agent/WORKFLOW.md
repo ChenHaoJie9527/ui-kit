@@ -38,6 +38,9 @@ spec 确认后，写 `decisions.md`，记录每个设计决策（编号、原因
 
 ## Phase 3: Implementation
 
+实现阶段复用 Issue 的 Spec 分支时，工作流先合并最新的 `origin/main`。
+这样工作流与 Agent 自身的修复不会因为分支创建时间较早而被旧版本覆盖。
+
 按顺序：
 
 1. 实现（`.tsx`）
@@ -73,8 +76,10 @@ CI=true pnpm build
 全部通过后更新 `evidence.json`；仍失败则保留 Draft PR、验证日志和失败状态，
 交给人处理。
 
-`repair-raw.md` 与 `verification-*.log` 是临时诊断文件，只上传为
-Actions Artifacts，不提交到 PR。提交前必须再次格式化所有运行文档。
+`implementation-raw.md`、`repair-raw.md` 与 `verification-*.log` 是临时诊断文件，
+只上传为 Actions Artifacts，不提交到 PR。增强实现按文件规模和数量分批生成，
+避免单次模型输出上限导致文件截断；任一批次格式不完整时会拆分剩余文件重试。
+提交前必须再次格式化所有运行文档。
 
 **停止条件：同一错误修复 3 次仍失败 → 停止并报告。**
 
