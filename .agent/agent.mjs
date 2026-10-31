@@ -16,7 +16,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname, resolve as resolvePath, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
-import https from "node:https";
+import { readArkStream } from "./ark-stream.mjs";
 import {
   buildEnhancementContext,
   extractImplementationFilePlan,
@@ -157,54 +157,25 @@ const docsContent = existsSync(docsContentPath)
   : "";
 
 // ─── Call Ark API ─────────────────────────────────────────────────────────
-function httpsPost(urlString, headers, body) {
-  return new Promise((resolve, reject) => {
-    const url = new URL(urlString);
-    const payload = JSON.stringify(body);
-
-    const req = https.request(
-      {
-        hostname: url.hostname,
-        port: 443,
-        path: url.pathname,
-        method: "POST",
-        family: 4,
-        headers: {
-          ...headers,
-          "Content-Length": Buffer.byteLength(payload),
-        },
-        timeout: 600_000,
-      },
-      (res) => {
-        const chunks = [];
-        res.on("data", (chunk) => chunks.push(chunk));
-        res.on("end", () => {
-          const text = Buffer.concat(chunks).toString("utf-8");
-          resolve({ status: res.statusCode, body: text });
-        });
-      },
-    );
-
-    req.on("error", reject);
-    req.on("timeout", () => {
-      req.destroy(new Error("Request timed out"));
-    });
-    req.write(payload);
-    req.end();
-  });
+function isRetryableArkError(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /ECONNRESET|ETIMEDOUT|EPIPE|socket hang up|fetch failed|terminated|other side closed|Ark returned empty content/i.test(
+    message,
+  );
 }
 
-async function callArk(systemPrompt, userPrompt) {
+async function callArkOnce(systemPrompt, userPrompt) {
   const url = `${ARK_BASE_URL}/chat/completions`;
-  console.log(`[Agent] Calling ${url} with model ${ARK_MODEL}`);
+  console.log(`[Agent] Calling ${url} with model ${ARK_MODEL} (streaming)`);
 
-  const response = await httpsPost(
-    url,
-    {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Accept: "text/event-stream",
       "Content-Type": "application/json",
       Authorization: `Bearer ${ARK_API_KEY}`,
     },
-    {
+    body: JSON.stringify({
       model: ARK_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
@@ -213,15 +184,38 @@ async function callArk(systemPrompt, userPrompt) {
       max_tokens: 16384,
       temperature: 0.6,
       thinking: { type: "disabled" },
-    },
-  );
+      stream: true,
+    }),
+    signal: AbortSignal.timeout(900_000),
+  });
 
-  if (response.status !== 200) {
-    throw new Error(`Ark API error ${response.status}: ${response.body}`);
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Ark API error ${response.status}: ${body}`);
   }
 
-  const data = JSON.parse(response.body);
-  return data.choices[0]?.message?.content || "";
+  const content = await readArkStream(response);
+  if (content.trim() === "") {
+    throw new Error("Ark returned empty content.");
+  }
+  return content;
+}
+
+async function callArk(systemPrompt, userPrompt) {
+  let lastError;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      return await callArkOnce(systemPrompt, userPrompt);
+    } catch (error) {
+      lastError = error;
+      if (attempt === 2 || !isRetryableArkError(error)) throw error;
+      console.warn(
+        `[Agent] Ark request failed (${error.message}); retrying once.`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+    }
+  }
+  throw lastError;
 }
 
 function getRepairFiles() {
