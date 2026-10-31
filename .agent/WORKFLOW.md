@@ -38,6 +38,9 @@ spec 确认后，写 `decisions.md`，记录每个设计决策（编号、原因
 
 ## Phase 3: Implementation
 
+实现阶段复用 Issue 的 Spec 分支时，工作流先合并最新的 `origin/main`。
+这样工作流与 Agent 自身的修复不会因为分支创建时间较早而被旧版本覆盖。
+
 按顺序：
 
 1. 实现（`.tsx`）
