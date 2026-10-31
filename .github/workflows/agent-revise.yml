@@ -100,6 +100,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git fetch origin main "${{ steps.init.outputs.branch }}"
           git checkout -B "${{ steps.init.outputs.branch }}" "${{ steps.init.outputs.sha }}"
+          git ls-tree -r --name-only origin/main -- .agent | rg -v '^\.agent/runs/' | while IFS= read -r file; do
+            git restore --source=origin/main --worktree --staged -- "$file"
+          done
           RUN_ID=$(git diff --name-only origin/main...HEAD -- .agent/runs | awk -F/ 'NF >= 3 { print $3 }' | head -n 1)
           if [ -z "$RUN_ID" ]; then
             echo "Unable to locate the Agent run directory for this pull request."
@@ -215,7 +218,11 @@ jobs:
         run: |
           set -o pipefail
           CI=true pnpm format
-          CI=true pnpm lint:fix || true
+          CHANGED=$(git diff --name-only origin/main -- packages apps e2e | rg '\.(?:ts|tsx|js|jsx|mjs|cjs)$' || true)
+          if [ -n "$CHANGED" ]; then
+            printf '%s\n' "$CHANGED" | xargs -r pnpm exec oxlint --fix || true
+          fi
+          CI=true pnpm format
           { CI=true pnpm check && CI=true pnpm test:e2e && CI=true pnpm build; } 2>&1 | tee "$RUNNER_TEMP/revision-verification.log"
 
       - name: Commit Verified Revision
