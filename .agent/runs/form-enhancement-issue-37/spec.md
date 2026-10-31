@@ -53,13 +53,13 @@ No new public validation state machine or error type is added.
 
 ### Validation interaction states
 
-| Trigger | Required behavior |
-| --- | --- |
-| `focus` | Run the applicable field rules and form-level validation when the field receives focus. |
-| `change` | Run after the transformed value is written. Async validation continues to use `validateDebounce`. |
-| `blur` | Preserve current touched/blur behavior and run validation after focus leaves the control. |
+| Trigger        | Required behavior                                                                                                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `focus`        | Run the applicable field rules and form-level validation when the field receives focus.                            |
+| `change`       | Run after the transformed value is written. Async validation continues to use `validateDebounce`.                  |
+| `blur`         | Preserve current touched/blur behavior and run validation after focus leaves the control.                          |
 | `pointerleave` | Run when the pointer leaves the field region. This supplements, rather than replaces, keyboard and touch feedback. |
-| `submit` | Validate all registered fields and form-level rules before calling `onSubmit`. |
+| `submit`       | Validate all registered fields and form-level rules before calling `onSubmit`.                                     |
 
 `revalidateOn` controls when an already-invalid field is checked again. It cannot be `"submit"`.
 
@@ -72,11 +72,11 @@ A form-level validation run must update the existing error map without duplicati
 
 ### Layout states
 
-| Layout | Desktop behavior | Narrow-screen behavior |
-| --- | --- | --- |
-| `vertical` | Label, control, description, and error stack vertically. | Same readable stacking. |
-| `horizontal` | Label occupies a stable column; control and its feedback occupy the adjacent column. | Collapse to the vertical reading order at the Form stylesheet’s documented small-screen breakpoint. |
-| `inline` | Fields and actions flow in a compact single-line/filter-bar arrangement where space permits. | Items wrap rather than shrink into unreadable controls; long content remains readable. |
+| Layout       | Desktop behavior                                                                             | Narrow-screen behavior                                                                              |
+| ------------ | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `vertical`   | Label, control, description, and error stack vertically.                                     | Same readable stacking.                                                                             |
+| `horizontal` | Label occupies a stable column; control and its feedback occupy the adjacent column.         | Collapse to the vertical reading order at the Form stylesheet’s documented small-screen breakpoint. |
+| `inline`     | Fields and actions flow in a compact single-line/filter-bar arrangement where space permits. | Items wrap rather than shrink into unreadable controls; long content remains readable.              |
 
 Disabled, read-only, hidden, validating, invalid, and submitting states must remain visually and programmatically available in every layout.
 
@@ -95,11 +95,7 @@ Disabled, read-only, hidden, validating, invalid, and submitting states must rem
 
 ```ts
 export type FormValidationTrigger =
-  | "submit"
-  | "focus"
-  | "change"
-  | "blur"
-  | "pointerleave";
+  "submit" | "focus" | "change" | "blur" | "pointerleave";
 
 export interface FormRootProps<
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -132,8 +128,7 @@ layout = "horizontal";
 ### Label props
 
 ```ts
-export interface FormLabelProps
-  extends LabelHTMLAttributes<HTMLLabelElement> {
+export interface FormLabelProps extends LabelHTMLAttributes<HTMLLabelElement> {
   required?: boolean;
   labelWrap?: boolean;
   children: ReactNode;

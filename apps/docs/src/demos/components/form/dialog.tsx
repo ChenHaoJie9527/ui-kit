@@ -86,6 +86,7 @@ export function Demo() {
           <Form.Root<InviteValues>
             ref={formRef}
             id={formId}
+            layout="vertical"
             defaultValues={{
               name: "",
               email: "",
