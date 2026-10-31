@@ -12,7 +12,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: ai-ci-repair-${{ github.event.workflow_run.head_branch }}
+  group: ai-ci-repair-${{ github.event.workflow_run.head_sha }}
   cancel-in-progress: false
 
 jobs:
@@ -21,8 +21,7 @@ jobs:
       github.event.workflow_run.conclusion == 'failure' &&
       (github.event.workflow_run.event == 'pull_request' ||
         github.event.workflow_run.event == 'workflow_dispatch') &&
-      github.event.workflow_run.head_repository.full_name == github.repository &&
-      startsWith(github.event.workflow_run.head_branch, 'codex/')
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Resolve Eligible Pull Request
@@ -39,8 +38,8 @@ jobs:
             });
             const pr = pulls.find((candidate) =>
               candidate.head.sha === run.head_sha &&
-              candidate.head.ref === run.head_branch &&
-              candidate.head.repo?.full_name === context.repo.repo
+              candidate.head.repo?.full_name === context.repo.repo &&
+              candidate.head.ref.startsWith('codex/')
             );
 
             if (!pr) {
@@ -102,6 +101,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git fetch origin main "${{ steps.pr.outputs.branch }}"
           git checkout -B "${{ steps.pr.outputs.branch }}" "${{ steps.pr.outputs.sha }}"
+          git ls-tree -r --name-only origin/main -- .agent | rg -v '^\.agent/runs/' | while IFS= read -r file; do
+            git restore --source=origin/main --worktree --staged -- "$file"
+          done
           RUN_ID=$(git diff --name-only origin/main...HEAD -- .agent/runs | awk -F/ 'NF >= 3 { print $3 }' | head -n 1)
           if [ -z "$RUN_ID" ]; then
             echo "Unable to locate the Agent run directory for this pull request."
@@ -140,7 +142,11 @@ jobs:
         if: steps.pr.outputs.number != ''
         run: |
           CI=true pnpm format
-          CI=true pnpm lint:fix || true
+          CHANGED=$(git diff --name-only origin/main -- packages apps e2e | rg '\.(?:ts|tsx|js|jsx|mjs|cjs)$' || true)
+          if [ -n "$CHANGED" ]; then
+            printf '%s\n' "$CHANGED" | xargs -r pnpm exec oxlint --fix || true
+          fi
+          CI=true pnpm format
 
       - name: Verify Deterministic Fixes
         if: steps.pr.outputs.number != ''
@@ -165,7 +171,11 @@ jobs:
         if: steps.pr.outputs.number != '' && steps.verify.outcome == 'failure'
         run: |
           CI=true pnpm format
-          CI=true pnpm lint:fix || true
+          CHANGED=$(git diff --name-only origin/main -- packages apps e2e | rg '\.(?:ts|tsx|js|jsx|mjs|cjs)$' || true)
+          if [ -n "$CHANGED" ]; then
+            printf '%s\n' "$CHANGED" | xargs -r pnpm exec oxlint --fix || true
+          fi
+          CI=true pnpm format
           CI=true pnpm check
           CI=true pnpm test:e2e
           CI=true pnpm build

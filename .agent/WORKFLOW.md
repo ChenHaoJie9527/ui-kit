@@ -40,6 +40,8 @@ spec 确认后，写 `decisions.md`，记录每个设计决策（编号、原因
 
 实现阶段复用 Issue 的 Spec 分支时，工作流先合并最新的 `origin/main`。
 这样工作流与 Agent 自身的修复不会因为分支创建时间较早而被旧版本覆盖。
+随后只保留该分支的 `.agent/runs` 运行记录，并将其余 `.agent` 基础设施恢复为
+`origin/main` 的版本。旧分支不能继续携带过期的 Agent 代码、模板或工作流文件。
 
 按顺序：
 
@@ -71,7 +73,8 @@ CI=true pnpm build
 验证失败时，将日志和本次变更的源码回传给 Agent，进行定向修复后重新验证。
 最多执行 3 次完整验证（初次验证 + 2 次修复后复验）。修复只允许修改
 本次变更中的 `packages/`、`apps/`、`e2e/` 源码文件，不得借机修改工作流或
-无关代码。
+无关代码。自动 lint 修复只作用于本次变更文件，并在 `lint --fix` 后再次执行
+格式化，避免全仓库自动修复改写 Agent 自身文件并污染验证结果。
 
 全部通过后更新 `evidence.json`；仍失败则保留 Draft PR、验证日志和失败状态，
 交给人处理。
@@ -94,6 +97,11 @@ CI=true pnpm build
 `ai-needs-human`。每个 PR 通过
 `ai-ci-repair-attempted` 标签限制为一次自动尝试，避免失败提交形成循环；人工
 移除该标签后才允许再次尝试。不处理 fork，不自动合并。
+
+`workflow_dispatch` 的 `workflow_run.head_branch` 可能报告默认分支而不是实际
+PR 分支，因此自动修复按 `head_sha` 解析唯一的同仓库 `codex/*` PR，并使用
+`head_sha` 隔离并发任务。修复开始前同样恢复 `.agent` 基础设施，只保留 Spec
+分支中的运行记录。
 
 ## Phase 4.5: Independent Review Before The PR
 

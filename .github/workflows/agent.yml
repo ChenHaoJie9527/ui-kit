@@ -119,6 +119,12 @@ jobs:
             git checkout -B "$BRANCH" origin/main
           fi
 
+      - name: Restore Agent Infrastructure
+        run: |
+          git ls-tree -r --name-only origin/main -- .agent | rg -v '^\.agent/runs/' | while IFS= read -r file; do
+            git restore --source=origin/main --worktree --staged -- "$file"
+          done
+
       - name: Warn About Automation Token
         env:
           AI_PIPELINE_TOKEN: ${{ secrets.AI_PIPELINE_TOKEN }}
@@ -220,7 +226,11 @@ jobs:
         run: |
           set -o pipefail
           env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm format
-          env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm lint:fix || true
+          CHANGED=$(git diff --name-only origin/main -- packages apps e2e | rg '\.(?:ts|tsx|js|jsx|mjs|cjs)$' || true)
+          if [ -n "$CHANGED" ]; then
+            printf '%s\n' "$CHANGED" | env -u ARK_API_KEY -u ARK_MODEL CI=true xargs -r pnpm exec oxlint --fix || true
+          fi
+          env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm format
 
           ATTEMPT=1
           MAX_ATTEMPTS=3
@@ -245,7 +255,11 @@ jobs:
               exit "$REPAIR_STATUS"
             fi
             env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm format
-            env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm lint:fix || true
+            CHANGED=$(git diff --name-only origin/main -- packages apps e2e | rg '\.(?:ts|tsx|js|jsx|mjs|cjs)$' || true)
+            if [ -n "$CHANGED" ]; then
+              printf '%s\n' "$CHANGED" | env -u ARK_API_KEY -u ARK_MODEL CI=true xargs -r pnpm exec oxlint --fix || true
+            fi
+            env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm format
             ATTEMPT=$((ATTEMPT + 1))
           done
 
