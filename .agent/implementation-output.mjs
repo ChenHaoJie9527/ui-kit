@@ -75,3 +75,8 @@ export function writeValidatedFile(absPath, content, validate) {
     return { written: false, error };
   }
 }
+
+export function mergePrefilledOutput(prefill, content) {
+  if (content.trimStart().startsWith("=== FILE:")) return content;
+  return `${prefill}${content}`;
+}

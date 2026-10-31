@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import {
+  mergePrefilledOutput,
   parseFileBlocks,
   planFileBatches,
   writeValidatedFile,
@@ -114,4 +115,20 @@ test("keeps formatted content when validation succeeds", () => {
 
   assert.equal(result.written, true);
   assert.equal(readFileSync(file, "utf-8"), "export const valid = true;\n");
+});
+
+test("prepends a prefilled file marker when the model continues the file", () => {
+  const prefill = "=== FILE: packages/ui/src/A.tsx ===\n";
+
+  assert.equal(
+    mergePrefilledOutput(prefill, "export const A = 1;\n=== END FILE ==="),
+    `${prefill}export const A = 1;\n=== END FILE ===`,
+  );
+});
+
+test("does not duplicate a file marker returned by the model", () => {
+  const prefill = "=== FILE: packages/ui/src/A.tsx ===\n";
+  const output = `${prefill}export const A = 1;\n=== END FILE ===`;
+
+  assert.equal(mergePrefilledOutput(prefill, output), output);
 });
