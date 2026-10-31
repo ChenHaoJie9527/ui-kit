@@ -138,11 +138,14 @@ test("extracts only source files named on failing log lines", () => {
   const log = `::warning file=packages/ui/src/Warning.tsx,line=1::warning message
 ::error file=apps/docs/src/demos/form.tsx,line=8::error message
 packages/ui/src/__tests__/Form.test.tsx:42:3: error TS2322: wrong type
-##[error]e2e/tests/form.spec.ts:25:16: unused function`;
+##[error]e2e/tests/form.spec.ts:25:16: unused function
+packages/ui typecheck: src/__tests__/FormComponent.test.tsx(684,7): error TS2345: wrong return type
+packages/ui test: FAIL src/__tests__/FormComponent.test.tsx > validation`;
 
   assert.deepEqual(extractFailureFiles(log), [
     "apps/docs/src/demos/form.tsx",
     "packages/ui/src/__tests__/Form.test.tsx",
     "e2e/tests/form.spec.ts",
+    "packages/ui/src/__tests__/FormComponent.test.tsx",
   ]);
 });
