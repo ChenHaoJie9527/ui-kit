@@ -32,6 +32,7 @@ import {
   positiveInteger,
 } from "./ark-retry.mjs";
 import {
+  extractFailureFiles,
   mergePrefilledOutput,
   parseFileBlocks,
   planFileBatches,
@@ -355,7 +356,12 @@ async function repairImplementation(logPath, mode = "verification") {
     throw new Error("No changed source files are available for repair.");
   }
 
-  const sources = repairFiles
+  const failureFiles = extractFailureFiles(verificationLog).filter((file) =>
+    repairFiles.includes(file),
+  );
+  const contextFiles =
+    failureFiles.length > 0 ? failureFiles : repairFiles.slice(0, 8);
+  const sources = contextFiles
     .map((file) => {
       const content = readFileSync(join(repoDir, file), "utf-8");
       return `=== FILE: ${file} ===\n${content}`;
@@ -398,7 +404,9 @@ ${sources}
 
 Repair the failures and rerun-ready source files.`;
 
-  const implementation = await callArk(systemPrompt, userPrompt);
+  const prefill =
+    failureFiles.length > 0 ? `=== FILE: ${failureFiles[0]} ===\n` : "";
+  const implementation = await callArk(systemPrompt, userPrompt, prefill);
   const parsedFiles = parseFileBlocks(implementation);
   const filesWritten = [];
 
@@ -418,7 +426,17 @@ Repair the failures and rerun-ready source files.`;
       throw new Error(`Repair path escapes the repository: ${filePath}`);
     }
 
-    writeFileSync(absPath, `${file.content}\n`);
+    const result = writeValidatedFile(
+      absPath,
+      `${file.content}\n`,
+      validateGeneratedSource,
+    );
+    if (!result.written) {
+      writeFileSync(join(runDir, "repair-raw.md"), implementation);
+      throw new Error(
+        `Repair produced invalid source for ${filePath}: ${result.error.message.split("\n")[0]}`,
+      );
+    }
     filesWritten.push(filePath);
     console.log(`[Agent] Repaired: ${filePath}`);
   }

@@ -80,3 +80,17 @@ export function mergePrefilledOutput(prefill, content) {
   if (content.trimStart().startsWith("=== FILE:")) return content;
   return `${prefill}${content}`;
 }
+
+const SOURCE_PATH_PATTERN =
+  /(?:packages|apps|e2e)\/[A-Za-z0-9._@+/-]+\.(?:tsx|css|md|ts)/g;
+const FAILURE_LINE_PATTERN =
+  /(?:##\[error\]|::error|\berror\b|Error:|error TS\d+)/i;
+
+export function extractFailureFiles(log) {
+  const files = [];
+  for (const line of String(log).split(/\r?\n/)) {
+    if (!FAILURE_LINE_PATTERN.test(line)) continue;
+    files.push(...(line.match(SOURCE_PATH_PATTERN) ?? []));
+  }
+  return [...new Set(files)];
+}

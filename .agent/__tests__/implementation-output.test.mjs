@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import {
+  extractFailureFiles,
   mergePrefilledOutput,
   parseFileBlocks,
   planFileBatches,
@@ -131,4 +132,17 @@ test("does not duplicate a file marker returned by the model", () => {
   const output = `${prefill}export const A = 1;\n=== END FILE ===`;
 
   assert.equal(mergePrefilledOutput(prefill, output), output);
+});
+
+test("extracts only source files named on failing log lines", () => {
+  const log = `::warning file=packages/ui/src/Warning.tsx,line=1::warning message
+::error file=apps/docs/src/demos/form.tsx,line=8::error message
+packages/ui/src/__tests__/Form.test.tsx:42:3: error TS2322: wrong type
+##[error]e2e/tests/form.spec.ts:25:16: unused function`;
+
+  assert.deepEqual(extractFailureFiles(log), [
+    "apps/docs/src/demos/form.tsx",
+    "packages/ui/src/__tests__/Form.test.tsx",
+    "e2e/tests/form.spec.ts",
+  ]);
 });
