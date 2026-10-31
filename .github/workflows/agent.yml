@@ -332,6 +332,7 @@ jobs:
             .agent/runs/${{ steps.init.outputs.run_id }}/review.md
             .agent/runs/${{ steps.init.outputs.run_id }}/review-repair.md
             .agent/runs/${{ steps.init.outputs.run_id }}/review-loop-result.json
+            .agent/runs/${{ steps.init.outputs.run_id }}/implementation-raw.md
             .agent/runs/${{ steps.init.outputs.run_id }}/repair-raw.md
             .agent/runs/${{ steps.init.outputs.run_id }}/review-raw.md
 
