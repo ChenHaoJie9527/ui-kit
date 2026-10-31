@@ -25,6 +25,11 @@ import { execFileSync } from "node:child_process";
 import https from "node:https";
 import { Readable } from "node:stream";
 import { readArkStream } from "./ark-stream.mjs";
+import {
+  getArkRetryDelay,
+  isRetryableArkError,
+  positiveInteger,
+} from "./ark-retry.mjs";
 import { parseFileBlocks, planFileBatches } from "./implementation-output.mjs";
 import {
   buildEnhancementContext,
@@ -166,17 +171,14 @@ const docsContent = existsSync(docsContentPath)
   : "";
 
 // ─── Call Ark API ─────────────────────────────────────────────────────────
-function isRetryableArkError(error) {
-  const message = error instanceof Error ? error.message : String(error);
-  return /ECONNRESET|ETIMEDOUT|EPIPE|socket hang up|terminated|other side closed|Ark returned empty content/i.test(
-    message,
-  );
-}
-
 function httpsPostStream(urlString, headers, body) {
   return new Promise((resolve, reject) => {
     const url = new URL(urlString);
     const payload = JSON.stringify(body);
+    const connectTimeoutMs = positiveInteger(
+      process.env.ARK_CONNECT_TIMEOUT_MS,
+      45_000,
+    );
     const request = https.request(
       {
         hostname: url.hostname,
@@ -212,7 +214,22 @@ function httpsPostStream(urlString, headers, body) {
       },
     );
 
-    request.on("error", reject);
+    const connectTimer = setTimeout(() => {
+      request.destroy(
+        new Error(`Ark connection timed out after ${connectTimeoutMs}ms.`),
+      );
+    }, connectTimeoutMs);
+    const clearConnectTimer = () => clearTimeout(connectTimer);
+
+    request.on("socket", (socket) => {
+      if (socket.connecting) socket.once("connect", clearConnectTimer);
+      else clearConnectTimer();
+    });
+    request.on("close", clearConnectTimer);
+    request.on("error", (error) => {
+      clearConnectTimer();
+      reject(error);
+    });
     request.on("timeout", () => {
       request.destroy(new Error("Request timed out"));
     });
@@ -251,17 +268,19 @@ async function callArkOnce(systemPrompt, userPrompt) {
 }
 
 async function callArk(systemPrompt, userPrompt) {
+  const maxAttempts = positiveInteger(process.env.ARK_MAX_ATTEMPTS, 5);
   let lastError;
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       return await callArkOnce(systemPrompt, userPrompt);
     } catch (error) {
       lastError = error;
-      if (attempt === 2 || !isRetryableArkError(error)) throw error;
+      if (attempt === maxAttempts || !isRetryableArkError(error)) throw error;
+      const delayMs = getArkRetryDelay(attempt);
       console.warn(
-        `[Agent] Ark request failed (${error.message}); retrying once.`,
+        `[Agent] Ark request failed (${error.message}); retry ${attempt}/${maxAttempts} in ${delayMs}ms.`,
       );
-      await new Promise((resolve) => setTimeout(resolve, 2_000));
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
   throw lastError;
