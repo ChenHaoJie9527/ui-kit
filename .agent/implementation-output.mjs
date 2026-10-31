@@ -1,3 +1,5 @@
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+
 const FILE_BLOCK_PATTERN =
   /^[ \t]*===[ \t]*FILE:[ \t]*(.+?)[ \t]*===[ \t]*\r?\n([\s\S]*?)^[ \t]*===[ \t]*END[ \t]+FILE[ \t]*===[ \t]*\r?$/gm;
 
@@ -53,4 +55,23 @@ export function planFileBatches(
 
   if (batch.length > 0) batches.push(batch);
   return batches;
+}
+
+export function writeValidatedFile(absPath, content, validate) {
+  const previousContent = existsSync(absPath)
+    ? readFileSync(absPath, "utf-8")
+    : null;
+
+  writeFileSync(absPath, content);
+  try {
+    validate(absPath);
+    return { written: true };
+  } catch (error) {
+    if (previousContent === null) {
+      unlinkSync(absPath);
+    } else {
+      writeFileSync(absPath, previousContent);
+    }
+    return { written: false, error };
+  }
 }
