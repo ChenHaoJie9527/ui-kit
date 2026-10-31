@@ -1,123 +1,190 @@
 import { useState } from "react";
-import { Button, Form, Input, Select } from "seam-react";
+import {
+  Button,
+  Form,
+  Input,
+  Select,
+  Switch,
+  useFormContext,
+} from "seam-react";
 
-const regions = [
-  { value: "all", label: "全部区域" },
-  { value: "east", label: "华东" },
-  { value: "south", label: "华南" },
-  { value: "north", label: "华北" },
+const teams = [
+  { value: "all", label: "全部团队" },
+  { value: "design", label: "产品设计" },
+  { value: "engineering", label: "工程研发" },
+  { value: "operations", label: "客户运营" },
 ];
 
-interface LayoutValues {
-  workspace: string;
-  region: string;
+type LayoutValues = {
+  displayName: string;
+  email: string;
   keyword: string;
-}
+  team: string;
+  activeOnly: boolean;
+};
 
-interface LayoutDemoProps {
-  layout: "vertical" | "horizontal" | "inline";
-  title: string;
-  description: string;
-}
+function HorizontalSubmitButton() {
+  const { state } = useFormContext();
 
-function LayoutDemo({ layout, title, description }: LayoutDemoProps) {
   return (
-    <section className="min-w-0 rounded-[18px] border border-line bg-surface p-5">
-      <header className="mb-4">
-        <h3 className="m-0 text-[16px] font-[650]">{title}</h3>
-        <p className="mt-1 text-[12.5px] leading-[1.6] text-muted">
-          {description}
-        </p>
-      </header>
-      <Form.Root<LayoutValues>
-        layout={layout}
-        defaultValues={{ workspace: "", region: "all", keyword: "" }}
-        onSubmit={() => undefined}
+    <Button type="submit" loading={state.submitting}>
+      保存偏好
+    </Button>
+  );
+}
+
+function HorizontalForm() {
+  return (
+    <Form.Root<LayoutValues>
+      layout="horizontal"
+      defaultValues={{ displayName: "", email: "" }}
+      onSubmit={async () => {
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+      }}
+    >
+      <Form.Field name="displayName" rules={{ required: "请输入显示名称" }}>
+        <Form.Label>显示名称</Form.Label>
+        <Form.Control>
+          <Input placeholder="例如：张明" />
+        </Form.Control>
+        <Form.Description>
+          默认 horizontal 使用稳定标签列；窄屏自动恢复纵向阅读顺序。
+        </Form.Description>
+        <Form.ErrorMessage />
+      </Form.Field>
+
+      <Form.Field
+        name="email"
+        rules={{
+          required: "请输入联系邮箱",
+          pattern: {
+            value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+            message: "请输入有效邮箱",
+          },
+        }}
       >
-        <Form.Field name="workspace">
-          <Form.Label>工作空间名称</Form.Label>
-          <Form.Control>
-            <Input placeholder="例如：增长团队" />
-          </Form.Control>
-          <Form.Description>
-            名称会显示在成员的工作空间列表中。
-          </Form.Description>
-          <Form.ErrorMessage />
-        </Form.Field>
+        <Form.Label>联系邮箱</Form.Label>
+        <Form.Control>
+          <Input type="email" placeholder="you@company.com" />
+        </Form.Control>
+        <Form.ErrorMessage />
+      </Form.Field>
 
-        <Form.Field name="region">
-          <Form.Label>所属区域</Form.Label>
-          <Form.Control>
-            <Select options={regions} aria-label="所属区域" />
-          </Form.Control>
-          <Form.ErrorMessage />
-        </Form.Field>
+      <Form.Actions>
+        <HorizontalSubmitButton />
+      </Form.Actions>
+    </Form.Root>
+  );
+}
 
-        <Form.Field name="keyword">
-          <Form.Label>搜索关键词</Form.Label>
-          <Form.Control>
-            <Input placeholder="输入成员或项目名称" />
-          </Form.Control>
-          <Form.ErrorMessage />
-        </Form.Field>
+function VerticalForm() {
+  return (
+    <Form.Root<LayoutValues>
+      layout="vertical"
+      defaultValues={{ displayName: "" }}
+      onSubmit={() => undefined}
+    >
+      <Form.Field name="displayName" rules={{ required: "请输入项目名称" }}>
+        <Form.Label>项目名称</Form.Label>
+        <Form.Control>
+          <Input placeholder="例如：企业工作台改版" />
+        </Form.Control>
+        <Form.Description>
+          vertical 保留标签、控件、说明与错误依次堆叠的原始展示方式。
+        </Form.Description>
+        <Form.ErrorMessage />
+      </Form.Field>
+      <Form.Actions>
+        <Button type="submit" variant="secondary">
+          创建项目
+        </Button>
+      </Form.Actions>
+    </Form.Root>
+  );
+}
 
-        <Form.Actions>
-          <Button type="submit">应用</Button>
-          <Button type="reset" variant="ghost">
-            重置
-          </Button>
-        </Form.Actions>
-      </Form.Root>
-    </section>
+function InlineForm() {
+  return (
+    <Form.Root<LayoutValues>
+      layout="inline"
+      defaultValues={{ keyword: "", team: "all", activeOnly: true }}
+      onSubmit={() => undefined}
+    >
+      <Form.Field name="keyword">
+        <Form.Label>搜索成员</Form.Label>
+        <Form.Control>
+          <Input placeholder="姓名或邮箱" />
+        </Form.Control>
+        <Form.ErrorMessage />
+      </Form.Field>
+
+      <Form.Field name="team">
+        <Form.Label>所属团队</Form.Label>
+        <Form.Control>
+          <Select options={teams} aria-label="所属团队" />
+        </Form.Control>
+        <Form.ErrorMessage />
+      </Form.Field>
+
+      <Form.Field name="activeOnly">
+        <Form.Control>
+          <Switch>仅显示活跃成员</Switch>
+        </Form.Control>
+      </Form.Field>
+
+      <Form.Actions>
+        <Button type="submit" size="sm">
+          应用筛选
+        </Button>
+      </Form.Actions>
+    </Form.Root>
   );
 }
 
 export function Demo() {
-  const [layout, setLayout] = useState<"vertical" | "horizontal" | "inline">(
-    "horizontal",
-  );
+  const [submittedName, setSubmittedName] = useState("");
 
   return (
     <div className="grid w-full max-w-[900px] gap-5">
-      <fieldset className="m-0 flex min-w-0 flex-wrap items-center gap-2 border-0 p-0">
-        <legend className="sr-only">表单布局</legend>
-        {(
-          [
-            ["vertical", "垂直"],
-            ["horizontal", "水平（默认）"],
-            ["inline", "行内"],
-          ] as const
-        ).map(([value, label]) => (
-          <Button
-            key={value}
-            variant={layout === value ? "primary" : "outline"}
-            size="sm"
-            aria-pressed={layout === value}
-            onClick={() => setLayout(value)}
-          >
-            {label}
-          </Button>
-        ))}
-      </fieldset>
+      <section className="rounded-[18px] border border-line bg-surface p-5 phone:p-6">
+        <header className="mb-5">
+          <h3 className="m-0 text-[17px] font-[650]">Horizontal（默认）</h3>
+          <p className="mt-1 text-[12.5px] leading-[1.6] text-muted">
+            标签与控件分列，说明和错误跟随控件列；适合设置页与资料表单。
+          </p>
+        </header>
+        <div onSubmitCapture={() => setSubmittedName("偏好已保存")}>
+          <HorizontalForm />
+        </div>
+        <output
+          className="mt-3 block min-h-5 text-[12px] text-muted"
+          aria-live="polite"
+        >
+          {submittedName}
+        </output>
+      </section>
 
-      <LayoutDemo
-        key={layout}
-        layout={layout}
-        title={
-          layout === "vertical"
-            ? "垂直布局"
-            : layout === "horizontal"
-              ? "水平布局"
-              : "行内布局"
-        }
-        description={
-          layout === "vertical"
-            ? "标签、控件与反馈依次堆叠，适合登录、注册等集中填写的表单。"
-            : layout === "horizontal"
-              ? "标签占据稳定列宽，控件与反馈位于相邻列；窄屏自动折叠为垂直阅读顺序。"
-              : "字段与操作在可用空间内紧凑排列，空间不足时自动换行，适合筛选栏。"
-        }
-      />
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <section className="min-w-0 rounded-[18px] border border-line bg-surface p-5">
+          <header className="mb-5">
+            <h3 className="m-0 text-[17px] font-[650]">Vertical</h3>
+            <p className="mt-1 text-[12.5px] leading-[1.6] text-muted">
+              需要旧版纵向布局时显式设置 layout=&quot;vertical&quot;。
+            </p>
+          </header>
+          <VerticalForm />
+        </section>
+
+        <section className="min-w-0 rounded-[18px] border border-line bg-surface p-5">
+          <header className="mb-5">
+            <h3 className="m-0 text-[17px] font-[650]">Inline</h3>
+            <p className="mt-1 text-[12.5px] leading-[1.6] text-muted">
+              筛选字段与操作紧凑排列，空间不足时换行并保留 DOM 焦点顺序。
+            </p>
+          </header>
+          <InlineForm />
+        </section>
+      </div>
     </div>
   );
 }

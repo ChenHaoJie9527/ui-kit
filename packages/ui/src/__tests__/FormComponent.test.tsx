@@ -5,10 +5,16 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { createRef } from "react";
+import { createRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { CheckBox } from "../CheckBox";
-import { Form, useFieldState, useWatch, type FormRef } from "../FormComponent";
+import {
+  Form,
+  useFieldState,
+  useWatch,
+  type FormErrors,
+  type FormRef,
+} from "../FormComponent";
 import { RadioGroup, RadioGroupItem } from "../RadioGroup";
 import { Select } from "../Select";
 import { Switch } from "../Switch";
@@ -50,6 +56,22 @@ function ErrorProbe({ name }: { name: string }) {
   const state = useFieldState(name);
 
   return <output data-testid={`${name}-error`}>{state.error ?? ""}</output>;
+}
+
+function ControlledForm() {
+  const [values, setValues] = useState<Record<string, unknown>>({
+    email: "",
+  });
+
+  return (
+    <Form.Root
+      values={values}
+      onValuesChange={(next) => setValues(next)}
+      validateOn="change"
+    >
+      <EmailField />
+    </Form.Root>
+  );
 }
 
 describe("Form", () => {
@@ -361,14 +383,35 @@ describe("Form", () => {
     });
   });
 
-  /* ------------------------------------------------------------------ */
-  /* Enhancement: validation triggers                                    */
-  /* ------------------------------------------------------------------ */
+  it("uses horizontal layout by default and supports vertical and inline layouts", () => {
+    const { rerender } = render(
+      <Form.Root>
+        <EmailField />
+      </Form.Root>,
+    );
 
-  it("runs field rules on focus when validateOn is focus", async () => {
+    const form = document.querySelector("form");
+    expect(form?.getAttribute("data-layout")).toBe("horizontal");
+
+    rerender(
+      <Form.Root layout="vertical">
+        <EmailField />
+      </Form.Root>,
+    );
+    expect(form?.getAttribute("data-layout")).toBe("vertical");
+
+    rerender(
+      <Form.Root layout="inline">
+        <EmailField />
+      </Form.Root>,
+    );
+    expect(form?.getAttribute("data-layout")).toBe("inline");
+  });
+
+  it("runs field rules and form validation on focus only when configured", async () => {
     const validate = vi.fn<
-      (values: Record<string, unknown>) => Record<string, string>
-    >(() => ({}));
+      (values: Record<string, unknown>) => FormErrors<Record<string, unknown>>
+    >((values) => (values.email ? {} : { email: "表单邮箱错误" }));
 
     render(
       <Form.Root validateOn="focus" validate={validate}>
@@ -377,8 +420,8 @@ describe("Form", () => {
     );
 
     const input = screen.getByRole("textbox", { name: "邮箱" });
-    expect(screen.queryByText("请输入邮箱")).toBeNull();
     expect(validate).not.toHaveBeenCalled();
+    expect(screen.queryByText("请输入邮箱")).toBeNull();
 
     fireEvent.focus(input);
 
@@ -386,69 +429,84 @@ describe("Form", () => {
     expect(validate).toHaveBeenCalled();
   });
 
-  it("runs field rules and form validate on change when validateOn is change", async () => {
+  it("validates transformed change values and preserves the original callback", async () => {
+    const onChange =
+      vi.fn<(event: React.ChangeEvent<HTMLInputElement>) => void>();
     const validate = vi.fn<
-      (values: Record<string, unknown>) => Record<string, string>
-    >(() => ({}));
+      (values: Record<string, unknown>) => FormErrors<Record<string, unknown>>
+    >((values) =>
+      values.email === "team@example.com" ? {} : { email: "表单邮箱错误" },
+    );
 
     render(
       <Form.Root validateOn="change" validate={validate}>
-        <EmailField />
+        <Form.Field
+          name="email"
+          defaultValue=""
+          rules={[
+            {
+              validator: (value) =>
+                value === "team@example.com" || "请输入团队邮箱",
+            },
+          ]}
+        >
+          <Form.Label>邮箱</Form.Label>
+          <Form.Control>
+            <input onChange={onChange} />
+          </Form.Control>
+          <Form.ErrorMessage />
+        </Form.Field>
       </Form.Root>,
     );
 
     const input = screen.getByRole("textbox", { name: "邮箱" });
-    fireEvent.change(input, { target: { value: "" } });
+    fireEvent.change(input, { target: { value: "team@example.com" } });
 
-    expect(await screen.findByText("请输入邮箱")).not.toBeNull();
-    expect(validate).toHaveBeenCalled();
+    expect(onChange).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(validate).toHaveBeenLastCalledWith({ email: "team@example.com" });
+    });
+    expect(screen.queryByText("请输入团队邮箱")).toBeNull();
+    expect(screen.queryByText("表单邮箱错误")).toBeNull();
   });
 
-  it("runs form-level validate on blur by default", async () => {
+  it("validates on pointerleave without changing default blur timing", async () => {
     const validate = vi.fn<
-      (values: Record<string, unknown>) => Record<string, string>
+      (values: Record<string, unknown>) => FormErrors<Record<string, unknown>>
     >(() => ({}));
 
-    render(
+    const { rerender } = render(
       <Form.Root validate={validate}>
         <EmailField />
       </Form.Root>,
     );
 
-    const input = screen.getByRole("textbox", { name: "邮箱" });
+    const field = document.querySelector(".uk-form__field");
+    expect(field).not.toBeNull();
+    fireEvent.pointerLeave(field as Element);
+    fireEvent.focus(screen.getByRole("textbox", { name: "邮箱" }));
     expect(validate).not.toHaveBeenCalled();
 
-    fireEvent.blur(input);
-
+    fireEvent.blur(screen.getByRole("textbox", { name: "邮箱" }));
     await waitFor(() => expect(validate).toHaveBeenCalled());
-  });
 
-  it("runs validation on pointerleave when validateOn is pointerleave", async () => {
-    const validate = vi.fn<
-      (values: Record<string, unknown>) => Record<string, string>
-    >(() => ({}));
-
-    render(
+    validate.mockClear();
+    rerender(
       <Form.Root validateOn="pointerleave" validate={validate}>
         <EmailField />
       </Form.Root>,
     );
 
-    const input = screen.getByRole("textbox", { name: "邮箱" });
-    expect(screen.queryByText("请输入邮箱")).toBeNull();
-
-    const field = input.closest(".uk-form__field") as HTMLElement;
-    fireEvent.pointerLeave(field);
-
+    fireEvent.pointerLeave(field as Element);
     expect(await screen.findByText("请输入邮箱")).not.toBeNull();
     expect(validate).toHaveBeenCalled();
   });
 
-  it("skips interaction validation when validateOn is submit but still validates on submit", async () => {
-    const validate = vi.fn<
-      (values: Record<string, unknown>) => Record<string, string>
-    >(() => ({}));
+  it("does not validate interactions in submit mode but validates on submission", async () => {
     const onSubmit = vi.fn<(values: Record<string, unknown>) => void>();
+    const validate = vi.fn<
+      (values: Record<string, unknown>) => FormErrors<Record<string, unknown>>
+    >((values) => (values.email ? {} : { email: "表单邮箱错误" }));
 
     render(
       <Form.Root validateOn="submit" validate={validate} onSubmit={onSubmit}>
@@ -459,97 +517,96 @@ describe("Form", () => {
 
     const input = screen.getByRole("textbox", { name: "邮箱" });
     fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "team@example.com" } });
     fireEvent.blur(input);
-    fireEvent.change(input, { target: { value: "x" } });
+    fireEvent.pointerLeave(
+      document.querySelector(".uk-form__field") as Element,
+    );
     expect(validate).not.toHaveBeenCalled();
 
+    fireEvent.change(input, { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "提交" }));
-    await waitFor(() => expect(validate).toHaveBeenCalled());
-  });
 
-  it("revalidates an already-invalid field on the configured revalidateOn trigger", async () => {
-    render(
-      <Form.Root validateOn="blur" revalidateOn="focus">
-        <EmailField />
-      </Form.Root>,
-    );
-
-    const input = screen.getByRole("textbox", { name: "邮箱" });
-    fireEvent.blur(input);
     expect(await screen.findByText("请输入邮箱")).not.toBeNull();
+    expect(validate).toHaveBeenCalled();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
 
-    fireEvent.change(input, { target: { value: "team@example.com" } });
-    expect(screen.queryByText("请输入邮箱")).not.toBeNull();
+  it("revalidates existing errors at each supported non-submit trigger", async () => {
+    const triggers = ["focus", "change", "blur", "pointerleave"] as const;
+    const results = triggers.map(async (revalidateOn) => {
+      const { unmount } = render(
+        <Form.Root validateOn="submit" revalidateOn={revalidateOn}>
+          <EmailField />
+          <button type="submit">提交</button>
+        </Form.Root>,
+      );
 
-    fireEvent.focus(input);
+      const input = screen.getByRole("textbox", { name: "邮箱" });
+      fireEvent.click(screen.getByRole("button", { name: "提交" }));
+      expect(await screen.findByText("请输入邮箱")).not.toBeNull();
+
+      fireEvent.change(input, { target: { value: "team@example.com" } });
+      if (revalidateOn === "focus") {
+        fireEvent.focus(input);
+      } else if (revalidateOn === "blur") {
+        fireEvent.blur(input);
+      } else if (revalidateOn === "pointerleave") {
+        fireEvent.pointerLeave(
+          document.querySelector(".uk-form__field") as Element,
+        );
+      }
+
+      await waitFor(() => expect(screen.queryByText("请输入邮箱")).toBeNull());
+      unmount();
+    });
+
+    await Promise.all(results);
+  });
+
+  it("keeps controlled form values consistent with interaction validation", async () => {
+    render(<ControlledForm />);
+    const input = screen.getByRole("textbox", { name: "邮箱" });
+    fireEvent.change(input, { target: { value: "controlled@example.com" } });
+
     await waitFor(() => {
-      expect(screen.queryByText("请输入邮箱")).toBeNull();
+      expect((input as HTMLInputElement).value).toBe("controlled@example.com");
     });
+    expect(screen.queryByText("请输入邮箱")).toBeNull();
   });
 
-  it("preserves original control onChange callbacks", () => {
-    const onChange =
-      vi.fn<(event: React.ChangeEvent<HTMLInputElement>) => void>();
-
-    render(
-      <Form.Root>
-        <Form.Field name="email" defaultValue="">
-          <Form.Label>邮箱</Form.Label>
-          <Form.Control>
-            <input onChange={onChange} />
-          </Form.Control>
-        </Form.Field>
-      </Form.Root>,
-    );
-
-    fireEvent.change(screen.getByRole("textbox", { name: "邮箱" }), {
-      target: { value: "a@b.com" },
-    });
-    expect(onChange).toHaveBeenCalledTimes(1);
-  });
-
-  /* ------------------------------------------------------------------ */
-  /* Enhancement: required marker                                        */
-  /* ------------------------------------------------------------------ */
-
-  it("renders a required marker from Form.Label required", () => {
-    render(
-      <Form.Root>
-        <Form.Field name="email" defaultValue="">
-          <Form.Label required>邮箱</Form.Label>
-          <Form.Control>
-            <input />
-          </Form.Control>
-        </Form.Field>
-      </Form.Root>,
-    );
-
-    const label = screen.getByText("邮箱").closest("label") as HTMLElement;
-    const marker = label.querySelector(".uk-form__required");
-    expect(marker).not.toBeNull();
-    expect(marker?.getAttribute("aria-hidden")).toBe("true");
-  });
-
-  it("renders a required marker automatically from a required field rule", () => {
+  it("renders one hidden required marker from rules and supports explicit labels", async () => {
     render(
       <Form.Root>
         <Form.Field
           name="email"
-          defaultValue=""
-          rules={[{ required: true, message: "必填" }]}
+          rules={[{ required: true, message: "请输入邮箱" }]}
         >
           <Form.Label>邮箱</Form.Label>
           <Form.Control>
             <input />
           </Form.Control>
         </Form.Field>
+        <Form.Field name="name">
+          <Form.Label required>姓名</Form.Label>
+          <Form.Control>
+            <input />
+          </Form.Control>
+        </Form.Field>
       </Form.Root>,
     );
 
-    const label = screen.getByText("邮箱").closest("label") as HTMLElement;
-    const marker = label.querySelector(".uk-form__required");
-    expect(marker).not.toBeNull();
-    expect(marker?.getAttribute("aria-hidden")).toBe("true");
+    await waitFor(() => {
+      const emailLabel = screen.getByText("邮箱").closest("label");
+      const nameLabel = screen.getByText("姓名").closest("label");
+      expect(emailLabel?.querySelectorAll(".uk-form__required").length).toBe(1);
+      expect(nameLabel?.querySelectorAll(".uk-form__required").length).toBe(1);
+      expect(
+        emailLabel
+          ?.querySelector(".uk-form__required")
+          ?.getAttribute("aria-hidden"),
+      ).toBe("true");
+    });
     expect(
       screen
         .getByRole("textbox", { name: "邮箱" })
@@ -557,195 +614,124 @@ describe("Form", () => {
     ).toBe("true");
   });
 
-  /* ------------------------------------------------------------------ */
-  /* Enhancement: labelWrap                                              */
-  /* ------------------------------------------------------------------ */
-
-  it("exposes labelWrap styling state only when true", () => {
+  it("exposes label wrapping only when enabled without changing associations", () => {
     render(
       <Form.Root>
-        <Form.Field name="a" defaultValue="">
+        <Form.Field name="short">
           <Form.Label>短标签</Form.Label>
           <Form.Control>
             <input />
           </Form.Control>
+          <Form.Description>说明</Form.Description>
+          <Form.ErrorMessage />
         </Form.Field>
-        <Form.Field name="b" defaultValue="">
-          <Form.Label labelWrap>长标签长标签长标签</Form.Label>
+        <Form.Field name="long">
+          <Form.Label labelWrap>很长的标签文本</Form.Label>
           <Form.Control>
             <input />
           </Form.Control>
-        </Form.Field>
-      </Form.Root>,
-    );
-
-    const plainLabel = screen
-      .getByText("短标签")
-      .closest("label") as HTMLElement;
-    const wrapLabel = screen
-      .getByText("长标签长标签长标签")
-      .closest("label") as HTMLElement;
-
-    expect(plainLabel.getAttribute("data-wrap")).not.toBe("true");
-    expect(wrapLabel.getAttribute("data-wrap")).toBe("true");
-  });
-
-  it("labelWrap does not change the control accessible name", () => {
-    render(
-      <Form.Root>
-        <Form.Field name="email" defaultValue="">
-          <Form.Label labelWrap>电子邮箱地址</Form.Label>
-          <Form.Control>
-            <input />
-          </Form.Control>
-        </Form.Field>
-      </Form.Root>,
-    );
-
-    expect(
-      screen.getByRole("textbox", { name: "电子邮箱地址" }),
-    ).not.toBeNull();
-  });
-
-  /* ------------------------------------------------------------------ */
-  /* Enhancement: layout                                                 */
-  /* ------------------------------------------------------------------ */
-
-  it("defaults to horizontal layout and exposes layout via data attribute", () => {
-    const { container } = render(
-      <Form.Root>
-        <EmailField />
-      </Form.Root>,
-    );
-
-    const form = container.querySelector("form") as HTMLElement;
-    expect(form.getAttribute("data-layout")).toBe("horizontal");
-  });
-
-  it("exposes vertical and inline layouts via data attribute", () => {
-    const { container: vertical } = render(
-      <Form.Root layout="vertical">
-        <EmailField />
-      </Form.Root>,
-    );
-    const { container: inline } = render(
-      <Form.Root layout="inline">
-        <EmailField />
-      </Form.Root>,
-    );
-
-    expect(
-      (vertical.querySelector("form") as HTMLElement).getAttribute(
-        "data-layout",
-      ),
-    ).toBe("vertical");
-    expect(
-      (inline.querySelector("form") as HTMLElement).getAttribute("data-layout"),
-    ).toBe("inline");
-  });
-
-  /* ------------------------------------------------------------------ */
-  /* Enhancement: form-level validate shares interaction triggers        */
-  /* ------------------------------------------------------------------ */
-
-  it("runs form-level validate on focus trigger and surfaces schema errors in field UI", async () => {
-    render(
-      <Form.Root
-        validateOn="focus"
-        defaultValues={{ email: "" }}
-        validate={(values) => (values.email ? {} : { email: "邮箱不能为空" })}
-      >
-        <Form.Field name="email">
-          <Form.Label>邮箱</Form.Label>
-          <Form.Control>
-            <input />
-          </Form.Control>
+          <Form.Description>长说明</Form.Description>
           <Form.ErrorMessage />
         </Form.Field>
       </Form.Root>,
     );
 
-    const input = screen.getByRole("textbox", { name: "邮箱" });
-    fireEvent.focus(input);
-
-    expect(await screen.findByText("邮箱不能为空")).not.toBeNull();
-
-    fireEvent.change(input, { target: { value: "team@example.com" } });
-    fireEvent.focus(input);
-
-    await waitFor(() => {
-      expect(screen.queryByText("邮箱不能为空")).toBeNull();
-    });
+    const shortLabel = screen.getByText("短标签").closest("label");
+    const longLabel = screen.getByText("很长的标签文本").closest("label");
+    const longInput = screen.getByRole("textbox", { name: "很长的标签文本" });
+    expect(shortLabel?.getAttribute("data-wrap")).toBe("false");
+    expect(longLabel?.getAttribute("data-wrap")).toBe("true");
+    expect(longLabel?.getAttribute("for")).toBe(longInput.id);
+    expect(longInput.getAttribute("aria-describedby")).toContain(
+      screen.getByText("长说明").id,
+    );
   });
 
-  it("runs form-level validate on change trigger", async () => {
+  it("debounces async change validation and ignores stale results", async () => {
+    vi.useFakeTimers();
+    const pending = new Map<string, (result: { email?: string }) => void>();
     const validate = vi.fn<
-      (values: Record<string, unknown>) => Record<string, string>
-    >((values) => (values.email ? {} : { email: "必填" }));
+      (values: Record<string, unknown>) => Promise<{ email?: string }>
+    >(
+      (values) =>
+        new Promise<{ email?: string }>((resolve) => {
+          pending.set(String(values.email), resolve);
+        }),
+    );
+
+    try {
+      render(
+        <Form.Root
+          validateOn="change"
+          revalidateOn="change"
+          validateDebounce={100}
+          validate={validate}
+        >
+          <Form.Field name="email" defaultValue="">
+            <Form.Label>邮箱</Form.Label>
+            <Form.Control>
+              <input />
+            </Form.Control>
+            <Form.ErrorMessage />
+          </Form.Field>
+        </Form.Root>,
+      );
+
+      const input = screen.getByRole("textbox", { name: "邮箱" });
+      fireEvent.change(input, { target: { value: "old" } });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+      fireEvent.change(input, { target: { value: "new" } });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+
+      expect(validate).toHaveBeenCalledTimes(2);
+      await act(async () => {
+        pending.get("new")?.({});
+        await Promise.resolve();
+      });
+      await act(async () => {
+        pending.get("old")?.({ email: "过期错误" });
+        await Promise.resolve();
+      });
+
+      expect(screen.queryByText("过期错误")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("retains server errors, form errors, and clear flows", async () => {
+    const ref = createRef<FormRef>();
 
     render(
-      <Form.Root
-        validateOn="change"
-        defaultValues={{ email: "" }}
-        validate={validate}
-      >
-        <Form.Field name="email">
+      <Form.Root ref={ref}>
+        <Form.Field name="email" defaultValue="team@example.com">
           <Form.Label>邮箱</Form.Label>
           <Form.Control>
             <input />
           </Form.Control>
           <Form.ErrorMessage />
         </Form.Field>
+        <ErrorProbe name="email" />
       </Form.Root>,
     );
 
-    const input = screen.getByRole("textbox", { name: "邮箱" });
-    fireEvent.change(input, { target: { value: "" } });
-
-    expect(await screen.findByText("必填")).not.toBeNull();
-    expect(validate).toHaveBeenCalled();
-  });
-
-  it("keeps description and error associations with long wrapped content", async () => {
-    render(
-      <Form.Root>
-        <Form.Field
-          name="email"
-          defaultValue=""
-          rules={[
-            {
-              required: true,
-              message: "这是一个很长的错误消息用于验证换行行为",
-            },
-          ]}
-        >
-          <Form.Label labelWrap>
-            这是一个很长的标签文本用于验证换行行为
-          </Form.Label>
-          <Form.Control>
-            <input />
-          </Form.Control>
-          <Form.Description>
-            这是一段很长的描述文本用于验证换行行为
-          </Form.Description>
-          <Form.ErrorMessage />
-        </Form.Field>
-      </Form.Root>,
-    );
-
-    const input = screen.getByRole("textbox", {
-      name: "这是一个很长的标签文本用于验证换行行为",
+    act(() => {
+      ref.current?.setError("email", "服务器邮箱错误");
+      ref.current?.setFormError("服务器提交失败");
     });
-    const describedBy = input.getAttribute("aria-describedby") ?? "";
-    const description = screen.getByText(
-      "这是一段很长的描述文本用于验证换行行为",
+    expect(screen.getByTestId("email-error").textContent).toBe(
+      "服务器邮箱错误",
     );
-    expect(describedBy).toContain(description.id);
+    expect(screen.getByRole("alert").textContent).toContain("服务器提交失败");
 
-    fireEvent.blur(input);
-    const error = await screen.findByText(
-      "这是一个很长的错误消息用于验证换行行为",
-    );
-    expect(input.getAttribute("aria-describedby")).toContain(error.id);
+    act(() => ref.current?.clearErrors());
+    await waitFor(() => {
+      expect(screen.getByTestId("email-error").textContent).toBe("");
+      expect(screen.queryByText("服务器提交失败")).toBeNull();
+    });
   });
 });

@@ -1,29 +1,46 @@
-import { useState, type ReactElement } from "react";
-import { Button, Form, Input } from "seam-react";
+import { useRef, useState } from "react";
+import { Button, Form, Input, type FormRef } from "seam-react";
 
 interface ProfileValues extends Record<string, unknown> {
   displayName: string;
-  notificationEmail: string;
+  contactEmail: string;
 }
 
-/**
- * Long labels can wrap without changing their native label association or
- * accessible name. The required marker comes from the field rule and remains
- * hidden from assistive technology.
- */
-export default function LabelWrapDemo(): ReactElement {
-  const [submittedName, setSubmittedName] = useState<string | null>(null);
+const defaultValues: ProfileValues = {
+  displayName: "",
+  contactEmail: "",
+};
+
+export default function LabelWrapDemo() {
+  const formRef = useRef<FormRef<ProfileValues>>(null);
+  const [labelWrap, setLabelWrap] = useState(true);
+  const [message, setMessage] = useState(
+    "长标签可以换行，必填标记仍对辅助技术隐藏。",
+  );
 
   return (
-    <div className="demo-stack" style={{ maxWidth: "42rem" }}>
+    <div className="demo-stack">
+      <div className="demo-row">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          aria-pressed={labelWrap}
+          onClick={() => setLabelWrap((current) => !current)}
+        >
+          labelWrap：{labelWrap ? "开启" : "关闭"}
+        </Button>
+      </div>
+
       <Form.Root<ProfileValues>
+        ref={formRef}
         layout="vertical"
-        defaultValues={{
-          displayName: "",
-          notificationEmail: "",
+        defaultValues={defaultValues}
+        onSubmit={() => {
+          setMessage("资料已保存；标签换行不会改变字段的可访问名称。");
         }}
-        onSubmit={(values) => {
-          setSubmittedName(values.displayName);
+        onSubmitFailed={() => {
+          setMessage("请填写必填字段并修正邮箱格式。");
         }}
       >
         <Form.Field
@@ -32,38 +49,34 @@ export default function LabelWrapDemo(): ReactElement {
             required: true,
             minLength: {
               value: 2,
-              message:
-                "Enter at least two characters so other members can recognize your profile.",
+              message: "显示名称至少需要 2 个字符",
             },
           }}
         >
-          <Form.Label labelWrap>
-            Public display name shown to every member of your organization
+          <Form.Label labelWrap={labelWrap}>
+            在团队成员、客户以及外部合作方界面中展示的完整显示名称
           </Form.Label>
           <Form.Control>
-            <Input placeholder="Your public name" autoComplete="nickname" />
+            <Input placeholder="例如：林晓雨" autoComplete="name" />
           </Form.Control>
           <Form.Description>
-            This intentionally long label wraps together with its required
-            marker. It remains the accessible name of the input.
+            必填星号由 required 规则自动显示，控件保留 aria-required。
           </Form.Description>
           <Form.ErrorMessage />
         </Form.Field>
 
         <Form.Field
-          name="notificationEmail"
+          name="contactEmail"
           rules={{
             required: true,
             pattern: {
               value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-              message:
-                "Enter a complete email address, including the domain, so notifications can be delivered.",
+              message: "请输入有效的联系邮箱",
             },
           }}
         >
-          <Form.Label labelWrap required>
-            Email address used for security alerts and important account
-            notifications
+          <Form.Label required labelWrap={labelWrap}>
+            用于接收安全通知、账单信息和账户恢复消息的长期有效联系邮箱
           </Form.Label>
           <Form.Control>
             <Input
@@ -73,23 +86,27 @@ export default function LabelWrapDemo(): ReactElement {
             />
           </Form.Control>
           <Form.Description>
-            Explicit and rule-based required markers use the same visual
-            treatment. Descriptions and errors stay associated with the control
-            when their text wraps.
+            标签、说明和错误信息保持各自的可访问关联。
           </Form.Description>
           <Form.ErrorMessage />
         </Form.Field>
 
         <Form.Actions>
-          <Button type="submit">Save profile</Button>
+          <Button type="submit">保存资料</Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              formRef.current?.reset();
+              setMessage("已重置表单。");
+            }}
+          >
+            重置
+          </Button>
         </Form.Actions>
       </Form.Root>
 
-      <p className="demo-description" aria-live="polite">
-        {submittedName
-          ? `Saved profile for ${submittedName}.`
-          : "Submit the empty form to inspect wrapped required labels and error feedback."}
-      </p>
+      <output className="demo-description">{message}</output>
     </div>
   );
 }

@@ -1,17 +1,64 @@
 @layer uk.components {
   .uk-form {
+    --uk-form-label-width: 10rem;
     display: flex;
     flex-direction: column;
     gap: var(--uk-space-5);
     font-family: var(--uk-font-sans);
+    min-width: 0;
   }
 
   .uk-form__field {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: var(--uk-space-2);
-    position: relative;
     min-width: 0;
+  }
+
+  .uk-form[data-layout="horizontal"] .uk-form__field {
+    display: grid;
+    grid-template-columns: minmax(0, var(--uk-form-label-width)) minmax(0, 1fr);
+    column-gap: var(--uk-space-4);
+    row-gap: var(--uk-space-2);
+    align-items: start;
+  }
+
+  .uk-form[data-layout="horizontal"] .uk-form__label {
+    grid-column: 1;
+    grid-row: 1;
+    padding-top: var(--uk-space-2);
+    min-width: 0;
+  }
+
+  .uk-form[data-layout="horizontal"] .uk-form__control {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .uk-form[data-layout="horizontal"] .uk-form__description,
+  .uk-form[data-layout="horizontal"] .uk-form__error {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .uk-form[data-layout="inline"] {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--uk-space-4);
+  }
+
+  .uk-form[data-layout="inline"] .uk-form__field {
+    flex: 0 1 16rem;
+    min-width: min(100%, 12rem);
+  }
+
+  .uk-form[data-layout="inline"] .uk-form__actions {
+    flex: 0 1 auto;
+    align-items: center;
+    padding-top: 0;
   }
 
   .uk-form__field[data-disabled="true"] {
@@ -30,21 +77,22 @@
     display: flex;
     align-items: center;
     gap: var(--uk-space-1);
-    white-space: nowrap;
     min-width: 0;
+    white-space: nowrap;
   }
 
   .uk-form__label[data-wrap="true"] {
     white-space: normal;
     flex-wrap: wrap;
     overflow-wrap: anywhere;
+    align-items: baseline;
   }
 
   .uk-form__required {
     color: var(--uk-danger);
     font-size: var(--uk-text-lg);
     line-height: 1;
-    flex-shrink: 0;
+    flex: none;
   }
 
   .uk-form__description {
@@ -74,10 +122,12 @@
     border-radius: var(--uk-radius-md);
     color: var(--uk-danger);
     font-size: var(--uk-text-md);
+    overflow-wrap: anywhere;
   }
 
   .uk-form__actions {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--uk-space-3);
     justify-content: flex-end;
     padding-top: var(--uk-space-2);
@@ -104,60 +154,26 @@
     animation: uk-form-spin 0.6s linear infinite;
   }
 
-  /* Horizontal layout: stable label column, control + feedback in adjacent column */
-  .uk-form[data-layout="horizontal"] .uk-form__field {
-    display: grid;
-    grid-template-columns: var(--uk-form-label-width, 10rem) minmax(0, 1fr);
-    column-gap: var(--uk-space-4);
-    align-items: start;
+  @keyframes uk-form-spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
-  .uk-form[data-layout="horizontal"] .uk-form__label {
-    padding-top: var(--uk-space-2);
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .uk-form[data-layout="horizontal"] .uk-form__control,
-  .uk-form[data-layout="horizontal"] .uk-form__description,
-  .uk-form[data-layout="horizontal"] .uk-form__error {
-    grid-column: 2;
-  }
-
-  /* Inline layout: compact filter-bar flow, items wrap rather than shrink */
-  .uk-form[data-layout="inline"] {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: var(--uk-space-4);
-  }
-
-  .uk-form[data-layout="inline"] .uk-form__field {
-    flex: 0 1 auto;
-    min-width: 0;
-  }
-
-  .uk-form[data-layout="inline"] .uk-form__actions {
-    padding-top: 0;
-    align-self: flex-end;
-  }
-
-  /* Small-screen: horizontal collapses to vertical reading order */
-  @media (max-width: 640px) {
+  /* Small-screen breakpoint: horizontal fields return to vertical reading order. */
+  @media (max-width: 40rem) {
     .uk-form[data-layout="horizontal"] .uk-form__field {
       display: flex;
       flex-direction: column;
-      gap: var(--uk-space-2);
     }
 
     .uk-form[data-layout="horizontal"] .uk-form__label {
       padding-top: 0;
     }
-  }
 
-  @keyframes uk-form-spin {
-    to {
-      transform: rotate(360deg);
+    .uk-form[data-layout="inline"] .uk-form__field {
+      flex-basis: 100%;
+      min-width: 0;
     }
   }
 
