@@ -16,6 +16,8 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname, resolve as resolvePath, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
+import https from "node:https";
+import { Readable } from "node:stream";
 import { readArkStream } from "./ark-stream.mjs";
 import {
   buildEnhancementContext,
@@ -159,23 +161,71 @@ const docsContent = existsSync(docsContentPath)
 // ─── Call Ark API ─────────────────────────────────────────────────────────
 function isRetryableArkError(error) {
   const message = error instanceof Error ? error.message : String(error);
-  return /ECONNRESET|ETIMEDOUT|EPIPE|socket hang up|fetch failed|terminated|other side closed|Ark returned empty content/i.test(
+  return /ECONNRESET|ETIMEDOUT|EPIPE|socket hang up|terminated|other side closed|Ark returned empty content/i.test(
     message,
   );
+}
+
+function httpsPostStream(urlString, headers, body) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(urlString);
+    const payload = JSON.stringify(body);
+    const request = https.request(
+      {
+        hostname: url.hostname,
+        port: url.port || 443,
+        path: `${url.pathname}${url.search}`,
+        method: "POST",
+        family: 4,
+        headers: {
+          ...headers,
+          "Content-Length": Buffer.byteLength(payload),
+        },
+        timeout: 900_000,
+      },
+      (response) => {
+        const status = response.statusCode ?? 0;
+        if (status < 200 || status >= 300) {
+          const chunks = [];
+          response.on("data", (chunk) => chunks.push(chunk));
+          response.on("end", () => {
+            const responseBody = Buffer.concat(chunks).toString("utf-8");
+            reject(new Error(`Ark API error ${status}: ${responseBody}`));
+          });
+          response.on("error", reject);
+          return;
+        }
+
+        const streamedResponse = new Response(Readable.toWeb(response), {
+          headers: {
+            "content-type": response.headers["content-type"] ?? "",
+          },
+        });
+        readArkStream(streamedResponse).then(resolve, reject);
+      },
+    );
+
+    request.on("error", reject);
+    request.on("timeout", () => {
+      request.destroy(new Error("Request timed out"));
+    });
+    request.write(payload);
+    request.end();
+  });
 }
 
 async function callArkOnce(systemPrompt, userPrompt) {
   const url = `${ARK_BASE_URL}/chat/completions`;
   console.log(`[Agent] Calling ${url} with model ${ARK_MODEL} (streaming)`);
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
+  const content = await httpsPostStream(
+    url,
+    {
       Accept: "text/event-stream",
       "Content-Type": "application/json",
       Authorization: `Bearer ${ARK_API_KEY}`,
     },
-    body: JSON.stringify({
+    {
       model: ARK_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
@@ -185,16 +235,8 @@ async function callArkOnce(systemPrompt, userPrompt) {
       temperature: 0.6,
       thinking: { type: "disabled" },
       stream: true,
-    }),
-    signal: AbortSignal.timeout(900_000),
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Ark API error ${response.status}: ${body}`);
-  }
-
-  const content = await readArkStream(response);
+    },
+  );
   if (content.trim() === "") {
     throw new Error("Ark returned empty content.");
   }
