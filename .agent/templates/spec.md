@@ -56,6 +56,14 @@ interface {Component}Props {
 - {新增组件 | 增强已有 API | breaking change}
 - {影响范围}
 
+## Implementation File Plan
+
+<!-- Required for enhancement runs. List one repository-relative path per line.
+packages/ui/src/ExistingComponent.tsx
+packages/ui/src/__tests__/ExistingComponent.test.tsx
+apps/docs/src/pages/existing-component.tsx
+-->
+
 ## Test Plan
 
 - [ ] {测试 1：默认渲染和基本交互}

@@ -66,9 +66,13 @@ jobs:
             core.setOutput('sha', pr.head.sha);
             core.setOutput('title', pr.title);
             core.setOutput('body', pr.body || '');
+            const enhancement = pr.title.match(
+              /^enhance(?:ment)?\(([^)]+)\)\s*[:：]/i,
+            );
             core.setOutput(
               'component',
-              pr.title.replace(/^(?:feat|fix|enhance|refactor|chore|docs)(?:\([^)]*\))?\s*[:：]\s*/i, ''),
+              enhancement?.[1]?.trim() ||
+                pr.title.replace(/^(?:feat|fix|enhance|refactor|chore|docs)(?:\([^)]*\))?\s*[:：]\s*/i, ''),
             );
 
       - name: Check Out Pull Request

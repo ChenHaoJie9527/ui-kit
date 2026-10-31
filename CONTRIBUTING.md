@@ -81,8 +81,10 @@ CI；未配置时，流水线会用内置 `GITHUB_TOKEN` 显式 `workflow_dispat
 ### 从 Issue 到 Draft PR
 
 1. 创建描述需求和验收条件的 Issue。
-2. 人工添加 **`ai-develop`**。新组件先只生成 Spec，并推送
-   `codex/<component>` 分支，添加 **`ai-spec-ready`**。
+2. 人工添加 **`ai-develop`**。新组件，以及标题为
+   `enhance(<Component>): ...` 的既有组件增强，都会先只生成 Spec，并推送
+   `codex/*` 分支，添加 **`ai-spec-ready`**。enhancement Spec 必须列出
+   Agent 可修改的文件计划。
 3. 人工检查 Spec 中的 API、状态、键盘、无障碍、Motion Gate 和测试计划；
    可以直接在分支修正 `.agent/runs/<run-id>/spec.md`。
 4. 人工添加 **`spec-approved`** 后，工作流才读取这份已确认 Spec 并生成实现。
