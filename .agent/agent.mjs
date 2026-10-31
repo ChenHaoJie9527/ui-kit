@@ -18,6 +18,7 @@ import {
   mkdirSync,
   existsSync,
   statSync,
+  rmSync,
 } from "node:fs";
 import { join, dirname, resolve as resolvePath, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,6 +32,7 @@ import {
   positiveInteger,
 } from "./ark-retry.mjs";
 import {
+  mergePrefilledOutput,
   parseFileBlocks,
   planFileBatches,
   writeValidatedFile,
@@ -261,9 +263,15 @@ function httpsPostStream(urlString, headers, body) {
   });
 }
 
-async function callArkOnce(systemPrompt, userPrompt) {
+async function callArkOnce(systemPrompt, userPrompt, prefill = "") {
   const url = `${ARK_BASE_URL}/chat/completions`;
   console.log(`[Agent] Calling ${url} with model ${ARK_MODEL} (streaming)`);
+
+  const messages = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt },
+  ];
+  if (prefill !== "") messages.push({ role: "assistant", content: prefill });
 
   const content = await httpsPostStream(
     url,
@@ -274,11 +282,10 @@ async function callArkOnce(systemPrompt, userPrompt) {
     },
     {
       model: ARK_MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
+      messages,
       max_tokens: 16384,
+      // Kimi-K3.1-Pro only accepts temperature 0.6 on the Coding Plan endpoint.
+      // Keep this aligned with reviewer.mjs instead of lowering it per request.
       temperature: 0.6,
       thinking: { type: "disabled" },
       stream: true,
@@ -287,15 +294,15 @@ async function callArkOnce(systemPrompt, userPrompt) {
   if (content.trim() === "") {
     throw new Error("Ark returned empty content.");
   }
-  return content;
+  return prefill === "" ? content : mergePrefilledOutput(prefill, content);
 }
 
-async function callArk(systemPrompt, userPrompt) {
+async function callArk(systemPrompt, userPrompt, prefill = "") {
   const maxAttempts = positiveInteger(process.env.ARK_MAX_ATTEMPTS, 5);
   let lastError;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
-      return await callArkOnce(systemPrompt, userPrompt);
+      return await callArkOnce(systemPrompt, userPrompt, prefill);
     } catch (error) {
       lastError = error;
       if (attempt === maxAttempts || !isRetryableArkError(error)) throw error;
@@ -533,6 +540,41 @@ async function generateEnhancementImplementation(
   plannedFiles,
   references,
 ) {
+  console.log("[Agent] Resetting planned files to origin/main.");
+  for (const file of plannedFiles) {
+    const absolutePath = resolvePlannedFile(repoDir, file);
+    let existsOnMain = true;
+    try {
+      execFileSync("git", ["cat-file", "-e", `origin/main:${file}`], {
+        cwd: repoDir,
+        stdio: "ignore",
+      });
+    } catch {
+      existsOnMain = false;
+    }
+
+    if (existsOnMain) {
+      execFileSync(
+        "git",
+        [
+          "restore",
+          "--source=origin/main",
+          "--worktree",
+          "--staged",
+          "--",
+          file,
+        ],
+        { cwd: repoDir },
+      );
+    } else {
+      rmSync(absolutePath, { force: true });
+      execFileSync("git", ["rm", "--cached", "--ignore-unmatch", "--", file], {
+        cwd: repoDir,
+        stdio: "ignore",
+      });
+    }
+  }
+
   const allowedFiles = new Map(
     plannedFiles.map((file) => [file, resolvePlannedFile(repoDir, file)]),
   );
@@ -558,7 +600,10 @@ async function generateEnhancementImplementation(
     const filesToGenerate = batch
       .map((file, index) => `${index + 1}. ${file}`)
       .join("\n");
-    const plannedContext = readPlannedFileContext(repoDir, plannedFiles);
+    // Only send the files this request can write. Passing the entire plan
+    // makes a one-file retry carry every demo and test again, which encourages
+    // the model to reason about the whole change instead of emitting the file.
+    const batchContext = readPlannedFileContext(repoDir, batch);
     const systemPrompt = `You are a senior React component library engineer working on seam-ui.
 You have written a spec and now must implement part of an existing component enhancement.
 
@@ -603,7 +648,10 @@ Testing conventions (MUST follow exactly):
 - Do NOT use toHaveAttribute, toBeInTheDocument, toBeDisabled, toHaveAccessibleName
 - Use expect(el.getAttribute("data-variant")).toBe("...") instead of toHaveAttribute
 - Use expect(screen.queryByRole("...")).toBeNull() instead of not.toBeInTheDocument
-- Use expect((el as HTMLButtonElement).disabled).toBe(true) instead of toBeDisabled`;
+- Use expect((el as HTMLButtonElement).disabled).toBe(true) instead of toBeDisabled
+
+Your response must begin immediately with the first file marker. Do not write an
+analysis, plan, explanation, or code fence before the file content.`;
 
     const userPrompt = `Implement these existing component enhancement files: ${batch.join(", ")}
 
@@ -613,13 +661,14 @@ ${spec}
 ## Existing index.ts exports:
 ${currentExports}
 
-## Existing implementation files
-${plannedContext}
+## Existing files in this batch
+${batchContext}
 
 Generate every requested file in this batch following the output format specified above.`;
 
     console.log(`[Agent] Implementation batch ${label}: ${batch.join(", ")}`);
-    const implementation = await callArk(systemPrompt, userPrompt);
+    const prefill = `=== FILE: ${batch[0]} ===\n`;
+    const implementation = await callArk(systemPrompt, userPrompt, prefill);
     rawOutputs.push(`# Batch ${label}\n\n${implementation}`);
     const parsedFiles = parseFileBlocks(implementation);
     const normalizedFiles = new Map();
