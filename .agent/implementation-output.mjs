@@ -83,14 +83,22 @@ export function mergePrefilledOutput(prefill, content) {
 
 const SOURCE_PATH_PATTERN =
   /(?:packages|apps|e2e)\/[A-Za-z0-9._@+/-]+\.(?:tsx|css|md|ts)/g;
+const RELATIVE_SOURCE_PATTERN = /src\/[A-Za-z0-9._@+/-]+\.(?:tsx|css|md|ts)/;
+const WORKSPACES = ["packages/ui", "packages/hooks", "apps/docs"];
 const FAILURE_LINE_PATTERN =
-  /(?:##\[error\]|::error|\berror\b|Error:|error TS\d+)/i;
+  /(?:##\[error\]|::error|\berror\b|\bFAIL\b|\bFailed\b|Error:|error TS\d+)/i;
 
 export function extractFailureFiles(log) {
   const files = [];
   for (const line of String(log).split(/\r?\n/)) {
     if (!FAILURE_LINE_PATTERN.test(line)) continue;
-    files.push(...(line.match(SOURCE_PATH_PATTERN) ?? []));
+    const lineFiles = line.match(SOURCE_PATH_PATTERN) ?? [];
+    for (const workspace of WORKSPACES) {
+      if (!line.includes(`${workspace} `)) continue;
+      const relativeFile = line.match(RELATIVE_SOURCE_PATTERN)?.[0];
+      if (relativeFile) lineFiles.push(`${workspace}/${relativeFile}`);
+    }
+    files.push(...lineFiles);
   }
   return [...new Set(files)];
 }

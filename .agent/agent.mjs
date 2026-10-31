@@ -387,6 +387,7 @@ ${motionTokens}
 
 Return ONLY complete files that require changes. Do not return explanations, diffs, or code fences around the entire response.
 Start with the first file marker and do not describe your analysis or plan.
+The response may be prefilled with the first reported file marker; continue immediately with that file's complete content.
 Each file must use this exact format:
 === FILE: <existing-repository-relative-path> ===
 <complete file content>
