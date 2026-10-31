@@ -114,6 +114,7 @@ jobs:
           git fetch origin "$BRANCH" || true
           if [ "$SPEC_APPROVED" = "true" ] || { [ "$SPEC_ONLY" = "true" ] && git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; }; then
             git checkout -B "$BRANCH" "origin/$BRANCH"
+            git merge --no-edit origin/main
           else
             git checkout -B "$BRANCH" origin/main
           fi
