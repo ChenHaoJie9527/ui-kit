@@ -5,7 +5,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--uk-space-5);
-    min-width: 0;
     font-family: var(--uk-font-sans);
   }
 
@@ -31,7 +30,6 @@
     align-items: center;
     gap: var(--uk-space-1);
     min-width: 0;
-    max-width: 100%;
     color: var(--uk-text);
     font-size: var(--uk-text-md);
     font-weight: 500;
@@ -39,21 +37,19 @@
   }
 
   .uk-form__label[data-wrap="true"] {
-    flex-wrap: wrap;
-    align-items: baseline;
+    align-items: flex-start;
     white-space: normal;
     overflow-wrap: anywhere;
   }
 
   .uk-form__required {
-    flex: 0 0 auto;
+    flex: none;
     color: var(--uk-danger);
     font-size: var(--uk-text-lg);
     line-height: 1;
   }
 
   .uk-form__description {
-    min-width: 0;
     margin: 0;
     color: var(--uk-text-muted);
     font-size: var(--uk-text-sm);
@@ -61,7 +57,6 @@
   }
 
   .uk-form__error {
-    min-width: 0;
     min-height: 1.25rem;
     margin: 0;
     color: var(--uk-danger);
@@ -76,9 +71,9 @@
 
   .uk-form__error-summary {
     padding: var(--uk-space-3) var(--uk-space-4);
+    background: light-dark(rgb(185 28 28 / 0.08), rgb(252 165 165 / 0.12));
     border: 1px solid var(--uk-danger);
     border-radius: var(--uk-radius-md);
-    background: light-dark(rgb(185 28 28 / 0.08), rgb(252 165 165 / 0.12));
     color: var(--uk-danger);
     font-size: var(--uk-text-md);
     overflow-wrap: anywhere;
@@ -89,7 +84,6 @@
     flex-wrap: wrap;
     gap: var(--uk-space-3);
     justify-content: flex-end;
-    min-width: 0;
     padding-top: var(--uk-space-2);
   }
 
@@ -102,6 +96,7 @@
   }
 
   .uk-form__field[data-validating="true"]::after {
+    content: "";
     position: absolute;
     top: 0;
     right: 0;
@@ -111,98 +106,72 @@
     border-top-color: var(--uk-primary);
     border-radius: var(--uk-radius-full);
     animation: uk-form-spin 0.6s linear infinite;
-    content: "";
   }
 
-  /*
-   * Horizontal fields retain DOM order: label first, then control and feedback.
-   * The second column starts on the control row so descriptions and errors stay
-   * beside the label rather than creating another visual reading order.
-   */
-  .uk-form[data-layout="horizontal"] > .uk-form__field {
+  .uk-form[data-layout="horizontal"] .uk-form__field {
     display: grid;
     grid-template-columns: minmax(0, var(--uk-form-label-width)) minmax(0, 1fr);
     column-gap: var(--uk-space-4);
-    row-gap: var(--uk-space-2);
     align-items: start;
   }
 
-  .uk-form[data-layout="horizontal"] > .uk-form__field > .uk-form__label {
+  .uk-form[data-layout="horizontal"] .uk-form__field > .uk-form__label {
     grid-column: 1;
     grid-row: 1;
-    min-height: 2.25rem;
     padding-top: var(--uk-space-2);
   }
 
   .uk-form[data-layout="horizontal"]
-    > .uk-form__field
-    > :not(.uk-form__label):not(.uk-form__description):not(.uk-form__error) {
+    .uk-form__field
+    > :not(.uk-form__label):not([hidden]) {
     grid-column: 2;
+    min-width: 0;
   }
 
   .uk-form[data-layout="horizontal"]
-    > .uk-form__field
-    > :is(.uk-form__description, .uk-form__error) {
-    grid-column: 2;
-  }
-
-  .uk-form[data-layout="horizontal"] > .uk-form__field > .uk-form__description {
-    grid-row: 2;
-  }
-
-  .uk-form[data-layout="horizontal"] > .uk-form__field > .uk-form__error {
-    grid-row: 3;
-  }
-
-  .uk-form[data-layout="horizontal"]
-    > .uk-form__field
-    > .uk-form__description
-    ~ .uk-form__error {
-    grid-row: 3;
+    .uk-form__field[data-validating="true"]::after {
+    top: var(--uk-space-2);
   }
 
   .uk-form[data-layout="inline"] {
-    flex-flow: row wrap;
+    flex-direction: row;
+    flex-wrap: wrap;
     align-items: flex-start;
     gap: var(--uk-space-4);
   }
 
-  .uk-form[data-layout="inline"] > .uk-form__field {
-    flex: 1 1 12rem;
-    min-width: min(100%, 10rem);
+  .uk-form[data-layout="inline"] .uk-form__field {
+    flex: 0 1 auto;
+    min-width: min(100%, 12rem);
   }
 
-  .uk-form[data-layout="inline"] > .uk-form__actions {
-    flex: 0 1 auto;
+  .uk-form[data-layout="inline"] .uk-form__actions {
     align-items: center;
     padding-top: 0;
   }
 
-  .uk-form[data-layout="inline"] :is(input, textarea, select) {
-    min-width: 0;
-    max-width: 100%;
+  /* Small-screen breakpoint: horizontal fields return to DOM reading order. */
+  @media (max-width: 40rem) {
+    .uk-form[data-layout="horizontal"] .uk-form__field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--uk-space-2);
+    }
+
+    .uk-form[data-layout="horizontal"] .uk-form__field > .uk-form__label {
+      padding-top: 0;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .uk-form[data-layout="inline"] .uk-form__field {
+      flex: 1 1 12rem;
+    }
   }
 
   @keyframes uk-form-spin {
     to {
       transform: rotate(360deg);
-    }
-  }
-
-  /* Small-screen breakpoint: horizontal fields return to vertical reading order. */
-  @media (max-width: 40rem) {
-    .uk-form[data-layout="horizontal"] > .uk-form__field {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .uk-form[data-layout="horizontal"] > .uk-form__field > .uk-form__label {
-      min-height: 0;
-      padding-top: 0;
-    }
-
-    .uk-form[data-layout="inline"] > .uk-form__field {
-      flex-basis: 100%;
     }
   }
 

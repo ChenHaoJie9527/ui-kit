@@ -1,75 +1,56 @@
-import { useState } from "react";
-import { Button, Form, Input } from "seam-react";
+import { Form, Input } from "seam-react";
 
-export function Demo() {
-  const [submitted, setSubmitted] = useState("");
-
+export default function LabelWrapDemo() {
   return (
-    <div className="flex w-full max-w-[720px] flex-col gap-5">
-      <div className="rounded-[18px] border border-line bg-surface p-5 shadow-[0_18px_48px_-32px_rgb(15_23_42/0.45)] phone:p-6">
-        <Form.Root
-          layout="horizontal"
-          defaultValues={{ legalName: "", contact: "" }}
-          onSubmit={(values) =>
-            setSubmitted(`已提交联系人：${String(values.contact || "（空）")}`)
-          }
-        >
-          <Form.Field
-            name="legalName"
-            rules={[
-              { required: true, message: "请输入营业执照上的完整名称。" },
-            ]}
-          >
-            <Form.Label labelWrap>
-              企业法定全称（必须与营业执照及合同主体保持完全一致）
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      <div>
+        <h3>labelWrap=false（默认）</h3>
+        <Form.Root layout="horizontal" onSubmit={() => {}}>
+          <Form.Field name="username" rules={{ required: true }}>
+            <Form.Label>
+              这是一个非常长的标签文本用于演示不换行时的显示效果
             </Form.Label>
             <Form.Control>
-              <Input
-                autoComplete="organization"
-                placeholder="请输入完整企业名称"
-              />
+              <Input placeholder="请输入用户名" />
             </Form.Control>
-            <Form.Description>
-              required 规则自动显示星号；长标签、说明和错误都在各自区域内换行。
-            </Form.Description>
+            <Form.Description>用户名将用于登录系统</Form.Description>
             <Form.ErrorMessage />
           </Form.Field>
-
-          <Form.Field name="contact">
-            <Form.Label required labelWrap={false}>
-              管理员联系邮箱
-            </Form.Label>
-            <Form.Control>
-              <Input
-                type="email"
-                autoComplete="email"
-                aria-required="true"
-                placeholder="admin@company.com"
-              />
-            </Form.Control>
-            <Form.Description>
-              此标签显式使用 required，并保留 labelWrap=false 的非换行设置。
-            </Form.Description>
-            <Form.ErrorMessage />
-          </Form.Field>
-
-          <Form.Actions>
-            <Button type="submit">保存企业资料</Button>
-          </Form.Actions>
         </Form.Root>
       </div>
 
-      <p className="m-0 text-[12px] leading-[1.65] text-muted">
-        星号仅为视觉提示并保持 aria-hidden；labelWrap
-        不会改变标签文本、控件名称、htmlFor 或 aria-describedby。缩窄视口可观察
-        horizontal 布局恢复纵向阅读顺序。
-      </p>
-      <output
-        className="m-0 min-h-5 text-[12.5px] text-muted"
-        aria-live="polite"
-      >
-        {submitted || "留空提交第一个字段，检查长错误文本与控件的关联。"}
-      </output>
+      <div>
+        <h3>labelWrap=true</h3>
+        <Form.Root layout="horizontal" onSubmit={() => {}}>
+          <Form.Field name="email" rules={{ required: true }}>
+            <Form.Label labelWrap>
+              这是一个非常长的标签文本用于演示换行时的显示效果，标签和必填标记都会正常换行
+            </Form.Label>
+            <Form.Control>
+              <Input type="email" placeholder="请输入邮箱" />
+            </Form.Control>
+            <Form.Description>
+              我们将向此邮箱发送验证邮件，请确保邮箱地址正确
+            </Form.Description>
+            <Form.ErrorMessage />
+          </Form.Field>
+        </Form.Root>
+      </div>
+
+      <div>
+        <h3>显式 required 属性</h3>
+        <Form.Root layout="vertical" onSubmit={() => {}}>
+          <Form.Field name="phone">
+            <Form.Label required labelWrap>
+              手机号码（通过 Label required 属性显示必填标记）
+            </Form.Label>
+            <Form.Control>
+              <Input type="tel" placeholder="请输入手机号" />
+            </Form.Control>
+            <Form.ErrorMessage />
+          </Form.Field>
+        </Form.Root>
+      </div>
     </div>
   );
 }

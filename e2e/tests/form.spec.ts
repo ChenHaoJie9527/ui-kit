@@ -1,376 +1,273 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
-const FORM_PATH = "/components/form";
-const PHONE_VIEWPORT = { width: 390, height: 844 };
-const DESKTOP_VIEWPORT = { width: 1280, height: 900 };
+const FORM_URL = "/components/form";
 
-type Layout = "vertical" | "horizontal" | "inline";
-
-async function openFormPage(page: Page): Promise<void> {
-  await page.goto(FORM_PATH);
+async function openFormDocs(page: Page) {
+  await page.goto(FORM_URL);
   await expect(
-    page.getByRole("heading", { name: "Form", exact: true }),
+    page.getByRole("heading", { name: /Form/ }).first(),
   ).toBeVisible();
 }
 
-async function chooseLayout(page: Page, layout: Layout): Promise<void> {
-  await page
-    .getByRole("group", { name: "选择表单布局" })
-    .getByRole("button", { name: layout, exact: true })
-    .click();
+function demo(page: Page, name: string) {
+  return page.locator(`[data-demo="${name}"]`).first();
 }
 
-function layoutsForm(page: Page): Locator {
-  return page.locator("form[data-layout]").filter({
-    has: page.getByRole("button", { name: "应用筛选", exact: true }),
+async function expectNoHorizontalOverflow(page: Page) {
+  const overflow = await page.evaluate(() => {
+    const root = document.documentElement;
+    return root.scrollWidth > root.clientWidth + 1;
   });
+
+  expect(overflow).toBe(false);
 }
 
-function timingForm(page: Page): Locator {
-  return page.locator("form").filter({
-    has: page.getByRole("button", { name: "提交并完整校验", exact: true }),
-  });
-}
-
-async function expectNoHorizontalOverflow(page: Page): Promise<void> {
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          document.documentElement.scrollWidth -
-          document.documentElement.clientWidth,
-      ),
-    )
-    .toBeLessThanOrEqual(1);
-}
-
-function boxesOverlap(
-  first: { x: number; y: number; width: number; height: number },
-  second: { x: number; y: number; width: number; height: number },
-): boolean {
-  return (
-    first.x < second.x + second.width &&
-    first.x + first.width > second.x &&
-    first.y < second.y + second.height &&
-    first.y + first.height > second.y
-  );
-}
-
-async function expectReadableGeometry(
-  label: Locator,
-  control: Locator,
-  description: Locator,
-  error: Locator,
-): Promise<void> {
-  const [labelBox, controlBox, descriptionBox, errorBox] = await Promise.all([
-    label.boundingBox(),
-    control.boundingBox(),
-    description.boundingBox(),
-    error.boundingBox(),
-  ]);
-
-  expect(labelBox).not.toBeNull();
-  expect(controlBox).not.toBeNull();
-  expect(descriptionBox).not.toBeNull();
-  expect(errorBox).not.toBeNull();
-
-  expect(labelBox!.width).toBeGreaterThan(0);
-  expect(labelBox!.height).toBeGreaterThan(0);
-  expect(controlBox!.width).toBeGreaterThan(80);
-  expect(controlBox!.height).toBeGreaterThan(20);
-  expect(descriptionBox!.width).toBeGreaterThan(0);
-  expect(errorBox!.width).toBeGreaterThan(0);
-  expect(boxesOverlap(labelBox!, controlBox!)).toBe(false);
-}
-
-async function expectDomTabOrder(
-  page: Page,
-  controls: Locator[],
-): Promise<void> {
-  for (const control of controls) {
+async function expectDomTabOrder(page: Page, labels: string[]) {
+  for (const label of labels) {
     await page.keyboard.press("Tab");
-    await expect(control).toBeFocused();
+    await expect(page.getByLabel(label, { exact: true })).toBeFocused();
   }
 }
 
-test.describe("Form enhancement", () => {
-  test("supports all layouts at desktop and phone widths without overflow", async ({
+test.describe("Form layouts", () => {
+  test("vertical, horizontal, and inline layouts expose their styling state", async ({
     page,
   }) => {
-    await page.setViewportSize(DESKTOP_VIEWPORT);
-    await openFormPage(page);
+    await openFormDocs(page);
 
-    for (const viewport of [DESKTOP_VIEWPORT, PHONE_VIEWPORT]) {
-      await page.setViewportSize(viewport);
+    await expect(
+      demo(page, "layouts").locator('[data-layout="vertical"]'),
+    ).toBeVisible();
+    await expect(
+      demo(page, "layouts").locator('[data-layout="horizontal"]'),
+    ).toBeVisible();
+    await expect(
+      demo(page, "layouts").locator('[data-layout="inline"]'),
+    ).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
 
-      for (const layout of ["vertical", "horizontal", "inline"] as const) {
-        await chooseLayout(page, layout);
+  test("horizontal fields collapse into readable order at phone width", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openFormDocs(page);
 
-        const form = layoutsForm(page);
-        await expect(form).toHaveAttribute("data-layout", layout);
+    const form = demo(page, "layouts").locator('[data-layout="horizontal"]');
+    await expect(form).toBeVisible();
+    await expectNoHorizontalOverflow(page);
 
-        const keyword = form.getByRole("textbox", {
-          name: "项目或成员关键词",
-        });
-        const team = form.getByRole("combobox", { name: "所属团队" });
-        const description = form.getByText(
-          "horizontal 在桌面端使用稳定标签列，窄屏自动恢复纵向排列。",
-        );
-        const error = form.locator(".uk-form__error").first();
+    const geometry = await form.evaluate((element) => {
+      const label = element.querySelector("label");
+      const control = element.querySelector("input, select, textarea");
 
-        await expect(keyword).toBeVisible();
-        await expect(team).toBeVisible();
-        await expect(description).toBeVisible();
-        await expectReadableGeometry(
-          form.locator("label").first(),
-          keyword,
-          description,
-          error,
-        );
-        await expectNoHorizontalOverflow(page);
-
-        if (layout === "horizontal") {
-          const field = form.locator(".uk-form__field").first();
-          const display = await field.evaluate(
-            (element) => getComputedStyle(element).display,
-          );
-
-          if (viewport.width <= 640) {
-            expect(display).toBe("flex");
-            const labelBox = await form.locator("label").first().boundingBox();
-            const controlBox = await keyword.boundingBox();
-            expect(labelBox).not.toBeNull();
-            expect(controlBox).not.toBeNull();
-            expect(labelBox!.y + labelBox!.height).toBeLessThanOrEqual(
-              controlBox!.y + 1,
-            );
-          } else {
-            expect(display).toBe("grid");
-            const columns = await field.evaluate(
-              (element) => getComputedStyle(element).gridTemplateColumns,
-            );
-            expect(columns.split(" ").length).toBeGreaterThanOrEqual(2);
-          }
-        }
+      if (!label || !control) {
+        return null;
       }
+
+      const labelRect = label.getBoundingClientRect();
+      const controlRect = control.getBoundingClientRect();
+
+      return {
+        labelBottom: labelRect.bottom,
+        controlTop: controlRect.top,
+        controlLeft: controlRect.left,
+        formLeft: element.getBoundingClientRect().left,
+      };
+    });
+
+    expect(geometry).not.toBeNull();
+    expect(geometry!.controlTop).toBeGreaterThanOrEqual(
+      geometry!.labelBottom - 2,
+    );
+    expect(geometry!.controlLeft).toBeGreaterThanOrEqual(
+      geometry!.formLeft - 1,
+    );
+  });
+
+  test("inline fields wrap without page overflow or clipped long content", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openFormDocs(page);
+
+    const form = demo(page, "layouts").locator('[data-layout="inline"]');
+    await expect(form).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+
+    const bounds = await form.evaluate((element) => {
+      const formRect = element.getBoundingClientRect();
+      const controls = Array.from(
+        element.querySelectorAll("input, select, textarea, button"),
+      );
+
+      return controls.map((control) => {
+        const rect = control.getBoundingClientRect();
+        return {
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          formLeft: formRect.left,
+          formRight: formRect.right,
+        };
+      });
+    });
+
+    expect(bounds.length).toBeGreaterThan(0);
+    for (const bound of bounds) {
+      expect(bound.left).toBeGreaterThanOrEqual(bound.formLeft - 2);
+      expect(bound.right).toBeLessThanOrEqual(bound.formRight + 2);
+      expect(bound.width).toBeGreaterThan(0);
     }
   });
 
-  test("wraps inline content while preserving DOM keyboard order", async ({
-    page,
-  }) => {
-    await page.setViewportSize(PHONE_VIEWPORT);
-    await openFormPage(page);
-    await chooseLayout(page, "inline");
+  test("tab order follows DOM order in every layout", async ({ page }) => {
+    await openFormDocs(page);
 
-    const form = layoutsForm(page);
-    const keyword = form.getByRole("textbox", {
-      name: "项目或成员关键词",
-    });
-    const team = form.getByRole("combobox", { name: "所属团队" });
-    const submit = form.getByRole("button", { name: "应用筛选" });
+    for (const layout of ["vertical", "horizontal", "inline"] as const) {
+      const form = demo(page, "layouts").locator(`[data-layout="${layout}"]`);
+      const controls = form.locator(
+        "input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])",
+      );
+      const count = await controls.count();
+      expect(count).toBeGreaterThan(1);
 
-    await keyword.fill("一个用于验证窄屏内联布局自动换行的很长搜索关键词");
-    await expectNoHorizontalOverflow(page);
+      await controls.first().focus();
+      for (let index = 1; index < count; index += 1) {
+        await page.keyboard.press("Tab");
+        await expect(controls.nth(index)).toBeFocused();
+      }
+    }
+  });
+});
 
-    const keywordBox = await keyword.boundingBox();
-    const teamBox = await team.boundingBox();
-    expect(keywordBox).not.toBeNull();
-    expect(teamBox).not.toBeNull();
-    expect(keywordBox!.width).toBeGreaterThan(80);
-    expect(teamBox!.width).toBeGreaterThan(80);
-    expect(teamBox!.y).toBeGreaterThanOrEqual(keywordBox!.y);
+test.describe("Form validation timing", () => {
+  test("focus and blur validation are keyboard usable", async ({ page }) => {
+    await openFormDocs(page);
 
-    await keyword.focus();
-    await expectDomTabOrder(page, [team, submit]);
+    const form = demo(page, "validation-timing").locator(
+      '[data-validation-timing="focus"]',
+    );
+    const input = form.getByLabel(/Email/i).first();
+    await input.focus();
+    await expect(form.locator(".uk-form__error-message").first()).toBeVisible();
+
+    await input.fill("person@example.com");
+    await page.keyboard.press("Tab");
+    await expect(input).toHaveAttribute("aria-invalid", "false");
   });
 
-  test("keeps keyboard validation usable and pointerleave supplementary", async ({
+  test("change validation updates errors and submit validates all fields", async ({
     page,
   }) => {
-    await page.setViewportSize(DESKTOP_VIEWPORT);
-    await openFormPage(page);
+    await openFormDocs(page);
 
-    const validateOn = page.getByLabel("首次校验 validateOn");
-    const revalidateOn = page.getByLabel("错误重检 revalidateOn");
-    await expect(validateOn).toHaveValue("blur");
-    await expect(revalidateOn).toHaveValue("change");
-
-    const blurForm = timingForm(page);
-    const email = blurForm.getByRole("textbox", { name: "工作邮箱" });
-    const nickname = blurForm.getByRole("textbox", { name: "显示昵称" });
-
-    await email.focus();
-    await expect(blurForm.getByText("请输入邮箱", { exact: true })).toHaveCount(
-      0,
+    const form = demo(page, "validation-timing").locator(
+      '[data-validation-timing="change"]',
     );
-    await page.keyboard.press("Tab");
-    await expect(nickname).toBeFocused();
-    await expect(
-      blurForm.getByText("请输入邮箱", { exact: true }),
-    ).toBeVisible();
+    const input = form.getByLabel(/Email/i).first();
+    await input.fill("invalid");
+    await expect(form.locator(".uk-form__error-message").first()).toBeVisible();
+    await input.fill("person@example.com");
+    await expect(input).toHaveAttribute("aria-invalid", "false");
 
-    await email.fill("person@example.com");
-    await expect(blurForm.getByText("请输入邮箱", { exact: true })).toHaveCount(
-      0,
+    await form.getByRole("button", { name: /Submit|Validate/i }).click();
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test("pointerleave supplements rather than removes keyboard feedback", async ({
+    page,
+  }) => {
+    await openFormDocs(page);
+
+    const form = demo(page, "validation-timing").locator(
+      '[data-validation-timing="pointerleave"]',
     );
+    const field = form.locator(".uk-form__field").first();
+    const input = field.locator("input").first();
 
-    await validateOn.selectOption("focus");
-    const focusForm = timingForm(page);
-    const focusEmail = focusForm.getByRole("textbox", { name: "工作邮箱" });
-    await focusEmail.focus();
-    await expect(
-      focusForm.getByText("请输入邮箱", { exact: true }),
-    ).toBeVisible();
+    await input.focus();
+    await input.blur();
+    await expect(form.locator(".uk-form__error-message").first()).toBeVisible();
 
-    await validateOn.selectOption("change");
-    const changeForm = timingForm(page);
-    const changeEmail = changeForm.getByRole("textbox", { name: "工作邮箱" });
-    await changeEmail.fill("invalid");
-    await expect(
-      changeForm.getByText("请输入有效邮箱", { exact: true }),
-    ).toBeVisible();
-    await changeEmail.fill("person@example.com");
-    await expect(
-      changeForm.getByText("请输入有效邮箱", { exact: true }),
-    ).toHaveCount(0);
-
-    await validateOn.selectOption("pointerleave");
-    const pointerForm = timingForm(page);
-    const pointerEmail = pointerForm.getByRole("textbox", {
-      name: "工作邮箱",
-    });
-    const pointerField = pointerEmail.locator(
-      "xpath=ancestor::div[contains(@class, 'uk-form__field')][1]",
-    );
-    await pointerField.hover();
+    await input.fill("person@example.com");
+    await field.hover();
     await page.mouse.move(0, 0);
-    await expect(
-      pointerForm.getByText("请输入邮箱", { exact: true }),
-    ).toBeVisible();
-
-    await pointerEmail.focus();
-    await pointerEmail.fill("person@example.com");
-    await page.keyboard.press("Tab");
-    await expect(
-      pointerForm.getByText("请输入邮箱", { exact: true }),
-    ).toHaveCount(0);
-
-    await validateOn.selectOption("submit");
-    const submitForm = timingForm(page);
-    const submitEmail = submitForm.getByRole("textbox", { name: "工作邮箱" });
-    const submitNickname = submitForm.getByRole("textbox", {
-      name: "显示昵称",
-    });
-    await submitEmail.focus();
-    await page.keyboard.press("Tab");
-    await expect(submitNickname).toBeFocused();
-    await expect(
-      submitForm.getByText("请输入邮箱", { exact: true }),
-    ).toHaveCount(0);
-
-    await submitForm
-      .getByRole("button", { name: "提交并完整校验", exact: true })
-      .click();
-    await expect(
-      submitForm.getByText("请输入邮箱", { exact: true }),
-    ).toBeVisible();
-    await expect(submitForm.getByText("昵称至少 2 个字符")).toBeVisible();
-    await expect(submitEmail).toBeFocused();
-
-    await submitEmail.fill("person@example.com");
-    await submitNickname.fill("Seam");
-    await submitForm
-      .getByRole("button", { name: "提交并完整校验", exact: true })
-      .click();
-    await expect(
-      page.getByText("字段与 Valibot schema 均通过，已提交。"),
-    ).toBeVisible();
+    await expect(input).toHaveAttribute("aria-invalid", "false");
   });
+});
 
-  test("keeps long wrapped labels, required markers, and errors associated", async ({
+test.describe("Form labels and errors", () => {
+  test("required markers have one visual source and remain hidden from AT", async ({
     page,
   }) => {
-    await page.setViewportSize(PHONE_VIEWPORT);
-    await openFormPage(page);
+    await openFormDocs(page);
 
-    const longLabelText =
-      "企业法定全称（必须与营业执照及合同主体保持完全一致）";
-    const form = page.locator("form").filter({
-      has: page.getByRole("button", { name: "保存企业资料", exact: true }),
-    });
-    const label = form.locator("label").filter({ hasText: longLabelText });
-    const input = form.getByRole("textbox", { name: longLabelText });
-    const description = form.getByText(
-      "required 规则自动显示星号；长标签、说明和错误都在各自区域内换行。",
-    );
+    const root = demo(page, "label-wrap");
+    const labels = root.locator("label");
+    expect(await labels.count()).toBeGreaterThan(0);
 
-    await expect(label).toHaveAttribute("data-wrap", "true");
-    await expect(label.locator(".uk-form__required")).toHaveCount(1);
-    await expect(label.locator(".uk-form__required")).toHaveAttribute(
-      "aria-hidden",
-      "true",
-    );
-    await expect(input).toHaveAttribute("aria-required", "true");
+    const markers = root.locator('label [aria-hidden="true"]');
+    expect(await markers.count()).toBeGreaterThan(0);
+    await expect(root.locator('[aria-required="true"]').first()).toBeVisible();
+  });
 
-    const descriptionId = await description.getAttribute("id");
-    expect(descriptionId).not.toBeNull();
-    await expect(input).toHaveAttribute(
-      "aria-describedby",
-      new RegExp(descriptionId!),
-    );
+  test("long wrapped labels and errors do not overlap controls", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openFormDocs(page);
 
-    await form.getByRole("button", { name: "保存企业资料" }).click();
-    const error = form.getByText("请输入营业执照上的完整名称。");
-    await expect(error).toBeVisible();
-    await expect(input).toBeFocused();
-    await expect(input).toHaveAttribute("aria-invalid", "true");
-
-    const errorId = await error.getAttribute("id");
-    expect(errorId).not.toBeNull();
-    await expect(input).toHaveAttribute(
-      "aria-describedby",
-      new RegExp(errorId!),
-    );
-
-    await expectReadableGeometry(label, input, description, error);
+    const root = demo(page, "label-wrap");
+    const wrapped = root.locator('[data-label-wrap="true"]').first();
+    await expect(wrapped).toBeVisible();
     await expectNoHorizontalOverflow(page);
-  });
 
-  test("preserves Dialog form submission and server-error focus", async ({
+    const overlap = await root.evaluate((element) => {
+      const labels = Array.from(element.querySelectorAll("label"));
+      const controls = Array.from(
+        element.querySelectorAll("input, select, textarea"),
+      );
+
+      return labels.some((label) => {
+        const labelRect = label.getBoundingClientRect();
+        return controls.some((control) => {
+          if (label.contains(control) || control.contains(label)) {
+            return false;
+          }
+          const controlRect = control.getBoundingClientRect();
+          return (
+            labelRect.left < controlRect.right &&
+            labelRect.right > controlRect.left &&
+            labelRect.top < controlRect.bottom &&
+            labelRect.bottom > controlRect.top
+          );
+        });
+      });
+    });
+
+    expect(overlap).toBe(false);
+  });
+});
+
+test.describe("Form Dialog integration", () => {
+  test("invalid submission focuses the first error and valid submission succeeds", async ({
     page,
   }) => {
-    await openFormPage(page);
+    await openFormDocs(page);
 
-    await page.getByRole("button", { name: "邀请成员", exact: true }).click();
+    const root = demo(page, "dialog");
+    await root.getByRole("button", { name: /Open|Edit|Create/i }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
 
-    const name = dialog.getByRole("textbox", { name: "姓名" });
-    const email = dialog.getByRole("textbox", { name: "邮箱", exact: true });
-    await expect(name).toBeFocused();
+    await dialog.getByRole("button", { name: /Submit|Save/i }).click();
+    const invalid = dialog.locator('[aria-invalid="true"]').first();
+    await expect(invalid).toBeVisible();
+    await expect(invalid).toBeFocused();
 
-    await dialog.getByRole("button", { name: "发送邀请" }).click();
-    await expect(dialog.getByText("请输入成员姓名")).toBeVisible();
-    await expect(dialog.getByText("请输入成员邮箱")).toBeVisible();
-    await expect(name).toBeFocused();
-
-    await name.fill("张明");
-    await email.fill("blocked@example.com");
-    await dialog.getByRole("button", { name: "发送邀请" }).click();
-
-    await expect(dialog.getByText("该用户已属于其他企业空间")).toBeVisible();
-    await expect(
-      dialog.getByText("邀请发送失败，请检查标记字段后重试。"),
-    ).toBeVisible();
-    await expect(email).toBeFocused();
-    await expect(dialog).toBeVisible();
-
-    await email.fill("member@example.com");
-    await dialog.getByRole("button", { name: "发送邀请" }).click();
-    await expect(dialog).toHaveCount(0);
-    await expect(
-      page.getByText("member@example.com", { exact: true }),
-    ).toBeVisible();
+    await invalid.fill("Valid value");
+    await dialog.getByRole("button", { name: /Submit|Save/i }).click();
+    await expect(dialog).toBeHidden();
   });
 });

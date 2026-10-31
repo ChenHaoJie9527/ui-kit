@@ -15,9 +15,7 @@ function parseDataLine(line, onContent) {
   try {
     payload = JSON.parse(data);
   } catch (error) {
-    throw new Error(`Ark returned invalid SSE JSON: ${error.message}`, {
-      cause: error,
-    });
+    throw new Error(`Ark returned invalid SSE JSON: ${error.message}`);
   }
 
   if (payload?.error) {
@@ -41,7 +39,6 @@ export async function readArkStream(response, onContent = () => {}) {
     } catch (error) {
       throw new Error(
         `Ark returned an invalid response body: ${error.message}`,
-        { cause: error },
       );
     }
     if (payload?.error) {

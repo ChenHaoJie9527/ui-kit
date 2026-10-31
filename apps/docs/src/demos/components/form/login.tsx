@@ -12,8 +12,6 @@ const LoginSchema = v.object({
   remember: v.boolean(),
 });
 
-type LoginValues = v.InferInput<typeof LoginSchema>;
-
 function SubmitStatus() {
   const { state } = useFormContext();
 
@@ -59,7 +57,7 @@ export function Demo() {
           </div>
         </header>
 
-        <Form.Root<LoginValues>
+        <Form.Root
           layout="vertical"
           defaultValues={{ email: "", password: "", remember: true }}
           validate={valibotResolver(LoginSchema)}
