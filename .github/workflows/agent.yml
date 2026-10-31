@@ -533,7 +533,7 @@ jobs:
             console.log(`Draft PR ready: ${pr.html_url}`);
 
       - name: Comment On Pipeline Failure
-        if: failure()
+        if: always() && (failure() || steps.verify.outcome != 'success' || steps.review.outcome == 'failure')
         uses: actions/github-script@v7
         with:
           script: |
@@ -541,5 +541,11 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              body: `❌ The AI component pipeline could not complete. Check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for logs. No unverified work was pushed as a revision.`,
+              body: `❌ The AI component pipeline could not complete. Check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for logs. Any Draft PR update is evidence only and must not be merged.`,
             });
+
+      - name: Fail When Automated Checks Are Incomplete
+        if: always() && steps.init.outputs.spec_only != 'true' && (steps.verify.outcome != 'success' || steps.review.outcome == 'failure')
+        run: |
+          echo "::error::Automated verification or independent review did not complete successfully. The Draft PR is evidence only and must not be merged."
+          exit 1
