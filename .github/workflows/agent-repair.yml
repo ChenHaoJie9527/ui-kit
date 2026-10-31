@@ -101,9 +101,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git fetch origin main "${{ steps.pr.outputs.branch }}"
           git checkout -B "${{ steps.pr.outputs.branch }}" "${{ steps.pr.outputs.sha }}"
-          git ls-tree -r --name-only origin/main -- .agent | rg -v '^\.agent/runs/' | while IFS= read -r file; do
+          git ls-tree -r --name-only origin/main -- .agent | grep -v '^\.agent/runs/' | while IFS= read -r file; do
             git restore --source=origin/main --worktree --staged -- "$file"
           done
+          INFRA_DIFF=$(git diff --name-only origin/main -- .agent | grep -v '^\.agent/runs/' || true)
+          if [ -n "$INFRA_DIFF" ]; then
+            echo "::error::Agent infrastructure differs from origin/main after restore."
+            printf '%s\n' "$INFRA_DIFF"
+            exit 1
+          fi
           RUN_ID=$(git diff --name-only origin/main...HEAD -- .agent/runs | awk -F/ 'NF >= 3 { print $3 }' | head -n 1)
           if [ -z "$RUN_ID" ]; then
             echo "Unable to locate the Agent run directory for this pull request."
@@ -141,12 +147,12 @@ jobs:
       - name: Apply Deterministic Fixes
         if: steps.pr.outputs.number != ''
         run: |
-          CI=true pnpm format
-          CHANGED=$(git diff --name-only origin/main -- packages apps e2e | rg '\.(?:ts|tsx|js|jsx|mjs|cjs)$' || true)
+          CI=true pnpm format || true
+          CHANGED=$(git diff --name-only origin/main -- packages apps e2e | grep -E '\.(ts|tsx|js|jsx|mjs|cjs)$' || true)
           if [ -n "$CHANGED" ]; then
             printf '%s\n' "$CHANGED" | xargs -r pnpm exec oxlint --fix || true
           fi
-          CI=true pnpm format
+          CI=true pnpm format || true
 
       - name: Verify Deterministic Fixes
         if: steps.pr.outputs.number != ''
@@ -170,12 +176,12 @@ jobs:
       - name: Verify Agent Repair
         if: steps.pr.outputs.number != '' && steps.verify.outcome == 'failure'
         run: |
-          CI=true pnpm format
-          CHANGED=$(git diff --name-only origin/main -- packages apps e2e | rg '\.(?:ts|tsx|js|jsx|mjs|cjs)$' || true)
+          CI=true pnpm format || true
+          CHANGED=$(git diff --name-only origin/main -- packages apps e2e | grep -E '\.(ts|tsx|js|jsx|mjs|cjs)$' || true)
           if [ -n "$CHANGED" ]; then
             printf '%s\n' "$CHANGED" | xargs -r pnpm exec oxlint --fix || true
           fi
-          CI=true pnpm format
+          CI=true pnpm format || true
           CI=true pnpm check
           CI=true pnpm test:e2e
           CI=true pnpm build
