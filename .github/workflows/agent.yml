@@ -220,7 +220,11 @@ jobs:
         run: |
           set -o pipefail
           env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm format
-          env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm lint:fix || true
+          CHANGED=$(git diff --name-only origin/main -- packages apps e2e | rg '\.(?:ts|tsx|js|jsx|mjs|cjs)$' || true)
+          if [ -n "$CHANGED" ]; then
+            printf '%s\n' "$CHANGED" | env -u ARK_API_KEY -u ARK_MODEL CI=true xargs -r pnpm exec oxlint --fix || true
+          fi
+          env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm format
 
           ATTEMPT=1
           MAX_ATTEMPTS=3
