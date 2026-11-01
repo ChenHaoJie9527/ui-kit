@@ -42,6 +42,7 @@ function BasicDemo() {
   return (
     <div className="flex w-full max-w-[440px] flex-col gap-4">
       <Form.Root
+        layout="vertical"
         onSubmit={(values) => setSubmittedEmail(String(values.email ?? ""))}
       >
         <Form.Field
@@ -92,6 +93,7 @@ function ValibotDemo() {
   return (
     <div className="flex w-full max-w-[440px] flex-col gap-4">
       <Form.Root
+        layout="vertical"
         defaultValues={{ email: "", password: "" }}
         validate={valibotResolver(LoginSchema)}
         onSubmit={() => setSignedIn(true)}
@@ -139,7 +141,7 @@ export function FormPage() {
         description="Field 注册字段与规则，Control 将值、状态和事件接入现有输入组件。默认失焦校验，字段报错后在输入时重新校验。"
       >
         <Demo
-          code={`<Form.Root onSubmit={(values) => console.log(values)}>
+          code={`<Form.Root layout="vertical" onSubmit={(values) => console.log(values)}>
   <Form.Field
     name="email"
     defaultValue=""
@@ -176,6 +178,7 @@ const LoginSchema = v.object({
 });
 
 <Form.Root
+  layout="vertical"
   defaultValues={{ email: "", password: "" }}
   validate={valibotResolver(LoginSchema)}
   onSubmit={handleSubmit}
@@ -298,20 +301,39 @@ const LoginSchema = v.object({
             },
             {
               name: "validateOn",
-              type: '"submit" | "blur" | "change"',
+              type: '"submit" | "focus" | "change" | "blur" | "pointerleave"',
               defaultValue: '"blur"',
-              description: "首次字段校验时机。",
+              description:
+                "首次字段与表单级校验时机；submit 始终执行完整校验。",
             },
             {
               name: "revalidateOn",
-              type: '"change" | "blur"',
+              type: '"focus" | "change" | "blur" | "pointerleave"',
               defaultValue: '"change"',
               description: "已报错字段的重新校验时机。",
             },
             {
+              name: "validateDebounce",
+              type: "number",
+              description: "change 触发异步校验时使用的防抖时间（毫秒）。",
+            },
+            {
+              name: "noValidate",
+              type: "boolean",
+              defaultValue: "false",
+              description: "透传原生表单 noValidate 语义。",
+            },
+            {
               name: "validate",
               type: "(values: T) => FormErrors<T> | Promise<FormErrors<T>>",
-              description: "跨字段或表单级校验。",
+              description: "跨字段或表单级校验，与字段规则共享触发时机。",
+            },
+            {
+              name: "layout",
+              type: '"vertical" | "horizontal" | "inline"',
+              defaultValue: '"horizontal"',
+              description:
+                "字段布局；horizontal 在窄屏折叠为纵向阅读顺序，inline 自动换行。",
             },
           ]}
         />
@@ -361,6 +383,27 @@ const LoginSchema = v.object({
         />
       </Section>
 
+      <Section title="Form.Label API">
+        <PropsTable
+          rows={[
+            {
+              name: "required",
+              type: "boolean",
+              defaultValue: "false",
+              description:
+                "显示必填标记；字段规则包含 required: true 时也会自动显示。",
+            },
+            {
+              name: "labelWrap",
+              type: "boolean",
+              defaultValue: "false",
+              description:
+                "允许长标签与必填标记换行；不改变标签文本或控件关联。",
+            },
+          ]}
+        />
+      </Section>
+
       <Section
         title="与现有控件集成"
         description="Form.Control 会保留控件原有的公开事件契约，同时把值接入表单状态。"
@@ -382,11 +425,48 @@ const LoginSchema = v.object({
             "必填、无效、禁用、只读和异步校验状态会暴露给辅助技术。",
             "提交失败聚焦第一个错误字段；异步提交失败保留输入并显示表单级错误。",
             "错误与校验反馈不依赖颜色，reduced motion 下移除非必要动画。",
+            "focus 与 pointerleave 校验是可选补充；键盘和触摸用户仍可通过 change、blur 与 submit 获得等价反馈。",
+            "所有布局都遵循 DOM 的 Tab 顺序；horizontal 在窄屏折叠，inline 长内容换行而不裁切标签。",
           ]}
         />
         <Callout title="服务端校验" tone="info">
           可通过 FormRef 的 setError 映射字段错误，通过 setFormError
           展示无法归属于单个字段的服务端错误。
+        </Callout>
+      </Section>
+
+      <Section title="布局迁移">
+        <BulletList
+          items={[
+            <>
+              <InlineCode>layout</InlineCode> 默认值为{" "}
+              <InlineCode>horizontal</InlineCode>
+              ：标签使用稳定列，控件与反馈位于相邻列，窄屏自动恢复纵向阅读顺序。
+            </>,
+            <>
+              需要保留旧版纵向视觉时，在现有 <InlineCode>
+                Form.Root
+              </InlineCode>{" "}
+              上显式添加 <InlineCode>layout=&quot;vertical&quot;</InlineCode>
+              ，无需调整 Field、Label 或 Control 的组合结构。
+            </>,
+            <>
+              筛选栏等紧凑场景可选择{" "}
+              <InlineCode>layout=&quot;inline&quot;</InlineCode>
+              ；字段与操作区在空间不足时换行，不改变控件键盘行为。
+            </>,
+            <>
+              字段规则中的 <InlineCode>required: true</InlineCode> 与{" "}
+              <InlineCode>Form.Label required</InlineCode>{" "}
+              使用同一个视觉必填标记；不要额外添加 Field required 属性。
+            </>,
+          ]}
+        />
+        <Callout title="表单级校验频率" tone="info">
+          Form.Root.validate 与 valibotResolver 现在会遵循 validateOn 和
+          revalidateOn，在字段交互时执行。请保持校验函数纯净；昂贵或具有副作用的
+          校验应改为提交阶段处理，或使用 validateOn="submit" 并配置合适的
+          revalidateOn。
         </Callout>
       </Section>
     </Page>
