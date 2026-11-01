@@ -8,8 +8,10 @@ import {
   buildEnhancementContext,
   extractImplementationFilePlan,
   normalizePlannedPath,
+  readGenerationDependencyContext,
   readPlannedFileContext,
 } from "../enhancement-plan.mjs";
+import { resolveDependencyContext } from "../context-files.mjs";
 
 const plan = [
   "packages/ui/src/FormComponent.tsx",
@@ -81,4 +83,62 @@ test("discovers Form implementation, tests, styles, and docs", () => {
   );
   assert.match(context, /packages\/ui\/src\/form-component\.css/);
   assert.match(context, /apps\/docs\/src\/pages\/form\.tsx/);
+});
+
+test("expands a failing test with its imported implementation", () => {
+  const repoDir = mkdtempSync(join(tmpdir(), "agent-context-"));
+  const sourceDir = join(repoDir, "packages", "ui", "src");
+  const testDir = join(sourceDir, "__tests__");
+  mkdirSync(testDir, { recursive: true });
+  writeFileSync(
+    join(sourceDir, "FormComponent.tsx"),
+    "export const Form = { Root: () => null };\n",
+  );
+  writeFileSync(
+    join(testDir, "FormComponent.test.tsx"),
+    'import { Form } from "../FormComponent";\n',
+  );
+
+  assert.deepEqual(
+    resolveDependencyContext(
+      repoDir,
+      ["packages/ui/src/__tests__/FormComponent.test.tsx"],
+      [
+        "packages/ui/src/__tests__/FormComponent.test.tsx",
+        "packages/ui/src/FormComponent.tsx",
+      ],
+    ),
+    [
+      "packages/ui/src/__tests__/FormComponent.test.tsx",
+      "packages/ui/src/FormComponent.tsx",
+    ],
+  );
+});
+
+test("injects generated implementation source into a test batch", () => {
+  const repoDir = mkdtempSync(join(tmpdir(), "agent-generation-context-"));
+  const sourceDir = join(repoDir, "packages", "ui", "src");
+  const testDir = join(sourceDir, "__tests__");
+  mkdirSync(testDir, { recursive: true });
+  writeFileSync(
+    join(sourceDir, "FormComponent.tsx"),
+    "export const Form = { Root: () => null };\n",
+  );
+  writeFileSync(
+    join(testDir, "FormComponent.test.tsx"),
+    'import { Form } from "../FormComponent";\n',
+  );
+
+  const context = readGenerationDependencyContext(
+    repoDir,
+    ["packages/ui/src/__tests__/FormComponent.test.tsx"],
+    [
+      "packages/ui/src/FormComponent.tsx",
+      "packages/ui/src/__tests__/FormComponent.test.tsx",
+    ],
+  );
+
+  assert.match(context, /EXISTING FILE: packages\/ui\/src\/FormComponent\.tsx/);
+  assert.match(context, /export const Form/);
+  assert.doesNotMatch(context, /FormComponent\.test\.tsx/);
 });

@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { isAbsolute, join, normalize, resolve, sep } from "node:path";
+import { resolveDependencyContext } from "./context-files.mjs";
 
 const PLAN_PATTERN = /<!--\s*agent-files\s*\r?\n([\s\S]*?)-->/i;
 const ALLOWED_ROOTS = [
@@ -144,6 +145,26 @@ export function readPlannedFileContext(
   }
 
   return sections.join("\n\n");
+}
+
+export function readGenerationDependencyContext(
+  repoDir,
+  batchFiles,
+  plannedFiles,
+  maxFiles = 4,
+) {
+  const dependencies = resolveDependencyContext(
+    repoDir,
+    batchFiles,
+    plannedFiles,
+    maxFiles,
+  )
+    .filter((file) => !batchFiles.includes(file))
+    .filter((file) => existsSync(join(repoDir, file)));
+
+  return dependencies.length === 0
+    ? ""
+    : readPlannedFileContext(repoDir, dependencies);
 }
 
 export function buildEnhancementContext(
