@@ -27,6 +27,13 @@ import { cx } from "./utils/cx";
 // Types
 // ============================================================================
 
+export type FormValidationTrigger =
+  | "submit"
+  | "focus"
+  | "change"
+  | "blur"
+  | "pointerleave";
+
 export type FormErrors<
   T extends Record<string, unknown> = Record<string, unknown>,
 > = {
@@ -92,13 +99,6 @@ export interface FormRef<T = Record<string, unknown>> {
   clearErrors: (fields?: string[]) => void;
   focusFirstError: () => void;
 }
-
-export type FormValidationTrigger =
-  | "submit"
-  | "focus"
-  | "change"
-  | "blur"
-  | "pointerleave";
 
 export interface FormContextValue<T = Record<string, unknown>> {
   values: T;
@@ -445,6 +445,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
   const validationAbortRef = useRef<Map<string, AbortController>>(new Map());
   const submitAbortRef = useRef<AbortController | null>(null);
   const formElementRef = useRef<HTMLFormElement>(null);
+  const formValidationRunRef = useRef(0);
 
   const getFieldState = useCallback(
     (name: string): FieldState => {
@@ -557,6 +558,43 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
     },
   );
 
+  const mergeFormLevelErrors = useEventCallback(
+    (formLevelErrors: FormErrors) => {
+      const previousFormLevelErrors = formLevelErrorsRef.current;
+      const allErrors = { ...errorsRef.current };
+      Object.keys(previousFormLevelErrors).forEach((key) => {
+        if (allErrors[key] === previousFormLevelErrors[key]) {
+          delete allErrors[key];
+        }
+      });
+      const nextFormLevelErrors: Record<string, string> = {};
+      Object.entries(formLevelErrors).forEach(([key, value]) => {
+        if (value) {
+          allErrors[key] = value;
+          nextFormLevelErrors[key] = value;
+        }
+      });
+
+      formLevelErrorsRef.current = nextFormLevelErrors;
+      errorsRef.current = allErrors;
+      setFormState((prev) => ({ ...prev, errors: allErrors }));
+    },
+  );
+
+  const runFormLevelValidation = useEventCallback(
+    async (nextValues: Record<string, unknown> = values): Promise<boolean> => {
+      if (!validate) return true;
+
+      const runId = ++formValidationRunRef.current;
+      const formLevelErrors = await validate(nextValues);
+
+      if (runId !== formValidationRunRef.current) return false;
+
+      mergeFormLevelErrors(formLevelErrors);
+      return Object.values(formLevelErrors).every((error) => !error);
+    },
+  );
+
   const validateForm = useEventCallback(async (): Promise<boolean> => {
     const fieldNames = Array.from(fieldsRef.current.keys());
     const results = await Promise.all(
@@ -568,24 +606,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       formLevelErrors = await validate(values);
     }
 
-    const previousFormLevelErrors = formLevelErrorsRef.current;
-    const allErrors = { ...errorsRef.current };
-    Object.keys(previousFormLevelErrors).forEach((key) => {
-      if (allErrors[key] === previousFormLevelErrors[key]) {
-        delete allErrors[key];
-      }
-    });
-    const nextFormLevelErrors: Record<string, string> = {};
-    Object.entries(formLevelErrors).forEach(([key, value]) => {
-      if (value) {
-        allErrors[key] = value;
-        nextFormLevelErrors[key] = value;
-      }
-    });
-
-    formLevelErrorsRef.current = nextFormLevelErrors;
-    errorsRef.current = allErrors;
-    setFormState((prev) => ({ ...prev, errors: allErrors }));
+    mergeFormLevelErrors(formLevelErrors);
 
     const isValid =
       results.every((r) => r) && Object.keys(formLevelErrors).length === 0;
@@ -630,11 +651,13 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
         if (hasAsyncRules && validateDebounce > 0) {
           const newTimer = setTimeout(() => {
             validateField(name, newValues);
+            runFormLevelValidation(newValues);
             validationTimersRef.current.delete(name);
           }, validateDebounce);
           validationTimersRef.current.set(name, newTimer);
         } else {
           validateField(name, newValues);
+          runFormLevelValidation(newValues);
         }
       }
 
@@ -663,6 +686,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
         Object.keys(newValues).forEach((name) =>
           validateField(name, updatedValues),
         );
+        runFormLevelValidation(updatedValues);
       }
     },
   );
@@ -672,10 +696,25 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
 
     if (touched && validateOn === "blur") {
       validateField(name);
+      runFormLevelValidation();
     } else if (touched && revalidateOn === "blur" && formState.errors[name]) {
       validateField(name);
+      runFormLevelValidation();
     }
   });
+
+  const handleFieldInteraction = useEventCallback(
+    (name: string, trigger: Exclude<FormValidationTrigger, "submit">) => {
+      const shouldValidate =
+        validateOn === trigger ||
+        (revalidateOn === trigger && Boolean(formState.errors[name]));
+
+      if (!shouldValidate) return;
+
+      validateField(name);
+      runFormLevelValidation();
+    },
+  );
 
   const focusFirstError = useEventCallback(() => {
     const firstErrorField = Object.keys(errorsRef.current)[0];
@@ -745,6 +784,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       validationTimersRef.current.clear();
       validationAbortRef.current.forEach((abort) => abort.abort());
       validationAbortRef.current.clear();
+      formValidationRunRef.current += 1;
 
       // Cancel submit
       if (submitAbortRef.current) {
@@ -803,6 +843,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
     });
     errorsRef.current = {};
     formLevelErrorsRef.current = {};
+    formValidationRunRef.current += 1;
     setValuesState(clearedValues);
     setFormState((prev) => ({ ...prev, errors: {}, formError: null }));
   });
@@ -958,6 +999,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
     return () => {
       validationTimers.forEach((timer) => clearTimeout(timer));
       validationAborts.forEach((abort) => abort.abort());
+      formValidationRunRef.current += 1;
       if (submitAbortRef.current) submitAbortRef.current.abort();
     };
   }, []);
@@ -970,13 +1012,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       setValue,
       setFieldTouched,
       setFieldFocused,
-      handleFieldInteraction: (name, trigger) => {
-        if (validateOn === trigger) {
-          validateField(name);
-        } else if (revalidateOn === trigger && formState.errors[name]) {
-          validateField(name);
-        }
-      },
+      handleFieldInteraction,
       registerField,
       unregisterField,
       validateField,
@@ -999,6 +1035,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       setValue,
       setFieldTouched,
       setFieldFocused,
+      handleFieldInteraction,
       registerField,
       unregisterField,
       validateField,
@@ -1175,7 +1212,7 @@ const FormLabel = forwardRef<HTMLLabelElement, FormLabelProps>(
         id={fieldContext.labelId}
         htmlFor={fieldContext.fieldId}
         className={cx("uk-form__label", className)}
-        data-wrap={labelWrap ? "true" : undefined}
+        data-label-wrap={labelWrap ? "true" : undefined}
       >
         {children}
         {required || fieldContext.state.required ? (

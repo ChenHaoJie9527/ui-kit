@@ -1,11 +1,12 @@
 @layer uk.components {
   .uk-form {
     --uk-form-label-width: 10rem;
+
     display: flex;
     flex-direction: column;
     gap: var(--uk-space-5);
-    font-family: var(--uk-font-sans);
     min-width: 0;
+    font-family: var(--uk-font-sans);
   }
 
   .uk-form__field {
@@ -14,51 +15,6 @@
     flex-direction: column;
     gap: var(--uk-space-2);
     min-width: 0;
-  }
-
-  .uk-form[data-layout="horizontal"] .uk-form__field {
-    display: grid;
-    grid-template-columns: minmax(0, var(--uk-form-label-width)) minmax(0, 1fr);
-    column-gap: var(--uk-space-4);
-    row-gap: var(--uk-space-2);
-    align-items: start;
-  }
-
-  .uk-form[data-layout="horizontal"] .uk-form__label {
-    grid-column: 1;
-    grid-row: 1;
-    padding-top: var(--uk-space-2);
-    min-width: 0;
-  }
-
-  .uk-form[data-layout="horizontal"] .uk-form__control {
-    grid-column: 2;
-    grid-row: 1;
-    min-width: 0;
-  }
-
-  .uk-form[data-layout="horizontal"] .uk-form__description,
-  .uk-form[data-layout="horizontal"] .uk-form__error {
-    grid-column: 2;
-    min-width: 0;
-  }
-
-  .uk-form[data-layout="inline"] {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: var(--uk-space-4);
-  }
-
-  .uk-form[data-layout="inline"] .uk-form__field {
-    flex: 0 1 16rem;
-    min-width: min(100%, 12rem);
-  }
-
-  .uk-form[data-layout="inline"] .uk-form__actions {
-    flex: 0 1 auto;
-    align-items: center;
-    padding-top: 0;
   }
 
   .uk-form__field[data-disabled="true"] {
@@ -71,43 +27,46 @@
   }
 
   .uk-form__label {
-    font-size: var(--uk-text-md);
-    font-weight: 500;
-    color: var(--uk-text);
     display: flex;
     align-items: center;
     gap: var(--uk-space-1);
     min-width: 0;
+    max-width: 100%;
+    font-size: var(--uk-text-md);
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--uk-text);
     white-space: nowrap;
   }
 
-  .uk-form__label[data-wrap="true"] {
+  .uk-form__label[data-label-wrap="true"] {
+    align-items: flex-start;
     white-space: normal;
-    flex-wrap: wrap;
     overflow-wrap: anywhere;
-    align-items: baseline;
   }
 
   .uk-form__required {
+    flex: 0 0 auto;
     color: var(--uk-danger);
     font-size: var(--uk-text-lg);
-    line-height: 1;
-    flex: none;
+    line-height: 1.4;
   }
 
   .uk-form__description {
-    font-size: var(--uk-text-sm);
-    color: var(--uk-text-muted);
+    max-width: 100%;
     margin: 0;
     overflow-wrap: anywhere;
+    font-size: var(--uk-text-sm);
+    color: var(--uk-text-muted);
   }
 
   .uk-form__error {
+    max-width: 100%;
+    min-height: 1.25rem;
+    margin: 0;
+    overflow-wrap: anywhere;
     font-size: var(--uk-text-sm);
     color: var(--uk-danger);
-    margin: 0;
-    min-height: 1.25rem;
-    overflow-wrap: anywhere;
     transition: opacity var(--uk-duration-fast) var(--uk-ease-out);
   }
 
@@ -117,12 +76,12 @@
 
   .uk-form__error-summary {
     padding: var(--uk-space-3) var(--uk-space-4);
+    overflow-wrap: anywhere;
     background: light-dark(rgb(185 28 28 / 0.08), rgb(252 165 165 / 0.12));
     border: 1px solid var(--uk-danger);
     border-radius: var(--uk-radius-md);
     color: var(--uk-danger);
     font-size: var(--uk-text-md);
-    overflow-wrap: anywhere;
   }
 
   .uk-form__actions {
@@ -130,6 +89,7 @@
     flex-wrap: wrap;
     gap: var(--uk-space-3);
     justify-content: flex-end;
+    min-width: 0;
     padding-top: var(--uk-space-2);
   }
 
@@ -154,26 +114,104 @@
     animation: uk-form-spin 0.6s linear infinite;
   }
 
-  @keyframes uk-form-spin {
-    to {
-      transform: rotate(360deg);
+  /*
+   * Horizontal fields keep the label and feedback in DOM order. The label
+   * spans the first grid row while control, description, and error share the
+   * adjacent column. Override --uk-form-label-width on .uk-form when a form
+   * needs a different stable label column.
+   */
+  .uk-form[data-layout="horizontal"] > .uk-form__field {
+    display: grid;
+    grid-template-columns: minmax(0, var(--uk-form-label-width)) minmax(0, 1fr);
+    column-gap: var(--uk-space-4);
+    row-gap: var(--uk-space-2);
+    align-items: start;
+  }
+
+  .uk-form[data-layout="horizontal"] > .uk-form__field > .uk-form__label {
+    grid-column: 1;
+    grid-row: 1;
+    padding-top: var(--uk-space-2);
+  }
+
+  .uk-form[data-layout="horizontal"] > .uk-form__field > :not(.uk-form__label) {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .uk-form[data-layout="horizontal"]
+    > .uk-form__field
+    > :not(.uk-form__label):first-of-type {
+    grid-row: 1;
+  }
+
+  .uk-form[data-layout="horizontal"]
+    > .uk-form__field[data-validating="true"]::after {
+    top: var(--uk-space-2);
+  }
+
+  /* Inline forms are compact filter bars and wrap before controls shrink. */
+  .uk-form[data-layout="inline"] {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--uk-space-4);
+  }
+
+  .uk-form[data-layout="inline"] > .uk-form__field {
+    flex: 1 1 12rem;
+    min-width: min(100%, 12rem);
+    max-width: 100%;
+  }
+
+  .uk-form[data-layout="inline"] > .uk-form__field > .uk-form__label {
+    align-items: flex-start;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .uk-form[data-layout="inline"] > .uk-form__actions {
+    flex: 0 1 auto;
+    align-items: center;
+    padding-top: 0;
+  }
+
+  .uk-form[data-layout="inline"] > .uk-form__error-summary {
+    flex: 1 0 100%;
+  }
+
+  /* Documented small-screen breakpoint: horizontal forms collapse at 40rem. */
+  @media (max-width: 40rem) {
+    .uk-form[data-layout="horizontal"] > .uk-form__field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--uk-space-2);
+    }
+
+    .uk-form[data-layout="horizontal"] > .uk-form__field > .uk-form__label {
+      padding-top: 0;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .uk-form[data-layout="horizontal"]
+      > .uk-form__field[data-validating="true"]::after {
+      top: 0;
+    }
+
+    .uk-form[data-layout="inline"] > .uk-form__field {
+      flex-basis: min(100%, 12rem);
+    }
+
+    .uk-form[data-layout="inline"] > .uk-form__actions {
+      flex: 1 1 100%;
+      justify-content: flex-start;
     }
   }
 
-  /* Small-screen breakpoint: horizontal fields return to vertical reading order. */
-  @media (max-width: 40rem) {
-    .uk-form[data-layout="horizontal"] .uk-form__field {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .uk-form[data-layout="horizontal"] .uk-form__label {
-      padding-top: 0;
-    }
-
-    .uk-form[data-layout="inline"] .uk-form__field {
-      flex-basis: 100%;
-      min-width: 0;
+  @keyframes uk-form-spin {
+    to {
+      transform: rotate(360deg);
     }
   }
 

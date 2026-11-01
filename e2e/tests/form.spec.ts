@@ -1,248 +1,258 @@
-import { test, expect, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-const gotoForm = async (page: Page) => {
-  await page.goto("/form");
-  await page.waitForLoadState("networkidle");
-};
-
-const getHorizontalOverflow = (page: Page) =>
-  page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-
-test.describe("Form layouts", () => {
-  test("vertical layout stacks fields at desktop and phone widths", async ({
-    page,
-  }) => {
-    await gotoForm(page);
-
-    const root = page.locator(".uk-form[data-layout='vertical']").first();
-    await expect(root).toBeVisible();
-
-    for (const width of [1280, 390]) {
-      await page.setViewportSize({ width, height: 844 });
-      await expect(root).toBeVisible();
-      expect(await getHorizontalOverflow(page)).toBeLessThanOrEqual(1);
-
-      const field = root.locator(".uk-form__field").first();
-      const label = field.locator("label").first();
-      const control = field.locator("input, textarea, select").first();
-
-      if ((await label.count()) && (await control.count())) {
-        const labelBox = await label.boundingBox();
-        const controlBox = await control.boundingBox();
-        expect(labelBox).not.toBeNull();
-        expect(controlBox).not.toBeNull();
-        expect(controlBox!.y).toBeGreaterThanOrEqual(labelBox!.y);
-      }
-    }
+test.describe("Form layouts and validation", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/form");
   });
 
-  test("horizontal layout uses a label column and collapses on phones", async ({
+  test("vertical, horizontal, and inline layouts stay readable without horizontal overflow", async ({
     page,
   }) => {
-    await gotoForm(page);
+    const layouts = page.locator('[data-demo="form-layouts"]');
+    await expect(layouts).toBeVisible();
 
-    const root = page
-      .locator(
-        ".uk-form[data-layout='horizontal'], .uk-form:not([data-layout])",
-      )
+    for (const layout of ["vertical", "horizontal", "inline"] as const) {
+      const form = layouts.locator(`form[data-layout="${layout}"]`);
+      await expect(form).toBeVisible();
+
+      const labels = form.locator("label");
+      const controls = form.locator("input, textarea, select, button");
+      expect(await labels.count()).toBeGreaterThan(0);
+      expect(await controls.count()).toBeGreaterThan(0);
+
+      for (let index = 0; index < (await labels.count()); index += 1) {
+        const label = labels.nth(index);
+        await expect(label).toBeVisible();
+        const box = await label.boundingBox();
+        expect(box).not.toBeNull();
+        expect(box!.width).toBeGreaterThan(0);
+        expect(box!.height).toBeGreaterThan(0);
+      }
+    }
+
+    const hasHorizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    );
+    expect(hasHorizontalOverflow).toBe(false);
+  });
+
+  test("horizontal layout collapses at phone width and inline content wraps", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    const layouts = page.locator('[data-demo="form-layouts"]');
+    const horizontal = layouts.locator('form[data-layout="horizontal"]');
+    const inline = layouts.locator('form[data-layout="inline"]');
+    await expect(horizontal).toBeVisible();
+    await expect(inline).toBeVisible();
+
+    const horizontalField = horizontal.locator(".uk-form__field").first();
+    const horizontalLabel = horizontalField.locator("label").first();
+    const horizontalControl = horizontalField
+      .locator("input, textarea, select")
       .first();
-    await expect(root).toBeVisible();
+    const labelBox = await horizontalLabel.boundingBox();
+    const controlBox = await horizontalControl.boundingBox();
+    expect(labelBox).not.toBeNull();
+    expect(controlBox).not.toBeNull();
+    expect(controlBox!.y).toBeGreaterThanOrEqual(
+      labelBox!.y + labelBox!.height - 2,
+    );
 
-    await page.setViewportSize({ width: 1280, height: 900 });
-    expect(await getHorizontalOverflow(page)).toBeLessThanOrEqual(1);
+    const inlineFields = inline.locator(".uk-form__field");
+    expect(await inlineFields.count()).toBeGreaterThan(1);
+    const firstInlineBox = await inlineFields.first().boundingBox();
+    const lastInlineBox = await inlineFields.last().boundingBox();
+    expect(firstInlineBox).not.toBeNull();
+    expect(lastInlineBox).not.toBeNull();
+    expect(lastInlineBox!.y).toBeGreaterThan(firstInlineBox!.y);
 
-    const field = root.locator(".uk-form__field").first();
-    const label = field.locator("label").first();
-    const control = field.locator("input, textarea, select").first();
-
-    if ((await label.count()) && (await control.count())) {
-      const desktopLabel = await label.boundingBox();
-      const desktopControl = await control.boundingBox();
-      expect(desktopLabel).not.toBeNull();
-      expect(desktopControl).not.toBeNull();
-      expect(desktopControl!.x).toBeGreaterThanOrEqual(desktopLabel!.x);
-
-      await page.setViewportSize({ width: 390, height: 844 });
-      expect(await getHorizontalOverflow(page)).toBeLessThanOrEqual(1);
-
-      const phoneLabel = await label.boundingBox();
-      const phoneControl = await control.boundingBox();
-      expect(phoneLabel).not.toBeNull();
-      expect(phoneControl).not.toBeNull();
-      expect(phoneControl!.y).toBeGreaterThanOrEqual(
-        phoneLabel!.y + phoneLabel!.height - 1,
-      );
-    }
+    const hasHorizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    );
+    expect(hasHorizontalOverflow).toBe(false);
   });
 
-  test("inline layout wraps without changing DOM focus order", async ({
+  test("keyboard focus order follows DOM order in every layout", async ({
     page,
   }) => {
-    await gotoForm(page);
+    const layouts = page.locator('[data-demo="form-layouts"]');
 
-    const root = page.locator(".uk-form[data-layout='inline']").first();
-    await expect(root).toBeVisible();
-
-    for (const width of [1280, 390]) {
-      await page.setViewportSize({ width, height: 844 });
-      expect(await getHorizontalOverflow(page)).toBeLessThanOrEqual(1);
-    }
-
-    const focusOrder = await root
-      .locator("input, select, textarea, button")
-      .evaluateAll((elements) =>
-        elements
-          .filter((element) => !(element as HTMLButtonElement).disabled)
-          .map(
-            (element) =>
-              element.getAttribute("name") ??
-              element.getAttribute("aria-label") ??
-              element.textContent?.trim() ??
-              element.tagName,
-          ),
+    for (const layout of ["vertical", "horizontal", "inline"] as const) {
+      const form = layouts.locator(`form[data-layout="${layout}"]`);
+      const controls = form.locator(
+        'input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled]), button:not([disabled])',
       );
+      const count = await controls.count();
+      expect(count).toBeGreaterThan(1);
 
-    const visited: string[] = [];
-    for (let index = 0; index < focusOrder.length; index += 1) {
-      await page.keyboard.press("Tab");
-      const active = await page.evaluate(
-        () =>
-          document.activeElement?.getAttribute("name") ??
-          document.activeElement?.getAttribute("aria-label") ??
-          document.activeElement?.textContent?.trim() ??
-          document.activeElement?.tagName ??
-          "",
-      );
-      if (focusOrder.includes(active)) {
-        visited.push(active);
-      }
-      if (visited.length === focusOrder.length) {
-        break;
+      await controls.first().focus();
+      for (let index = 1; index < count; index += 1) {
+        await page.keyboard.press("Tab");
+        await expect(controls.nth(index)).toBeFocused();
       }
     }
-
-    expect(visited).toEqual(focusOrder);
   });
-});
 
-test.describe("Form validation interactions", () => {
   test("focus, change, blur, and submit validation remain keyboard usable", async ({
     page,
   }) => {
-    await gotoForm(page);
+    const demo = page.locator('[data-demo="form-validation-timing"]');
+    await expect(demo).toBeVisible();
 
-    const form = page.locator("form").first();
-    const input = form.locator("input").first();
-    await expect(input).toBeVisible();
+    const focusForm = demo.locator('form[data-validation="focus"]');
+    const focusInput = focusForm.locator("input").first();
+    await focusInput.focus();
+    await expect(
+      focusForm.locator(".uk-form__error-message").first(),
+    ).toBeVisible();
 
-    await input.focus();
-    await input.fill("a");
+    const changeForm = demo.locator('form[data-validation="change"]');
+    const changeInput = changeForm.locator("input").first();
+    await changeInput.focus();
+    await changeInput.fill("a");
+    await expect(
+      changeForm.locator(".uk-form__error-message").first(),
+    ).toBeVisible();
+    await changeInput.fill("valid value");
+    await expect(changeForm.locator(".uk-form__error-message")).toHaveCount(0);
+
+    const blurForm = demo.locator('form[data-validation="blur"]');
+    const blurInput = blurForm.locator("input").first();
+    await blurInput.focus();
+    await expect(blurForm.locator(".uk-form__error-message")).toHaveCount(0);
     await page.keyboard.press("Tab");
-    await expect(input).not.toBeFocused();
+    await expect(
+      blurForm.locator(".uk-form__error-message").first(),
+    ).toBeVisible();
 
-    await input.focus();
-    await input.fill("");
+    const submitForm = demo.locator('form[data-validation="submit"]');
+    const submitInput = submitForm.locator("input").first();
+    await submitInput.focus();
     await page.keyboard.press("Tab");
-
-    const error = form.locator(".uk-form__error, [role='alert']").first();
-    if (await error.count()) {
-      await expect(error).toBeVisible();
-    }
-
-    const submit = form.locator("button[type='submit'], button").last();
-    await submit.focus();
-    await page.keyboard.press("Enter");
-
-    const invalidControl = form.locator("[aria-invalid='true']").first();
-    if (await invalidControl.count()) {
-      await expect(invalidControl).toBeFocused();
-    }
+    await expect(submitForm.locator(".uk-form__error-message")).toHaveCount(0);
+    await submitForm.locator('button[type="submit"]').click();
+    await expect(
+      submitForm.locator(".uk-form__error-message").first(),
+    ).toBeVisible();
+    await expect(submitInput).toBeFocused();
   });
 
   test("pointerleave supplements rather than replaces keyboard feedback", async ({
     page,
   }) => {
-    await gotoForm(page);
-
-    const form = page.locator("form").first();
+    const demo = page.locator('[data-demo="form-validation-timing"]');
+    const form = demo.locator('form[data-validation="pointerleave"]');
     const field = form.locator(".uk-form__field").first();
     const input = field.locator("input").first();
-    await expect(input).toBeVisible();
 
     await input.focus();
-    await input.fill("");
+    await expect(form.locator(".uk-form__error-message")).toHaveCount(0);
     await field.hover();
-    await page.mouse.move(1, 1);
-
-    const error = form.locator(".uk-form__error, [role='alert']").first();
-    if (await error.count()) {
-      await expect(error).toBeVisible();
-    }
+    await page.mouse.move(0, 0);
+    await expect(form.locator(".uk-form__error-message").first()).toBeVisible();
 
     await input.focus();
+    await input.fill("valid value");
     await page.keyboard.press("Tab");
-    await expect(input).not.toBeFocused();
-
-    if (await error.count()) {
-      await expect(error).toBeVisible();
-    }
+    await expect(form.locator(".uk-form__error-message")).toHaveCount(0);
   });
 
-  test("long labels and errors remain associated and do not cover controls", async ({
+  test("long wrapped labels and errors stay associated and do not overlap controls", async ({
     page,
   }) => {
-    await gotoForm(page);
     await page.setViewportSize({ width: 390, height: 844 });
+    const demo = page.locator('[data-demo="form-label-wrap"]');
+    await expect(demo).toBeVisible();
 
-    const wrappingLabel = page.locator("label[data-label-wrap='true']").first();
-    if (await wrappingLabel.count()) {
-      const controlId = await wrappingLabel.getAttribute("for");
-      expect(controlId).toBeTruthy();
-      const control = page.locator(`#${controlId}`);
-      await expect(control).toBeVisible();
+    const wrappedLabel = demo.locator('label[data-label-wrap="true"]').first();
+    await expect(wrappedLabel).toBeVisible();
+    const controlId = await wrappedLabel.getAttribute("for");
+    expect(controlId).toBeTruthy();
+    const control = demo.locator(`#${controlId}`);
+    await expect(control).toBeVisible();
 
-      const labelText = await wrappingLabel.textContent();
+    const accessibleName = await control.getAttribute("aria-label");
+    const labelledBy = await control.getAttribute("aria-labelledby");
+    if (!accessibleName && !labelledBy) {
+      const labelText = await wrappedLabel.textContent();
       expect(labelText?.replace("*", "").trim().length).toBeGreaterThan(0);
-      expect(await getHorizontalOverflow(page)).toBeLessThanOrEqual(1);
-
-      const labelBox = await wrappingLabel.boundingBox();
-      const controlBox = await control.boundingBox();
-      expect(labelBox).not.toBeNull();
-      expect(controlBox).not.toBeNull();
-      expect(controlBox!.y).toBeGreaterThanOrEqual(labelBox!.y);
     }
-  });
-});
 
-test.describe("Form in Dialog", () => {
-  test("submission errors focus the first invalid field inside the dialog", async ({
+    const marker = wrappedLabel.locator('[aria-hidden="true"]');
+    await expect(marker).toHaveCount(1);
+    expect(await marker.textContent()).toContain("*");
+    await expect(control).toHaveAttribute("aria-required", "true");
+
+    await demo.locator('button[type="submit"]').first().click();
+    const error = demo.locator(".uk-form__error-message").first();
+    await expect(error).toBeVisible();
+    const errorId = await error.getAttribute("id");
+    expect(errorId).toBeTruthy();
+    expect(await control.getAttribute("aria-describedby")).toContain(errorId!);
+
+    const labelBox = await wrappedLabel.boundingBox();
+    const controlBox = await control.boundingBox();
+    const errorBox = await error.boundingBox();
+    expect(labelBox).not.toBeNull();
+    expect(controlBox).not.toBeNull();
+    expect(errorBox).not.toBeNull();
+    expect(controlBox!.y).toBeGreaterThanOrEqual(
+      labelBox!.y + labelBox!.height - 2,
+    );
+    expect(errorBox!.y).toBeGreaterThanOrEqual(
+      controlBox!.y + controlBox!.height - 2,
+    );
+
+    const hasHorizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    );
+    expect(hasHorizontalOverflow).toBe(false);
+  });
+
+  test("required markers come from labels and required rules", async ({
     page,
   }) => {
-    await gotoForm(page);
+    const demo = page.locator('[data-demo="form-label-wrap"]');
+    const explicit = demo.locator('[data-required-source="label"]');
+    const rule = demo.locator('[data-required-source="rule"]');
 
-    const trigger = page
-      .getByRole("button", {
-        name: /dialog|对话框|编辑|打开/i,
-      })
-      .first();
-
-    if (!(await trigger.count())) {
-      test.skip();
-      return;
+    for (const field of [explicit, rule]) {
+      await expect(field).toBeVisible();
+      const marker = field.locator('label [aria-hidden="true"]');
+      await expect(marker).toHaveCount(1);
+      expect(await marker.textContent()).toContain("*");
+      await expect(field.locator("input").first()).toHaveAttribute(
+        "aria-required",
+        "true",
+      );
     }
+  });
 
-    await trigger.click();
+  test("dialog-embedded form validates, focuses the first error, and submits", async ({
+    page,
+  }) => {
+    const demo = page.locator('[data-demo="form-dialog"]');
+    await expect(demo).toBeVisible();
+    await demo.getByRole("button", { name: /open|edit|create/i }).click();
+
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
+    const form = dialog.locator("form");
+    const firstInput = form.locator("input").first();
+    await form.locator('button[type="submit"]').click();
+    await expect(form.locator(".uk-form__error-message").first()).toBeVisible();
+    await expect(firstInput).toBeFocused();
 
-    const form = dialog.locator("form").first();
-    const submit = form.locator("button[type='submit'], button").last();
-    await submit.click();
-
-    const invalidControl = dialog.locator("[aria-invalid='true']").first();
-    if (await invalidControl.count()) {
-      await expect(invalidControl).toBeFocused();
-      await expect(dialog).toBeVisible();
+    const inputs = form.locator("input");
+    for (let index = 0; index < (await inputs.count()); index += 1) {
+      const input = inputs.nth(index);
+      if ((await input.getAttribute("type")) !== "checkbox") {
+        await input.fill(`Valid value ${index + 1}`);
+      }
     }
+    await form.locator('button[type="submit"]').click();
+    await expect(dialog).toHaveCount(0);
   });
 });

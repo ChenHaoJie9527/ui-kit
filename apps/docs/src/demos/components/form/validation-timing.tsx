@@ -1,137 +1,103 @@
-import { useRef, useState } from "react";
-import * as v from "valibot";
-import {
-  Button,
-  Form,
-  Input,
-  type FormRef,
-  type FormValidationTrigger,
-} from "seam-react";
+import { useState } from "react";
+import { Form, Input } from "seam-react";
 import { valibotResolver } from "seam-react/valibot";
+import * as v from "valibot";
 
-interface AccountValues extends Record<string, unknown> {
-  username: string;
-  email: string;
-}
-
-const accountSchema = v.object({
-  username: v.pipe(
-    v.string(),
-    v.nonEmpty("请输入用户名"),
-    v.minLength(3, "用户名至少需要 3 个字符"),
-  ),
+const schema = v.object({
   email: v.pipe(
     v.string(),
     v.nonEmpty("请输入邮箱"),
     v.email("请输入有效的邮箱地址"),
   ),
+  username: v.pipe(
+    v.string(),
+    v.nonEmpty("请输入用户名"),
+    v.minLength(3, "用户名至少 3 个字符"),
+  ),
 });
 
-const triggers: Array<{
-  value: FormValidationTrigger;
-  label: string;
-  description: string;
-}> = [
-  { value: "blur", label: "Blur", description: "离开控件时验证（默认）" },
-  { value: "focus", label: "Focus", description: "获得焦点时验证" },
-  { value: "change", label: "Change", description: "值变化后验证" },
-  {
-    value: "pointerleave",
-    label: "Pointer leave",
-    description: "指针离开字段区域时验证",
-  },
-  { value: "submit", label: "Submit", description: "仅提交时进行首次验证" },
-];
-
-const defaultValues: AccountValues = {
-  username: "",
-  email: "",
-};
+type ValidationValues = v.InferInput<typeof schema>;
 
 export default function ValidationTimingDemo() {
-  const formRef = useRef<FormRef<AccountValues>>(null);
-  const [trigger, setTrigger] = useState<FormValidationTrigger>("blur");
-  const [message, setMessage] = useState(
-    "修改字段，观察 Valibot 错误出现和清除的时机。",
-  );
+  const [validateOn, setValidateOn] = useState<
+    "blur" | "change" | "focus" | "pointerleave" | "submit"
+  >("blur");
 
   return (
-    <div className="demo-stack">
-      <div className="demo-row" aria-label="验证时机">
-        {triggers.map((item) => (
-          <Button
-            key={item.value}
-            type="button"
-            size="sm"
-            variant={trigger === item.value ? "primary" : "outline"}
-            aria-pressed={trigger === item.value}
-            onClick={() => {
-              setTrigger(item.value);
-              setMessage(`${item.label}：${item.description}`);
-            }}
-          >
-            {item.label}
-          </Button>
-        ))}
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        <label htmlFor="validate-on-select">验证时机：</label>
+        <select
+          id="validate-on-select"
+          value={validateOn}
+          onChange={(e) =>
+            setValidateOn(
+              e.target.value as
+                | "blur"
+                | "change"
+                | "focus"
+                | "pointerleave"
+                | "submit",
+            )
+          }
+          style={{
+            padding: "0.375rem 0.5rem",
+            borderRadius: "var(--uk-radius-sm)",
+            border: "1px solid var(--uk-border)",
+            background: "var(--uk-surface)",
+            color: "var(--uk-text)",
+          }}
+        >
+          <option value="blur">blur（默认）</option>
+          <option value="change">change</option>
+          <option value="focus">focus</option>
+          <option value="pointerleave">pointerleave</option>
+          <option value="submit">submit</option>
+        </select>
       </div>
 
-      <p className="demo-description">{message}</p>
-
-      <Form.Root<AccountValues>
-        key={trigger}
-        ref={formRef}
+      <Form.Root<ValidationValues>
+        key={validateOn}
         layout="vertical"
-        defaultValues={defaultValues}
-        validateOn={trigger}
+        validateOn={validateOn}
         revalidateOn="change"
-        validateDebounce={200}
-        validate={valibotResolver(accountSchema)}
-        onSubmit={async () => {
-          await new Promise((resolve) => setTimeout(resolve, 250));
-          setMessage("验证通过，账号信息已提交。");
+        validate={valibotResolver(schema)}
+        onSubmit={(values) => {
+          alert(JSON.stringify(values, null, 2));
         }}
-        onSubmitFailed={() => {
-          setMessage("请修正字段错误；提交失败会聚焦第一个无效字段。");
-        }}
+        style={{ maxWidth: 400 }}
       >
-        <Form.Field name="username">
-          <Form.Label>用户名</Form.Label>
-          <Form.Control>
-            <Input placeholder="至少 3 个字符" autoComplete="username" />
-          </Form.Control>
-          <Form.Description>
-            字段规则与 Valibot schema 共用同一验证时机。
-          </Form.Description>
-          <Form.ErrorMessage />
-        </Form.Field>
-
         <Form.Field name="email">
           <Form.Label>邮箱</Form.Label>
           <Form.Control>
-            <Input
-              type="email"
-              placeholder="name@example.com"
-              autoComplete="email"
-            />
+            <Input placeholder="you@example.com" />
           </Form.Control>
-          <Form.Description>
-            已出现的错误会在值变化时重新验证。
-          </Form.Description>
+          <Form.Description>用于接收通知的邮箱地址</Form.Description>
+          <Form.ErrorMessage />
+        </Form.Field>
+
+        <Form.Field name="username">
+          <Form.Label>用户名</Form.Label>
+          <Form.Control>
+            <Input placeholder="至少 3 个字符" />
+          </Form.Control>
           <Form.ErrorMessage />
         </Form.Field>
 
         <Form.Actions>
-          <Button type="submit">提交</Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              formRef.current?.reset();
-              setMessage("已重置；再次交互以观察当前验证时机。");
+          <button
+            type="submit"
+            style={{
+              padding: "0.5rem 1rem",
+              borderRadius: "var(--uk-radius-sm)",
+              border: "none",
+              background: "var(--uk-primary-solid)",
+              color: "var(--uk-primary-contrast)",
+              cursor: "pointer",
             }}
           >
-            重置
-          </Button>
+            提交
+          </button>
         </Form.Actions>
       </Form.Root>
     </div>
