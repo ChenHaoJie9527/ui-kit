@@ -239,7 +239,7 @@ jobs:
           env -u ARK_API_KEY -u ARK_MODEL CI=true pnpm format || true
 
           ATTEMPT=1
-          MAX_ATTEMPTS=3
+          MAX_ATTEMPTS=5
           while [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
             LOG=".agent/runs/$AGENT_RUN_ID/verification-$ATTEMPT.log"
             echo "--- Verification attempt $ATTEMPT/$MAX_ATTEMPTS ---"

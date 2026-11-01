@@ -8,6 +8,7 @@ import {
   mergePrefilledOutput,
   parseFileBlocks,
   planFileBatches,
+  planGenerationBatches,
   writeValidatedFile,
 } from "../implementation-output.mjs";
 
@@ -75,6 +76,26 @@ test("batches by file count and estimated output size", () => {
     ["large.tsx"],
     ["styles.css", "index.ts", "test.tsx"],
     ["page.tsx", "new.tsx"],
+  ]);
+});
+
+test("generates implementation before tests, docs, and e2e", () => {
+  const files = [
+    { path: "e2e/tests/form.spec.ts", characters: 100 },
+    { path: "apps/docs/src/pages/form.tsx", characters: 100 },
+    {
+      path: "packages/ui/src/__tests__/FormComponent.test.tsx",
+      characters: 100,
+    },
+    { path: "packages/ui/src/FormComponent.tsx", characters: 100 },
+    { path: "packages/ui/src/form-component.css", characters: 100 },
+  ];
+
+  assert.deepEqual(planGenerationBatches(files), [
+    ["packages/ui/src/FormComponent.tsx", "packages/ui/src/form-component.css"],
+    ["packages/ui/src/__tests__/FormComponent.test.tsx"],
+    ["apps/docs/src/pages/form.tsx"],
+    ["e2e/tests/form.spec.ts"],
   ]);
 });
 
