@@ -57,6 +57,30 @@ export function planFileBatches(
   return batches;
 }
 
+function getGenerationPhase(file) {
+  if (file.startsWith("e2e/")) return 4;
+  if (file.startsWith("apps/docs/")) return 3;
+  if (file.includes("/__tests__/")) return 2;
+  return 1;
+}
+
+export function planGenerationBatches(files, options) {
+  const phases = new Map([
+    [1, []],
+    [2, []],
+    [3, []],
+    [4, []],
+  ]);
+
+  for (const file of files) {
+    phases.get(getGenerationPhase(file.path)).push(file);
+  }
+
+  return [...phases.values()].flatMap((phaseFiles) =>
+    planFileBatches(phaseFiles, options),
+  );
+}
+
 export function writeValidatedFile(absPath, content, validate) {
   const previousContent = existsSync(absPath)
     ? readFileSync(absPath, "utf-8")

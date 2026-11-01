@@ -35,16 +35,18 @@ import {
   extractFailureFiles,
   mergePrefilledOutput,
   parseFileBlocks,
-  planFileBatches,
+  planGenerationBatches,
   writeValidatedFile,
 } from "./implementation-output.mjs";
 import {
   buildEnhancementContext,
   extractImplementationFilePlan,
   normalizePlannedPath,
+  readGenerationDependencyContext,
   readPlannedFileContext,
   resolvePlannedFile,
 } from "./enhancement-plan.mjs";
+import { resolveDependencyContext } from "./context-files.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -359,8 +361,11 @@ async function repairImplementation(logPath, mode = "verification") {
   const failureFiles = extractFailureFiles(verificationLog).filter((file) =>
     repairFiles.includes(file),
   );
-  const contextFiles =
-    failureFiles.length > 0 ? failureFiles : repairFiles.slice(0, 8);
+  const contextFiles = resolveDependencyContext(
+    repoDir,
+    failureFiles.length > 0 ? failureFiles : repairFiles.slice(0, 8),
+    repairFiles,
+  );
   const sources = contextFiles
     .map((file) => {
       const content = readFileSync(join(repoDir, file), "utf-8");
@@ -395,6 +400,11 @@ Each file must use this exact format:
 
 You may only return files supplied in the current sources. Do not create files or modify unrelated code.
 Remove unused imports, satisfy strict TypeScript checks including noUncheckedIndexedAccess, and preserve the repository testing conventions.
+For runtime test failures, the supplied sources include the failing test and
+its direct implementation dependencies. Fix production behavior first when the
+test asserts required Spec behavior. Change a test only when evidence shows it
+contradicts the approved Spec or the actual public API; never weaken, delete,
+or skip coverage to make verification pass.
 ${isReview ? "Address every actionable reviewer finding. If a finding requires files outside the supplied sources or a product decision, do not guess." : ""}`;
 
   const userPrompt = `## ${isReview ? "Independent Review Feedback" : "Verification Log"}
@@ -599,7 +609,7 @@ async function generateEnhancementImplementation(
   );
   const filesWritten = [];
   const rawOutputs = [];
-  const batches = planFileBatches(
+  const batches = planGenerationBatches(
     plannedFiles.map((file) => {
       const absolutePath = resolvePlannedFile(repoDir, file);
       return {
@@ -623,6 +633,11 @@ async function generateEnhancementImplementation(
     // makes a one-file retry carry every demo and test again, which encourages
     // the model to reason about the whole change instead of emitting the file.
     const batchContext = readPlannedFileContext(repoDir, batch);
+    const dependencyContext = readGenerationDependencyContext(
+      repoDir,
+      batch,
+      plannedFiles,
+    );
     const systemPrompt = `You are a senior React component library engineer working on seam-ui.
 You have written a spec and now must implement part of an existing component enhancement.
 
@@ -657,6 +672,13 @@ Rules:
 - Use Motion tokens from motion.ts
 - Follow the code style of existing components
 - Include comprehensive tests where the requested batch contains tests
+- Tests must follow the approved Spec and the actual implementation/API in the
+  supplied dependency context. Do not invent alternate props, rule shapes,
+  class names, or error text.
+- Keep each test isolated. Do not use global screen queries that match multiple
+  simultaneously mounted forms; narrow ambiguous queries or use within().
+- If several elements with the same role are legitimate and required, query the
+  intended one explicitly instead of removing behavior or weakening the test.
 
 Testing conventions (MUST follow exactly):
 - Import from "vitest": import { describe, expect, it, vi } from "vitest";
@@ -683,6 +705,7 @@ ${currentExports}
 ## Existing files in this batch
 ${batchContext}
 
+${dependencyContext ? `## Implementation dependency context (read-only)\n${dependencyContext}\n` : ""}
 Generate every requested file in this batch following the output format specified above.`;
 
     console.log(`[Agent] Implementation batch ${label}: ${batch.join(", ")}`);
