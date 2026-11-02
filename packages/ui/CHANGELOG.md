@@ -1,5 +1,11 @@
 # seam-react
 
+## 0.13.0
+
+### Minor Changes
+
+- d4312ca: Add interaction-level validation triggers, configurable Form layouts, required markers, and wrappable labels.
+
 ## 0.12.4
 
 ### Patch Changes
