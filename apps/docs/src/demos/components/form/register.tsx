@@ -90,6 +90,7 @@ export function Demo() {
 
         <Form.Root<RegisterValues>
           ref={formRef}
+          layout="vertical"
           defaultValues={{
             fullName: "",
             email: "",

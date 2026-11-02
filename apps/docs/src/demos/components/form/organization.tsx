@@ -83,6 +83,7 @@ export function Demo() {
         </header>
 
         <Form.Root<OrganizationValues>
+          layout="vertical"
           defaultValues={{
             companyName: "",
             creditCode: "",

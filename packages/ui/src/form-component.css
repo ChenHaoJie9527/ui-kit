@@ -4,12 +4,15 @@
     flex-direction: column;
     gap: var(--uk-space-5);
     font-family: var(--uk-font-sans);
+    min-width: 0;
   }
 
   .uk-form__field {
     display: flex;
     flex-direction: column;
     gap: var(--uk-space-2);
+    position: relative;
+    min-width: 0;
   }
 
   .uk-form__field[data-disabled="true"] {
@@ -28,18 +31,30 @@
     display: flex;
     align-items: center;
     gap: var(--uk-space-1);
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .uk-form__label[data-wrap="true"] {
+    white-space: normal;
+    flex-wrap: wrap;
+    overflow-wrap: anywhere;
+    align-items: flex-start;
   }
 
   .uk-form__required {
     color: var(--uk-danger);
     font-size: var(--uk-text-lg);
     line-height: 1;
+    flex: none;
   }
 
   .uk-form__description {
     font-size: var(--uk-text-sm);
     color: var(--uk-text-muted);
     margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .uk-form__error {
@@ -47,6 +62,8 @@
     color: var(--uk-danger);
     margin: 0;
     min-height: 1.25rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
     transition: opacity var(--uk-duration-fast) var(--uk-ease-out);
   }
 
@@ -61,6 +78,7 @@
     border-radius: var(--uk-radius-md);
     color: var(--uk-danger);
     font-size: var(--uk-text-md);
+    overflow-wrap: anywhere;
   }
 
   .uk-form__actions {
@@ -68,6 +86,7 @@
     gap: var(--uk-space-3);
     justify-content: flex-end;
     padding-top: var(--uk-space-2);
+    flex-wrap: wrap;
   }
 
   .uk-form__field[data-invalid="true"] :is(input, textarea, select) {
@@ -91,8 +110,98 @@
     animation: uk-form-spin 0.6s linear infinite;
   }
 
-  .uk-form__field {
-    position: relative;
+  /*
+   * Horizontal fields keep DOM order: label, control, description, error.
+   * The label column can be adjusted by consumers without adding layout props.
+   */
+  .uk-form[data-layout="horizontal"] {
+    --uk-form-label-width: 10rem;
+  }
+
+  .uk-form[data-layout="horizontal"] .uk-form__field {
+    display: grid;
+    grid-template-columns: var(--uk-form-label-width) minmax(0, 1fr);
+    column-gap: var(--uk-space-4);
+    row-gap: var(--uk-space-2);
+    align-items: start;
+  }
+
+  .uk-form[data-layout="horizontal"] .uk-form__label {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    padding-top: var(--uk-space-2);
+    justify-self: start;
+    max-width: 100%;
+  }
+
+  .uk-form[data-layout="horizontal"] .uk-form__label[data-wrap="true"] {
+    padding-top: var(--uk-space-1);
+  }
+
+  .uk-form[data-layout="horizontal"] .uk-form__field > :not(.uk-form__label) {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .uk-form[data-layout="horizontal"] .uk-form__field > .uk-form__description,
+  .uk-form[data-layout="horizontal"] .uk-form__field > .uk-form__error {
+    grid-row: auto;
+  }
+
+  .uk-form[data-layout="horizontal"]
+    .uk-form__field[data-validating="true"]::after {
+    top: var(--uk-space-2);
+  }
+
+  .uk-form[data-layout="inline"] {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--uk-space-4);
+  }
+
+  .uk-form[data-layout="inline"] .uk-form__field {
+    flex: 1 1 12rem;
+    min-width: min(12rem, 100%);
+    max-width: 100%;
+  }
+
+  .uk-form[data-layout="inline"] .uk-form__label {
+    max-width: 100%;
+  }
+
+  .uk-form[data-layout="inline"] .uk-form__actions {
+    flex: 0 1 auto;
+    align-items: center;
+    padding-top: 0;
+    margin-left: auto;
+    max-width: 100%;
+  }
+
+  /* Documented small-screen breakpoint: horizontal fields stack below 40rem. */
+  @media (max-width: 40rem) {
+    .uk-form[data-layout="horizontal"] .uk-form__field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--uk-space-2);
+    }
+
+    .uk-form[data-layout="horizontal"] .uk-form__label {
+      padding-top: 0;
+      max-width: 100%;
+    }
+
+    .uk-form[data-layout="horizontal"] .uk-form__label[data-wrap="true"] {
+      padding-top: 0;
+    }
+
+    .uk-form[data-layout="inline"] .uk-form__field {
+      flex-basis: min(12rem, 100%);
+    }
+
+    .uk-form[data-layout="inline"] .uk-form__actions {
+      margin-left: 0;
+    }
   }
 
   @keyframes uk-form-spin {

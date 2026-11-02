@@ -58,6 +58,7 @@ export function Demo() {
         </header>
 
         <Form.Root
+          layout="vertical"
           defaultValues={{ email: "", password: "", remember: true }}
           validate={valibotResolver(LoginSchema)}
           onSubmit={async ({ email }) => {
