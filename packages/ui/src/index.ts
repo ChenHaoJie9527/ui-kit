@@ -44,6 +44,7 @@ export type {
   FormRef,
   FormRootProps,
   FormState,
+  FormValidationTrigger,
 } from "./FormComponent";
 
 export { Switch } from "./Switch";
