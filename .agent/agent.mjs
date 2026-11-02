@@ -405,6 +405,10 @@ its direct implementation dependencies. Fix production behavior first when the
 test asserts required Spec behavior. Change a test only when evidence shows it
 contradicts the approved Spec or the actual public API; never weaken, delete,
 or skip coverage to make verification pass.
+Before changing production behavior for a DOM event failure, verify that the
+test actually produces the event. A change event that sets the same value
+already rendered does not call React's onChange; fix that test setup with a
+distinct prior value instead of weakening the expected behavior.
 ${isReview ? "Address every actionable reviewer finding. If a finding requires files outside the supplied sources or a product decision, do not guess." : ""}`;
 
   const userPrompt = `## ${isReview ? "Independent Review Feedback" : "Verification Log"}
@@ -679,6 +683,8 @@ Rules:
   simultaneously mounted forms; narrow ambiguous queries or use within().
 - If several elements with the same role are legitimate and required, query the
   intended one explicitly instead of removing behavior or weakening the test.
+- For change-triggered behavior, the rendered value must change. A change event
+  that sets the value already displayed does not fire React's onChange.
 
 Testing conventions (MUST follow exactly):
 - Import from "vitest": import { describe, expect, it, vi } from "vitest";
