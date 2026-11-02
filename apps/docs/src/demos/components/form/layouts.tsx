@@ -1,20 +1,12 @@
-import { useState } from "react";
 import { Button, Form, Input, Select, useFormContext } from "seam-react";
 import { valibotResolver } from "seam-react/valibot";
 import * as v from "valibot";
 
-const roles = [
-  { value: "all", label: "全部角色" },
-  { value: "owner", label: "所有者" },
-  { value: "admin", label: "管理员" },
-  { value: "member", label: "成员" },
-];
-
-const statuses = [
-  { value: "all", label: "全部状态" },
-  { value: "active", label: "正常" },
-  { value: "invited", label: "待接受邀请" },
-  { value: "suspended", label: "已停用" },
+const regions = [
+  { value: "all", label: "全部区域" },
+  { value: "east", label: "华东" },
+  { value: "south", label: "华南" },
+  { value: "north", label: "华北" },
 ];
 
 const ProfileSchema = v.object({
@@ -24,198 +16,146 @@ const ProfileSchema = v.object({
     v.nonEmpty("请输入联系邮箱"),
     v.email("请输入有效邮箱"),
   ),
-  biography: v.string(),
 });
 
 type ProfileValues = v.InferInput<typeof ProfileSchema>;
 
-type FilterValues = {
-  keyword: string;
-  role: string;
-  status: string;
-};
+const FilterSchema = v.object({
+  keyword: v.string(),
+  region: v.picklist(["all", "east", "south", "north"]),
+});
 
-function VerticalSubmitButton() {
+type FilterValues = v.InferInput<typeof FilterSchema>;
+
+function ProfileStatus() {
   const { state } = useFormContext();
 
   return (
-    <Button type="submit" loading={state.submitting}>
-      保存个人资料
-    </Button>
-  );
-}
-
-function VerticalSubmitStatus() {
-  const { state } = useFormContext();
-
-  return (
-    <output className="m-0 min-h-5 text-[12px] text-muted" aria-live="polite">
+    <output className="m-0 min-h-5 text-[12.5px] text-muted" aria-live="polite">
       {state.submitSucceeded
-        ? "个人资料已保存。"
-        : "离开显示名称输入框即可查看默认的 blur 校验。"}
+        ? "资料已保存。"
+        : "留空后提交可查看字段错误与说明的排列。"}
     </output>
   );
 }
 
-export function Demo() {
-  const [filters, setFilters] = useState<FilterValues>({
-    keyword: "",
-    role: "all",
-    status: "all",
-  });
+function ProfileSubmitButton() {
+  const { state } = useFormContext();
 
   return (
-    <div className="grid w-full max-w-[980px] gap-6">
+    <Button type="submit" loading={state.submitting}>
+      保存资料
+    </Button>
+  );
+}
+
+function ProfileFields() {
+  return (
+    <>
+      <Form.Field name="displayName">
+        <Form.Label>显示名称</Form.Label>
+        <Form.Control>
+          <Input autoComplete="name" placeholder="例如：张明" />
+        </Form.Control>
+        <Form.Description>名称会显示在成员列表与操作记录中。</Form.Description>
+        <Form.ErrorMessage />
+      </Form.Field>
+
+      <Form.Field name="email">
+        <Form.Label>联系邮箱</Form.Label>
+        <Form.Control>
+          <Input
+            type="email"
+            autoComplete="email"
+            placeholder="you@company.com"
+          />
+        </Form.Control>
+        <Form.Description>仅用于工作通知，不会公开展示。</Form.Description>
+        <Form.ErrorMessage />
+      </Form.Field>
+
+      <Form.Actions>
+        <ProfileSubmitButton />
+      </Form.Actions>
+      <ProfileStatus />
+    </>
+  );
+}
+
+export function Demo() {
+  return (
+    <div className="grid w-full max-w-[920px] gap-6">
       <section className="rounded-[18px] border border-line bg-surface p-5 phone:p-6">
         <header className="mb-5">
-          <h3 className="m-0 text-[17px] font-[650]">Vertical · 个人资料</h3>
-          <p className="mt-1 text-[12.5px] leading-[1.6] text-muted">
-            适合长说明与自由宽度的内容。显示名称使用 required
-            规则，星号由字段配置自动提供。
+          <h3 className="m-0 text-[17px] font-[650]">垂直布局</h3>
+          <p className="mb-0 mt-1 text-[12.5px] leading-[1.6] text-muted">
+            使用 layout=&quot;vertical&quot;
+            保留标签、控件与反馈的纵向阅读顺序。
           </p>
         </header>
-
         <Form.Root<ProfileValues>
           layout="vertical"
-          defaultValues={{ displayName: "", email: "", biography: "" }}
+          defaultValues={{ displayName: "", email: "" }}
           validate={valibotResolver(ProfileSchema)}
-          onSubmit={async () => {
-            await new Promise((resolve) => window.setTimeout(resolve, 500));
-          }}
+          onSubmit={() => {}}
         >
-          <Form.Field name="displayName" rules={[{ required: true }]}>
-            <Form.Label labelWrap>
-              显示名称（会同步到账单、审计日志与成员目录）
-            </Form.Label>
-            <Form.Control>
-              <Input autoComplete="name" placeholder="例如：张明" />
-            </Form.Control>
-            <Form.Description>
-              长标签通过 labelWrap 自然换行，控件的标签关联与输入顺序保持不变。
-            </Form.Description>
-            <Form.ErrorMessage />
-          </Form.Field>
-
-          <Form.Field name="email">
-            <Form.Label required>联系邮箱</Form.Label>
-            <Form.Control>
-              <Input
-                type="email"
-                autoComplete="email"
-                placeholder="you@company.com"
-              />
-            </Form.Control>
-            <Form.Description>
-              这里的星号来自 Form.Label required，用于对照两种必填标记来源。
-            </Form.Description>
-            <Form.ErrorMessage />
-          </Form.Field>
-
-          <Form.Field name="biography">
-            <Form.Label>个人简介</Form.Label>
-            <Form.Control>
-              <Input placeholder="可选，简要介绍你的职责" />
-            </Form.Control>
-          </Form.Field>
-
-          <Form.Actions>
-            <VerticalSubmitButton />
-          </Form.Actions>
-          <VerticalSubmitStatus />
+          <ProfileFields />
         </Form.Root>
       </section>
 
       <section className="rounded-[18px] border border-line bg-surface p-5 phone:p-6">
         <header className="mb-5">
-          <h3 className="m-0 text-[17px] font-[650]">Horizontal · 默认布局</h3>
-          <p className="mt-1 text-[12.5px] leading-[1.6] text-muted">
-            不传 layout 即为 horizontal；窄屏下恢复标签、控件、反馈的阅读顺序。
+          <h3 className="m-0 text-[17px] font-[650]">水平布局（默认）</h3>
+          <p className="mb-0 mt-1 text-[12.5px] leading-[1.6] text-muted">
+            标签占据稳定列宽，控件与反馈位于相邻列；窄屏下自动恢复纵向排列。
           </p>
         </header>
-
         <Form.Root<ProfileValues>
-          defaultValues={{
-            displayName: "张明",
-            email: "zhang@example.com",
-            biography: "",
-          }}
+          layout="horizontal"
+          defaultValues={{ displayName: "", email: "" }}
           validate={valibotResolver(ProfileSchema)}
-          onSubmit={async () => {
-            await new Promise((resolve) => window.setTimeout(resolve, 500));
-          }}
+          onSubmit={() => {}}
         >
-          <Form.Field name="displayName" rules={[{ required: true }]}>
-            <Form.Label labelWrap>显示名称与公开署名</Form.Label>
-            <Form.Control>
-              <Input autoComplete="name" />
-            </Form.Control>
-            <Form.Description>
-              标签列保持稳定，说明和错误与控件位于同一列。
-            </Form.Description>
-            <Form.ErrorMessage />
-          </Form.Field>
-
-          <Form.Field name="email">
-            <Form.Label required>联系邮箱</Form.Label>
-            <Form.Control>
-              <Input type="email" autoComplete="email" />
-            </Form.Control>
-            <Form.ErrorMessage />
-          </Form.Field>
-
-          <Form.Actions>
-            <Button type="submit">保存设置</Button>
-          </Form.Actions>
+          <ProfileFields />
         </Form.Root>
       </section>
 
       <section className="rounded-[18px] border border-line bg-surface p-5 phone:p-6">
         <header className="mb-5">
-          <h3 className="m-0 text-[17px] font-[650]">Inline · 成员筛选</h3>
-          <p className="mt-1 text-[12.5px] leading-[1.6] text-muted">
-            字段与操作按空间排列，空间不足时换行；Tab 顺序始终遵循 DOM 顺序。
+          <h3 className="m-0 text-[17px] font-[650]">行内布局</h3>
+          <p className="mb-0 mt-1 text-[12.5px] leading-[1.6] text-muted">
+            适合筛选栏；空间不足时字段与操作会换行，不改变 DOM 与键盘顺序。
           </p>
         </header>
-
         <Form.Root<FilterValues>
           layout="inline"
-          defaultValues={filters}
-          onValuesChange={(values) => setFilters(values)}
-          onSubmit={() => undefined}
+          defaultValues={{ keyword: "", region: "all" }}
+          validate={valibotResolver(FilterSchema)}
+          onSubmit={() => {}}
         >
           <Form.Field name="keyword">
-            <Form.Label>搜索成员</Form.Label>
+            <Form.Label>关键词</Form.Label>
             <Form.Control>
-              <Input placeholder="姓名或邮箱" />
+              <Input placeholder="搜索名称或编号" />
             </Form.Control>
+            <Form.ErrorMessage />
           </Form.Field>
 
-          <Form.Field name="role">
-            <Form.Label>角色</Form.Label>
+          <Form.Field name="region">
+            <Form.Label>区域</Form.Label>
             <Form.Control>
-              <Select options={roles} aria-label="角色" />
+              <Select options={regions} aria-label="区域" />
             </Form.Control>
-          </Form.Field>
-
-          <Form.Field name="status">
-            <Form.Label>状态</Form.Label>
-            <Form.Control>
-              <Select options={statuses} aria-label="状态" />
-            </Form.Control>
+            <Form.ErrorMessage />
           </Form.Field>
 
           <Form.Actions>
-            <Button type="submit" variant="secondary">
-              应用筛选
+            <Button type="submit">应用筛选</Button>
+            <Button type="reset" variant="ghost">
+              重置
             </Button>
           </Form.Actions>
         </Form.Root>
-
-        <p className="mb-0 mt-4 text-[12px] leading-[1.6] text-muted">
-          当前筛选：{filters.keyword || "全部成员"} ·{" "}
-          {roles.find((role) => role.value === filters.role)?.label} ·{" "}
-          {statuses.find((status) => status.value === filters.status)?.label}
-        </p>
       </section>
     </div>
   );
