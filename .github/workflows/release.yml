@@ -17,22 +17,27 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
+        with:
+          # v6 起默认自动执行 pnpm install；这里关掉，保留下面的显式 --frozen-lockfile
+          install: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
 
       - run: pnpm install --frozen-lockfile
 
-      - uses: changesets/action@v1
+      # v2 重命名了全部输入：version/publish/commit/title →
+      # version-script/publish-script/commit-message/pr-title
+      - uses: changesets/action@v2
         with:
-          version: pnpm version-packages
+          version-script: pnpm version-packages
           # Trusted Publishers for seam-hooks and seam-react point at this file.
-          publish: pnpm publish:npm
-          commit: "chore(release): version packages"
-          title: "chore(release): version packages"
+          publish-script: pnpm publish:npm
+          commit-message: "chore(release): version packages"
+          pr-title: "chore(release): version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
