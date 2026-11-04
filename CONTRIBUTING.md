@@ -19,6 +19,25 @@ docs: 补充 Dialog 的无障碍说明
 ci: 发布前自动校验提交信息
 ```
 
+## 提交粒度
+
+提交必须按可独立说明的功能点拆分，不要把同一轮工作中的多个功能、修复或重构合并成一个提交。
+
+- 每个提交只表达一个行为变化或工程决策，标题应能独立说明这次提交解决了什么。
+- 功能实现与它直接对应的测试、文档和 Changeset 放在同一个提交；与当前功能无关的文档或格式化另行提交。
+- 独立缺陷修复、行为重构、视觉增强和规范文档分开提交；不要用“顺手调整”把无关改动混入当前功能。
+- 提交前逐项审查暂存区，避免直接使用 `git add .`。每个提交都应能单独解释、回滚和验证。
+- 同一轮工作需要多个提交时，按可独立验证的顺序排列；靠后的提交不能成为靠前提交通过检查的前提。
+
+例如，一次 Form 校验迭代可以拆成：
+
+```
+fix(ui): isolate Form errors to interacted fields
+fix(ui): revalidate touched Form fields on change
+feat(ui): add Form validation feedback motion
+docs(contributing): codify atomic commit scope
+```
+
 ## 交互式提交
 
 ```bash
