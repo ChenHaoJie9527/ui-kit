@@ -18,8 +18,9 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          # v6 起默认自动执行 pnpm install；这里关掉，保留下面的显式 --frozen-lockfile
-          install: false
+          # v6 的输入名是 run_install（默认 null，本来不自动安装）。
+          # 显式关掉，避免将来升级到把默认值改成 true 的版本；安装一律走下面的显式步骤。
+          run_install: false
 
       - uses: actions/setup-node@v7
         with:
@@ -36,8 +37,9 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          # v6 起默认自动执行 pnpm install；这里关掉，保留下面的显式 --frozen-lockfile
-          install: false
+          # v6 的输入名是 run_install（默认 null，本来不自动安装）。
+          # 显式关掉，避免将来升级到把默认值改成 true 的版本；安装一律走下面的显式步骤。
+          run_install: false
 
       - uses: actions/setup-node@v7
         with:
