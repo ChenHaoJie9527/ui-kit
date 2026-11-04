@@ -17,7 +17,9 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  # 不能中途取消：Pages 的部署一旦在 updating_pages 阶段被打断，
+  # 后续部署会一直等在那次残缺部署后面，表现为 deploy 超时。
+  cancel-in-progress: false
 
 jobs:
   build:
