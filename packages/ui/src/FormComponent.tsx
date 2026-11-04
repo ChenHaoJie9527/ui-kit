@@ -561,6 +561,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
   const runFormLevelValidation = useEventCallback(
     async (
       nextValues: Record<string, unknown> = values,
+      triggerFields?: string[],
     ): Promise<FormErrors> => {
       formValidationAbortRef.current?.abort();
 
@@ -587,16 +588,36 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
 
         if (abortController.signal.aborted) return formLevelErrors;
 
+        // Interactive validation may update the field that caused it and
+        // fields the user already touched or that already show an error.
+        // Untouched fields wait for their own interaction or a full submit.
+        const touchedFields = Array.from(fieldStatesRef.current.entries())
+          .filter(([, meta]) => meta.touched)
+          .map(([fieldName]) => fieldName);
+        const fieldsToUpdate = triggerFields
+          ? new Set([
+              ...triggerFields,
+              ...touchedFields,
+              ...Object.keys(errorsRef.current),
+            ])
+          : null;
+        const shouldUpdateField = (name: string) =>
+          fieldsToUpdate === null || fieldsToUpdate.has(name);
         const previousFormLevelErrors = formLevelErrorsRef.current;
         const allErrors = { ...errorsRef.current };
+        const nextFormLevelErrors: Record<string, string> = fieldsToUpdate
+          ? { ...previousFormLevelErrors }
+          : {};
+
         Object.keys(previousFormLevelErrors).forEach((key) => {
+          if (!shouldUpdateField(key)) return;
           if (allErrors[key] === previousFormLevelErrors[key]) {
             delete allErrors[key];
           }
+          delete nextFormLevelErrors[key];
         });
-        const nextFormLevelErrors: Record<string, string> = {};
         Object.entries(formLevelErrors).forEach(([key, value]) => {
-          if (value) {
+          if (value && shouldUpdateField(key)) {
             allErrors[key] = value;
             nextFormLevelErrors[key] = value;
           }
@@ -665,6 +686,9 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       if (shouldValidate) {
         const timer = validationTimersRef.current.get(name);
         if (timer) clearTimeout(timer);
+        const dependentFields = Array.from(fieldsRef.current.entries())
+          .filter(([, fieldConfig]) => fieldConfig.dependencies?.includes(name))
+          .map(([fieldName]) => fieldName);
 
         const hasCustomValidator = config?.rules?.some(
           (rule) => "validator" in rule,
@@ -673,13 +697,13 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
         if (hasCustomValidator && validateDebounce > 0) {
           const newTimer = setTimeout(() => {
             validateField(name, newValues);
-            runFormLevelValidation(newValues);
+            runFormLevelValidation(newValues, [name, ...dependentFields]);
             validationTimersRef.current.delete(name);
           }, validateDebounce);
           validationTimersRef.current.set(name, newTimer);
         } else {
           validateField(name, newValues);
-          runFormLevelValidation(newValues);
+          runFormLevelValidation(newValues, [name, ...dependentFields]);
         }
       }
 
@@ -708,7 +732,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
         Object.keys(newValues).forEach((name) =>
           validateField(name, updatedValues),
         );
-        runFormLevelValidation(updatedValues);
+        runFormLevelValidation(updatedValues, Object.keys(newValues));
       }
     },
   );
@@ -718,10 +742,10 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
 
     if (touched && validateOn === "blur") {
       validateField(name);
-      runFormLevelValidation();
+      runFormLevelValidation(values, [name]);
     } else if (touched && revalidateOn === "blur" && formState.errors[name]) {
       validateField(name);
-      runFormLevelValidation();
+      runFormLevelValidation(values, [name]);
     }
   });
 
@@ -735,7 +759,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
 
       if (shouldValidate) {
         validateField(name);
-        runFormLevelValidation();
+        runFormLevelValidation(values, [name]);
       }
     },
   );

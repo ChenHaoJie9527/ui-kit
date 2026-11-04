@@ -614,6 +614,89 @@ describe("Form", () => {
     expect(validate).toHaveBeenCalledWith({ email: "" });
   });
 
+  it("only surfaces the interacted field's form-level error", async () => {
+    const validate = vi.fn<
+      (values: Record<string, unknown>) => Record<string, string>
+    >((values) => ({
+      email: values.email ? "" : "请输入邮箱",
+      password: values.password ? "" : "请输入密码",
+    }));
+
+    render(
+      <Form.Root
+        defaultValues={{ email: "", password: "" }}
+        validate={validate}
+      >
+        <Form.Field name="email">
+          <Form.Label>邮箱</Form.Label>
+          <Form.Control>
+            <input />
+          </Form.Control>
+          <Form.ErrorMessage />
+        </Form.Field>
+        <Form.Field name="password">
+          <Form.Label>密码</Form.Label>
+          <Form.Control>
+            <input type="password" />
+          </Form.Control>
+          <Form.ErrorMessage />
+        </Form.Field>
+      </Form.Root>,
+    );
+
+    const email = screen.getByRole("textbox", { name: "邮箱" });
+    const password = screen.getByLabelText("密码");
+
+    fireEvent.blur(email);
+
+    expect(await screen.findByText("请输入邮箱")).not.toBeNull();
+    expect(screen.queryByText("请输入密码")).toBeNull();
+    expect(password.getAttribute("aria-invalid")).toBeNull();
+
+    fireEvent.blur(password);
+
+    expect(await screen.findByText("请输入密码")).not.toBeNull();
+    expect(screen.getByText("请输入邮箱")).not.toBeNull();
+  });
+
+  it("surfaces every form-level field error on submit", async () => {
+    const validate = vi.fn<
+      (values: Record<string, unknown>) => Record<string, string>
+    >((values) => ({
+      email: values.email ? "" : "请输入邮箱",
+      password: values.password ? "" : "请输入密码",
+    }));
+
+    render(
+      <Form.Root
+        defaultValues={{ email: "", password: "" }}
+        validate={validate}
+        onSubmit={() => {}}
+      >
+        <Form.Field name="email">
+          <Form.Label>邮箱</Form.Label>
+          <Form.Control>
+            <input />
+          </Form.Control>
+          <Form.ErrorMessage />
+        </Form.Field>
+        <Form.Field name="password">
+          <Form.Label>密码</Form.Label>
+          <Form.Control>
+            <input type="password" />
+          </Form.Control>
+          <Form.ErrorMessage />
+        </Form.Field>
+        <button type="submit">提交</button>
+      </Form.Root>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "提交" }));
+
+    expect(await screen.findByText("请输入邮箱")).not.toBeNull();
+    expect(await screen.findByText("请输入密码")).not.toBeNull();
+  });
+
   it("uses the same validation timing for controlled and uncontrolled forms", async () => {
     const uncontrolled = render(
       <Form.Root validateOn="change">

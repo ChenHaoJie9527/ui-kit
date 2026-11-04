@@ -212,6 +212,7 @@ export function FormPage() {
               异步 change 校验继续使用 <InlineCode>validateDebounce</InlineCode>
               ；新一次校验会取代旧结果，避免过期错误覆盖新值。
             </>,
+            "字段交互只提交当前字段及其显式 dependencies 的校验结果；其他尚未报错的字段不会因一次失焦同时显示错误，提交时才汇总全部字段。",
           ]}
         />
       </Section>
@@ -389,7 +390,7 @@ const LoginSchema = v.object({
               name: "validate",
               type: "(values: T) => FormErrors<T> | Promise<FormErrors<T>>",
               description:
-                "跨字段或表单级校验；与字段 rules 使用相同触发时机和错误合并生命周期。",
+                "跨字段或表单级校验；交互时只提交当前字段及已触碰或已显示错误的字段结果，提交时汇总全部字段。",
             },
             {
               name: "layout",
