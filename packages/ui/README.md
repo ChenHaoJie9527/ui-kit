@@ -45,7 +45,7 @@ export function Root() {
 - Form 提供组合式字段、同步/异步规则、服务端错误和失败聚焦；安装 `valibot` 后可通过 `seam-react/valibot` 接入 schema 校验。
 - Sidebar 提供可折叠 Group、可配置分组间距，以及互斥的轨道与背景 hover 模式。
 
-完整文档：[chenhaojie9527.github.io/ui-kit](https://chenhaojie9527.github.io/ui-kit/)
+完整文档：[ui-kit.cn](https://ui-kit.cn/)
 
 ## License
 
