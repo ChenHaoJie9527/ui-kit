@@ -112,6 +112,129 @@ test.describe("Form layouts", () => {
 });
 
 test.describe("Form validation and content", () => {
+  test("validation feedback shakes the control once and reveals errors downward", async ({
+    page,
+  }) => {
+    await gotoForm(page);
+
+    const root = page.getByTestId("form-validation-timing");
+    const trigger = page.getByLabel(/验证时机/);
+    const email = root.getByLabel("邮箱");
+    const password = root.getByLabel("密码");
+    const field = email.locator(
+      "xpath=ancestor::div[contains(@class,'uk-form__field')][1]",
+    );
+    const control = field.locator(".uk-form__control");
+    const error = field.locator(".uk-form__error");
+
+    await expect(error).toHaveAttribute("data-state", "hidden");
+    await trigger.selectOption("blur");
+    await email.focus();
+    await email.blur();
+
+    await expect(error).toHaveAttribute("data-state", "visible");
+    await expect(error).toBeVisible();
+    await expect(password).not.toHaveAttribute("aria-invalid", "true");
+    await expect(root.getByText("至少 8 个字符")).toHaveCount(0);
+
+    const motion = await control.evaluate((element) => {
+      const styles = getComputedStyle(element);
+      return {
+        animationName: styles.animationName,
+        animationDuration: styles.animationDuration,
+      };
+    });
+    expect(motion.animationName).toBe("uk-form-shake");
+    expect(motion.animationDuration).toBe("0.4s");
+
+    const errorMotion = await error.evaluate((element) => {
+      const styles = getComputedStyle(element);
+      return {
+        transitionProperty: styles.transitionProperty,
+        transitionDuration: styles.transitionDuration,
+      };
+    });
+    expect(errorMotion.transitionProperty).toBe("opacity, transform");
+    expect(errorMotion.transitionDuration).toBe("0.16s, 0.16s");
+  });
+
+  test("validation motion becomes opacity-only under reduced motion", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await gotoForm(page);
+
+    const root = page.getByTestId("form-validation-timing");
+    const trigger = page.getByLabel(/验证时机/);
+    const email = root.getByLabel("邮箱");
+    const field = email.locator(
+      "xpath=ancestor::div[contains(@class,'uk-form__field')][1]",
+    );
+
+    await trigger.selectOption("blur");
+    await email.focus();
+    await email.blur();
+    await expect(field.locator(".uk-form__error")).toBeVisible();
+
+    const motion = await field.evaluate((element) => {
+      const control = element.querySelector(".uk-form__control");
+      const error = element.querySelector(".uk-form__error");
+      if (
+        !(control instanceof HTMLElement) ||
+        !(error instanceof HTMLElement)
+      ) {
+        throw new Error("Expected control and error elements");
+      }
+
+      const controlStyles = getComputedStyle(control);
+      const errorStyles = getComputedStyle(error);
+      return {
+        controlAnimation: controlStyles.animationName,
+        errorTransform: errorStyles.transform,
+        errorTransition: errorStyles.transitionProperty,
+      };
+    });
+    expect(motion.controlAnimation).toBe("none");
+    expect(motion.errorTransform).toBe("none");
+    expect(motion.errorTransition).toBe("opacity");
+  });
+
+  test("restarts invalid feedback each time a touched field becomes invalid", async ({
+    page,
+  }) => {
+    await gotoForm(page);
+
+    const root = page.getByTestId("form-validation-timing");
+    const email = root.getByLabel("邮箱");
+    const field = email.locator(
+      "xpath=ancestor::div[contains(@class,'uk-form__field')][1]",
+    );
+    const control = field.locator(".uk-form__control");
+    const error = field.locator(".uk-form__error");
+
+    await page.getByLabel(/验证时机/).selectOption("blur");
+    await email.focus();
+    await email.blur();
+    await expect(error).toHaveAttribute("data-state", "visible");
+
+    await email.fill("person@example.com");
+    await expect(error).toHaveAttribute("data-state", "hidden");
+    await expect(control).not.toHaveCSS("animation-name", "uk-form-shake");
+
+    await email.fill("");
+    await expect(error).toHaveAttribute("data-state", "visible");
+    await expect(control).toHaveCSS("animation-name", "uk-form-shake");
+    await expect(control).not.toHaveCSS("animation-duration", "0s");
+
+    await email.fill("person@example.com");
+    await expect(error).toHaveAttribute("data-state", "hidden");
+    await expect(control).not.toHaveCSS("animation-name", "uk-form-shake");
+
+    await email.fill("");
+    await expect(error).toHaveAttribute("data-state", "visible");
+    await expect(control).toHaveCSS("animation-name", "uk-form-shake");
+  });
+
   test("focus, change, blur, and submit expose validation feedback", async ({
     page,
   }) => {
@@ -141,6 +264,7 @@ test.describe("Form validation and content", () => {
     await email.fill("");
     await root.getByRole("button", { name: "提交" }).click();
     await expect(root.getByText("请输入有效邮箱")).toBeVisible();
+    await expect(root.getByText("至少 8 个字符")).toBeVisible();
     await expect(email).toBeFocused();
   });
 

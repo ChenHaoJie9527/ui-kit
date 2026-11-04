@@ -57,6 +57,24 @@
     overflow-wrap: anywhere;
   }
 
+  .uk-form__control {
+    min-width: 0;
+  }
+
+  /*
+   * Validation feedback is occasional. A 400ms lateral cue with a 6px first
+   * excursion makes the error visible without delaying focus or state. It
+   * only runs when the field transitions into data-invalid, not on every
+   * render while the error remains visible.
+   */
+  .uk-form__field[data-invalid="true"] > .uk-form__control {
+    animation: uk-form-shake 400ms var(--uk-ease-in-out);
+  }
+
+  /*
+   * Error copy is occasional feedback. A short downward reveal ties the
+   * message to the control above it without delaying validation state.
+   */
   .uk-form__error {
     font-size: var(--uk-text-sm);
     color: var(--uk-danger);
@@ -64,11 +82,15 @@
     min-height: 1.25rem;
     min-width: 0;
     overflow-wrap: anywhere;
-    transition: opacity var(--uk-duration-fast) var(--uk-ease-out);
+    transform: translateY(0);
+    transition:
+      opacity var(--uk-duration-base) var(--uk-ease-out),
+      transform var(--uk-duration-base) var(--uk-ease-out);
   }
 
   .uk-form__error[data-state="hidden"] {
     opacity: 0;
+    transform: translateY(-0.25rem);
   }
 
   .uk-form__error-summary {
@@ -210,9 +232,48 @@
     }
   }
 
+  @keyframes uk-form-shake {
+    0% {
+      transform: translateX(0);
+    }
+
+    16% {
+      transform: translateX(-0.375rem);
+    }
+
+    36% {
+      transform: translateX(0.375rem);
+    }
+
+    56% {
+      transform: translateX(-0.25rem);
+    }
+
+    74% {
+      transform: translateX(0.1875rem);
+    }
+
+    88% {
+      transform: translateX(-0.125rem);
+    }
+
+    100% {
+      transform: translateX(0);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    .uk-form__field[data-invalid="true"] > .uk-form__control {
+      animation: none;
+    }
+
     .uk-form__error {
-      transition: none;
+      transform: none;
+      transition: opacity var(--uk-duration-fast) var(--uk-ease-out);
+    }
+
+    .uk-form__error[data-state="hidden"] {
+      transform: none;
     }
 
     .uk-form__field[data-validating="true"]::after {

@@ -141,7 +141,7 @@ export function FormPage() {
 
       <Section
         title="基础用法"
-        description="Field 注册字段与规则，Control 将值、状态和事件接入现有输入组件。默认失焦校验，字段报错后在输入时重新校验。此示例显式使用 vertical，保留紧凑订阅表单的纵向阅读顺序。"
+        description="Field 注册字段与规则，Control 将值、状态和事件接入现有输入组件。默认失焦校验，字段首次校验后在输入时持续重新校验；进入错误态会播放清晰的横向反馈，错误文案从上方淡入下沉。此示例显式使用 vertical，保留紧凑订阅表单的纵向阅读顺序。"
       >
         <Demo
           code={`<Form.Root layout="vertical" onSubmit={(values) => console.log(values)}>
@@ -185,7 +185,7 @@ export function FormPage() {
 
       <Section
         title="校验时机"
-        description="validateOn 与 revalidateOn 同时驱动字段 rules 和 Root.validate（包括 Valibot resolver）。focus、change、blur 与 pointerleave 可配置为首次校验时机；已报错字段按 revalidateOn 重新校验，submit 始终执行完整校验。"
+        description="validateOn 与 revalidateOn 同时驱动字段 rules 和 Root.validate（包括 Valibot resolver）。focus、change、blur 与 pointerleave 可配置为首次校验时机；字段首次交互后会按 revalidateOn 持续重新校验，submit 始终执行完整校验。"
       >
         <Demo
           code={getFormDemoSource("validation-timing")}
@@ -197,7 +197,8 @@ export function FormPage() {
           items={[
             <>
               默认 <InlineCode>validateOn="blur"</InlineCode>、
-              <InlineCode>revalidateOn="change"</InlineCode>，沿用既有交互节奏。
+              <InlineCode>revalidateOn="change"</InlineCode>
+              ：字段首次失焦校验后，即使在有效与无效之间反复切换，也会在每次输入变化时更新错误与反馈。
             </>,
             <>
               <InlineCode>validateOn="submit"</InlineCode>{" "}
@@ -212,6 +213,7 @@ export function FormPage() {
               异步 change 校验继续使用 <InlineCode>validateDebounce</InlineCode>
               ；新一次校验会取代旧结果，避免过期错误覆盖新值。
             </>,
+            "字段交互只提交当前字段及其显式 dependencies 的校验结果；其他尚未报错的字段不会因一次失焦同时显示错误，提交时才汇总全部字段。",
           ]}
         />
       </Section>
@@ -389,7 +391,7 @@ const LoginSchema = v.object({
               name: "validate",
               type: "(values: T) => FormErrors<T> | Promise<FormErrors<T>>",
               description:
-                "跨字段或表单级校验；与字段 rules 使用相同触发时机和错误合并生命周期。",
+                "跨字段或表单级校验；交互时只提交当前字段及已触碰或已显示错误的字段结果，提交时汇总全部字段。",
             },
             {
               name: "layout",
@@ -495,7 +497,7 @@ const LoginSchema = v.object({
             "提交失败聚焦第一个错误字段；异步提交失败保留输入并显示表单级错误。",
             "horizontal 与 inline 只调整视觉布局，Tab 顺序始终遵循 DOM；窄屏按标签、控件、反馈顺序阅读。",
             "pointerleave 不是唯一的报错或清除错误机会；键盘和触摸仍保留 focus、blur、change 与 submit 反馈。",
-            "错误与校验反馈不依赖颜色，reduced motion 下移除非必要动画；布局与标签换行不增加动画。",
+            "字段首次进入错误态时播放一次清晰的横向反馈，错误文案从上方淡入下沉；位移动画在 reduced motion 下移除，错误、aria-invalid 与关联描述不依赖动画存在。",
           ]}
         />
         <Callout title="保留旧版纵向外观" tone="info">

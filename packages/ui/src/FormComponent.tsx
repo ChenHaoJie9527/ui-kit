@@ -561,6 +561,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
   const runFormLevelValidation = useEventCallback(
     async (
       nextValues: Record<string, unknown> = values,
+      triggerFields?: string[],
     ): Promise<FormErrors> => {
       formValidationAbortRef.current?.abort();
 
@@ -587,16 +588,36 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
 
         if (abortController.signal.aborted) return formLevelErrors;
 
+        // Interactive validation may update the field that caused it and
+        // fields the user already touched or that already show an error.
+        // Untouched fields wait for their own interaction or a full submit.
+        const touchedFields = Array.from(fieldStatesRef.current.entries())
+          .filter(([, meta]) => meta.touched)
+          .map(([fieldName]) => fieldName);
+        const fieldsToUpdate = triggerFields
+          ? new Set([
+              ...triggerFields,
+              ...touchedFields,
+              ...Object.keys(errorsRef.current),
+            ])
+          : null;
+        const shouldUpdateField = (name: string) =>
+          fieldsToUpdate === null || fieldsToUpdate.has(name);
         const previousFormLevelErrors = formLevelErrorsRef.current;
         const allErrors = { ...errorsRef.current };
+        const nextFormLevelErrors: Record<string, string> = fieldsToUpdate
+          ? { ...previousFormLevelErrors }
+          : {};
+
         Object.keys(previousFormLevelErrors).forEach((key) => {
+          if (!shouldUpdateField(key)) return;
           if (allErrors[key] === previousFormLevelErrors[key]) {
             delete allErrors[key];
           }
+          delete nextFormLevelErrors[key];
         });
-        const nextFormLevelErrors: Record<string, string> = {};
         Object.entries(formLevelErrors).forEach(([key, value]) => {
-          if (value) {
+          if (value && shouldUpdateField(key)) {
             allErrors[key] = value;
             nextFormLevelErrors[key] = value;
           }
@@ -660,11 +681,16 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       const shouldValidate =
         options?.validate ??
         (validateOn === "change" ||
-          (revalidateOn === "change" && formState.errors[name]));
+          (revalidateOn === "change" &&
+            (Boolean(formState.errors[name]) ||
+              Boolean(fieldStatesRef.current.get(name)?.touched))));
 
       if (shouldValidate) {
         const timer = validationTimersRef.current.get(name);
         if (timer) clearTimeout(timer);
+        const dependentFields = Array.from(fieldsRef.current.entries())
+          .filter(([, fieldConfig]) => fieldConfig.dependencies?.includes(name))
+          .map(([fieldName]) => fieldName);
 
         const hasCustomValidator = config?.rules?.some(
           (rule) => "validator" in rule,
@@ -673,13 +699,13 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
         if (hasCustomValidator && validateDebounce > 0) {
           const newTimer = setTimeout(() => {
             validateField(name, newValues);
-            runFormLevelValidation(newValues);
+            runFormLevelValidation(newValues, [name, ...dependentFields]);
             validationTimersRef.current.delete(name);
           }, validateDebounce);
           validationTimersRef.current.set(name, newTimer);
         } else {
           validateField(name, newValues);
-          runFormLevelValidation(newValues);
+          runFormLevelValidation(newValues, [name, ...dependentFields]);
         }
       }
 
@@ -708,7 +734,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
         Object.keys(newValues).forEach((name) =>
           validateField(name, updatedValues),
         );
-        runFormLevelValidation(updatedValues);
+        runFormLevelValidation(updatedValues, Object.keys(newValues));
       }
     },
   );
@@ -718,10 +744,10 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
 
     if (touched && validateOn === "blur") {
       validateField(name);
-      runFormLevelValidation();
+      runFormLevelValidation(values, [name]);
     } else if (touched && revalidateOn === "blur" && formState.errors[name]) {
       validateField(name);
-      runFormLevelValidation();
+      runFormLevelValidation(values, [name]);
     }
   });
 
@@ -735,7 +761,7 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
 
       if (shouldValidate) {
         validateField(name);
-        runFormLevelValidation();
+        runFormLevelValidation(values, [name]);
       }
     },
   );
@@ -1328,12 +1354,14 @@ function FormControl({ children }: FormControlProps): ReactElement {
     sharedProps["aria-labelledby"] = labelledBy;
   }
 
+  let control: ReactElement;
+
   if (isBooleanControl) {
     const originalOnCheckedChange = childProps.onCheckedChange as
       | ((checked: boolean) => void)
       | undefined;
 
-    return cloneElement(child, {
+    control = cloneElement(child, {
       ...sharedProps,
       checked: Boolean(state.value),
       onCheckedChange: (checked: boolean) => {
@@ -1341,14 +1369,12 @@ function FormControl({ children }: FormControlProps): ReactElement {
         formContext.setValue(name, checked);
       },
     });
-  }
-
-  if (isCompositeControl) {
+  } else if (isCompositeControl) {
     const originalOnValueChange = childProps.onValueChange as
       | ((value: string | string[]) => void)
       | undefined;
 
-    return cloneElement(child, {
+    control = cloneElement(child, {
       ...sharedProps,
       value: state.value as string | readonly string[] | null | undefined,
       onValueChange: (value: string | string[]) => {
@@ -1356,43 +1382,49 @@ function FormControl({ children }: FormControlProps): ReactElement {
         formContext.setValue(name, value);
       },
     });
+  } else {
+    control = cloneElement(child, {
+      ...sharedProps,
+      value: isNativeCheckbox ? childProps.value : (state.value ?? ""),
+      checked: isNativeCheckbox ? Boolean(state.value) : childProps.checked,
+      onChange: (event: unknown) => {
+        const originalOnChange = childProps.onChange as
+          | ((event: unknown) => void)
+          | undefined;
+        originalOnChange?.(event);
+
+        let value: unknown;
+        if (event && typeof event === "object" && "target" in event) {
+          const target = (event as { target: unknown }).target;
+          if (target && typeof target === "object") {
+            if ("selectedOptions" in target && childProps.multiple) {
+              value = Array.from(
+                target.selectedOptions as ArrayLike<HTMLOptionElement>,
+              ).map((option) => option.value);
+            } else if (
+              "type" in target &&
+              (target as { type: unknown }).type === "checkbox" &&
+              "checked" in target
+            ) {
+              value = (target as { checked: unknown }).checked;
+            } else if ("value" in target) {
+              value = (target as { value: unknown }).value;
+            }
+          }
+        } else {
+          value = event;
+        }
+
+        formContext.setValue(name, value);
+      },
+    });
   }
 
-  return cloneElement(child, {
-    ...sharedProps,
-    value: isNativeCheckbox ? childProps.value : (state.value ?? ""),
-    checked: isNativeCheckbox ? Boolean(state.value) : childProps.checked,
-    onChange: (event: unknown) => {
-      const originalOnChange = childProps.onChange as
-        | ((event: unknown) => void)
-        | undefined;
-      originalOnChange?.(event);
-
-      let value: unknown;
-      if (event && typeof event === "object" && "target" in event) {
-        const target = (event as { target: unknown }).target;
-        if (target && typeof target === "object") {
-          if ("selectedOptions" in target && childProps.multiple) {
-            value = Array.from(
-              target.selectedOptions as ArrayLike<HTMLOptionElement>,
-            ).map((option) => option.value);
-          } else if (
-            "type" in target &&
-            (target as { type: unknown }).type === "checkbox" &&
-            "checked" in target
-          ) {
-            value = (target as { checked: unknown }).checked;
-          } else if ("value" in target) {
-            value = (target as { value: unknown }).value;
-          }
-        }
-      } else {
-        value = event;
-      }
-
-      formContext.setValue(name, value);
-    },
-  });
+  return (
+    <div className="uk-form__control" data-slot="control">
+      {control}
+    </div>
+  );
 }
 
 // ============================================================================
