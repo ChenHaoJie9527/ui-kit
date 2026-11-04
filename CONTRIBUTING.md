@@ -80,3 +80,41 @@ echo "feat(ui): 新增 Badge 组件" | pnpm exec commitlint
 pnpm changeset status    # 查看待发布的版本变化
 pnpm version-packages    # 应用版本号与 CHANGELOG（通常由 CI 执行）
 ```
+
+## 站点部署
+
+文档站有两个托管目标，同一个构建产物：
+
+| 目标         | 地址                                       | 触发方式                          |
+| ------------ | ------------------------------------------ | --------------------------------- |
+| GitHub Pages | `https://chenhaojie9527.github.io/ui-kit/` | `pages` 工作流，`main` 每次推送   |
+| 自有服务器   | `https://ui-kit.cn/`                       | 同一次构建后由 `pages` 工作流同步 |
+
+两个目标都由 `pnpm build:docs` 产出（输出到仓库根目录的 `docs/`，已加入
+`.gitignore`）。**不要手工把本地 `docs/` 传到服务器**：一旦手工覆盖，
+下一次自动同步会把它再覆盖回去，排查成本远高于收益。
+
+### 版本可见性
+
+构建会额外产出 `docs/version.json`，内容为 `packages/ui/package.json` 的
+`version`、当前提交和构建时间。它存在的唯一原因是：站点版本徽标只存在于
+压缩后的 bundle 里，从外部无法读取。
+
+核对线上版本：
+
+```bash
+pnpm check:site           # 默认检查 ui-kit.cn 与 GitHub Pages
+```
+
+`site-drift` 工作流每天定时跑同一个脚本，发现线上落后就自动开 issue 并持续
+追加评论，直到版本重新一致。
+
+### 服务器侧约定
+
+- 站点目录必须是**专用目录**（默认 `/var/www/ui-kit`），同步使用
+  `rsync --delete`，与其它站点共用目录会被删掉；
+- 同步顺序固定为先 `assets/` 后 `index.html`，避免用户撞到「HTML 已更新、
+  哈希资源还没到」的 404；
+- `index.html` 必须返回 `Cache-Control: no-cache`，`/assets/*` 才用
+  `immutable`。只给资源设长缓存而放任 HTML 被启发式缓存，会出现「部署成功
+  但用户仍看到旧版本」，此时版本徽标会和线上实际产物不一致。
