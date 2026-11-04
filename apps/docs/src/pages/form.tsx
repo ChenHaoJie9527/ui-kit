@@ -185,7 +185,7 @@ export function FormPage() {
 
       <Section
         title="校验时机"
-        description="validateOn 与 revalidateOn 同时驱动字段 rules 和 Root.validate（包括 Valibot resolver）。focus、change、blur 与 pointerleave 可配置为首次校验时机；已报错字段按 revalidateOn 重新校验，submit 始终执行完整校验。"
+        description="validateOn 与 revalidateOn 同时驱动字段 rules 和 Root.validate（包括 Valibot resolver）。focus、change、blur 与 pointerleave 可配置为首次校验时机；字段首次交互后会按 revalidateOn 持续重新校验，submit 始终执行完整校验。"
       >
         <Demo
           code={getFormDemoSource("validation-timing")}
@@ -197,7 +197,8 @@ export function FormPage() {
           items={[
             <>
               默认 <InlineCode>validateOn="blur"</InlineCode>、
-              <InlineCode>revalidateOn="change"</InlineCode>，沿用既有交互节奏。
+              <InlineCode>revalidateOn="change"</InlineCode>
+              ：字段首次失焦校验后，即使在有效与无效之间反复切换，也会在每次输入变化时更新错误与反馈。
             </>,
             <>
               <InlineCode>validateOn="submit"</InlineCode>{" "}

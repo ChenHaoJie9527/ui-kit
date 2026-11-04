@@ -681,7 +681,9 @@ const FormRoot = forwardRef<FormRef, FormRootProps>(function FormRoot(
       const shouldValidate =
         options?.validate ??
         (validateOn === "change" ||
-          (revalidateOn === "change" && formState.errors[name]));
+          (revalidateOn === "change" &&
+            (Boolean(formState.errors[name]) ||
+              Boolean(fieldStatesRef.current.get(name)?.touched))));
 
       if (shouldValidate) {
         const timer = validationTimersRef.current.get(name);

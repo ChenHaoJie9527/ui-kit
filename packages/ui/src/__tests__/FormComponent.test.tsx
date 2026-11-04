@@ -138,6 +138,40 @@ describe("Form", () => {
     expect(input.getAttribute("aria-invalid")).toBeNull();
   });
 
+  it("keeps revalidating a touched field after it becomes valid", async () => {
+    render(
+      <Form.Root>
+        <EmailField />
+      </Form.Root>,
+    );
+
+    const input = screen.getByRole("textbox", { name: "邮箱" });
+    const field = input.closest(".uk-form__field") as HTMLElement;
+
+    fireEvent.blur(input);
+    expect(await screen.findByText("请输入邮箱")).not.toBeNull();
+
+    fireEvent.change(input, { target: { value: "1" } });
+    await waitFor(() => {
+      expect(screen.queryByText("请输入邮箱")).toBeNull();
+      expect(field.getAttribute("data-invalid")).toBeNull();
+    });
+
+    fireEvent.change(input, { target: { value: "" } });
+    expect(await screen.findByText("请输入邮箱")).not.toBeNull();
+    expect(field.getAttribute("data-invalid")).toBe("true");
+
+    fireEvent.change(input, { target: { value: "1" } });
+    await waitFor(() => {
+      expect(screen.queryByText("请输入邮箱")).toBeNull();
+      expect(field.getAttribute("data-invalid")).toBeNull();
+    });
+
+    fireEvent.change(input, { target: { value: "" } });
+    expect(await screen.findByText("请输入邮箱")).not.toBeNull();
+    expect(field.getAttribute("data-invalid")).toBe("true");
+  });
+
   it("submits valid values and focuses the first invalid field", async () => {
     const onSubmit = vi.fn<(values: Record<string, unknown>) => void>();
 
