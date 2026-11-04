@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "只预演同步到自有服务器，不写入"
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -35,6 +40,13 @@ jobs:
         with:
           path: docs
 
+      # 同一次构建供两个托管目标复用，避免出现两套产物。
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: docs
+          retention-days: 7
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -44,3 +56,78 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  deploy-vps:
+    needs: build
+    runs-on: ubuntu-latest
+    # 未配置目标主机时跳过，避免在 secrets/variables 就绪前让流水线变红。
+    if: vars.VPS_HOST != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: site
+
+      - name: 配置 SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          cat >> ~/.ssh/config <<'CONFIG'
+          Host vps
+            HostName ${{ vars.VPS_HOST }}
+            User ${{ vars.VPS_USER }}
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+          CONFIG
+          chmod 600 ~/.ssh/config
+
+      # 三段式同步，保证任何时刻线上都是自洽的：
+      #   1) 先把新资源放上去（不删除），旧 HTML 仍能引用旧资源；
+      #   2) 再切换 index.html 与 version.json；
+      #   3) 最后清理旧资源。
+      # 若反过来先 --delete，旧 HTML 会短暂指向已被删除的文件。
+      - name: 资源预演
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+        run: >-
+          rsync -azn --itemize-changes
+          --exclude index.html --exclude version.json --exclude .nojekyll
+          -e ssh site/ "vps:${{ vars.VPS_PATH }}/"
+
+      - name: 资源同步
+        if: github.event_name != 'workflow_dispatch' || !inputs.dry_run
+        run: >-
+          rsync -az --itemize-changes
+          --exclude index.html --exclude version.json --exclude .nojekyll
+          -e ssh site/ "vps:${{ vars.VPS_PATH }}/"
+
+      - name: HTML 预演
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+        run: >-
+          rsync -azn --itemize-changes -e ssh
+          site/index.html site/version.json "vps:${{ vars.VPS_PATH }}/"
+
+      - name: HTML 切换
+        if: github.event_name != 'workflow_dispatch' || !inputs.dry_run
+        run: >-
+          rsync -az --itemize-changes -e ssh
+          site/index.html site/version.json "vps:${{ vars.VPS_PATH }}/"
+
+      - name: 清理旧资源
+        if: github.event_name != 'workflow_dispatch' || !inputs.dry_run
+        run: >-
+          rsync -az --delete --itemize-changes
+          --exclude .nojekyll
+          -e ssh site/ "vps:${{ vars.VPS_PATH }}/"
+
+      # 部署完立刻回读，避免「同步命令成功但线上还是旧的」这种静默失败。
+      - name: 校验线上版本
+        if: github.event_name != 'workflow_dispatch' || !inputs.dry_run
+        run: |
+          sleep 3
+          node scripts/check-site-version.mjs "https://${{ vars.VPS_HOST }}"

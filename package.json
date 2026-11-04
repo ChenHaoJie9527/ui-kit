@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "check:commitlint": "sh scripts/check-commitlint.sh",
+    "check:site": "node scripts/check-site-version.mjs",
     "dev": "pnpm --filter @chenhaojie9527/docs dev",
     "dev:docs": "pnpm --filter @chenhaojie9527/docs dev",
     "build:docs": "pnpm --filter @chenhaojie9527/docs build",
