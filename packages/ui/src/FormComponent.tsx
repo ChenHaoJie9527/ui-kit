@@ -1354,12 +1354,14 @@ function FormControl({ children }: FormControlProps): ReactElement {
     sharedProps["aria-labelledby"] = labelledBy;
   }
 
+  let control: ReactElement;
+
   if (isBooleanControl) {
     const originalOnCheckedChange = childProps.onCheckedChange as
       | ((checked: boolean) => void)
       | undefined;
 
-    return cloneElement(child, {
+    control = cloneElement(child, {
       ...sharedProps,
       checked: Boolean(state.value),
       onCheckedChange: (checked: boolean) => {
@@ -1367,14 +1369,12 @@ function FormControl({ children }: FormControlProps): ReactElement {
         formContext.setValue(name, checked);
       },
     });
-  }
-
-  if (isCompositeControl) {
+  } else if (isCompositeControl) {
     const originalOnValueChange = childProps.onValueChange as
       | ((value: string | string[]) => void)
       | undefined;
 
-    return cloneElement(child, {
+    control = cloneElement(child, {
       ...sharedProps,
       value: state.value as string | readonly string[] | null | undefined,
       onValueChange: (value: string | string[]) => {
@@ -1382,43 +1382,49 @@ function FormControl({ children }: FormControlProps): ReactElement {
         formContext.setValue(name, value);
       },
     });
+  } else {
+    control = cloneElement(child, {
+      ...sharedProps,
+      value: isNativeCheckbox ? childProps.value : (state.value ?? ""),
+      checked: isNativeCheckbox ? Boolean(state.value) : childProps.checked,
+      onChange: (event: unknown) => {
+        const originalOnChange = childProps.onChange as
+          | ((event: unknown) => void)
+          | undefined;
+        originalOnChange?.(event);
+
+        let value: unknown;
+        if (event && typeof event === "object" && "target" in event) {
+          const target = (event as { target: unknown }).target;
+          if (target && typeof target === "object") {
+            if ("selectedOptions" in target && childProps.multiple) {
+              value = Array.from(
+                target.selectedOptions as ArrayLike<HTMLOptionElement>,
+              ).map((option) => option.value);
+            } else if (
+              "type" in target &&
+              (target as { type: unknown }).type === "checkbox" &&
+              "checked" in target
+            ) {
+              value = (target as { checked: unknown }).checked;
+            } else if ("value" in target) {
+              value = (target as { value: unknown }).value;
+            }
+          }
+        } else {
+          value = event;
+        }
+
+        formContext.setValue(name, value);
+      },
+    });
   }
 
-  return cloneElement(child, {
-    ...sharedProps,
-    value: isNativeCheckbox ? childProps.value : (state.value ?? ""),
-    checked: isNativeCheckbox ? Boolean(state.value) : childProps.checked,
-    onChange: (event: unknown) => {
-      const originalOnChange = childProps.onChange as
-        | ((event: unknown) => void)
-        | undefined;
-      originalOnChange?.(event);
-
-      let value: unknown;
-      if (event && typeof event === "object" && "target" in event) {
-        const target = (event as { target: unknown }).target;
-        if (target && typeof target === "object") {
-          if ("selectedOptions" in target && childProps.multiple) {
-            value = Array.from(
-              target.selectedOptions as ArrayLike<HTMLOptionElement>,
-            ).map((option) => option.value);
-          } else if (
-            "type" in target &&
-            (target as { type: unknown }).type === "checkbox" &&
-            "checked" in target
-          ) {
-            value = (target as { checked: unknown }).checked;
-          } else if ("value" in target) {
-            value = (target as { value: unknown }).value;
-          }
-        }
-      } else {
-        value = event;
-      }
-
-      formContext.setValue(name, value);
-    },
-  });
+  return (
+    <div className="uk-form__control" data-slot="control">
+      {control}
+    </div>
+  );
 }
 
 // ============================================================================

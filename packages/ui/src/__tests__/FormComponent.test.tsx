@@ -1106,6 +1106,34 @@ describe("Form", () => {
     });
   });
 
+  it("exposes control and error states for validation feedback", async () => {
+    render(
+      <Form.Root>
+        <EmailField />
+      </Form.Root>,
+    );
+
+    const input = screen.getByRole("textbox", { name: "邮箱" });
+    const field = input.closest(".uk-form__field") as HTMLElement;
+    expect(input.parentElement?.classList.contains("uk-form__control")).toBe(
+      true,
+    );
+
+    fireEvent.blur(input);
+
+    const error = await screen.findByText("请输入邮箱");
+    expect(error.getAttribute("data-state")).toBe("visible");
+    expect(field.getAttribute("data-invalid")).toBe("true");
+
+    fireEvent.change(input, { target: { value: "team@example.com" } });
+
+    await waitFor(() => {
+      expect(screen.queryByText("请输入邮箱")).toBeNull();
+    });
+    expect(field.getAttribute("data-invalid")).toBeNull();
+    expect(error.getAttribute("data-state")).toBe("hidden");
+  });
+
   it("supports every public validation trigger type at runtime", async () => {
     const triggers: FormValidationTrigger[] = [
       "submit",

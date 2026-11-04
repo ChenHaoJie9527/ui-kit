@@ -141,7 +141,7 @@ export function FormPage() {
 
       <Section
         title="基础用法"
-        description="Field 注册字段与规则，Control 将值、状态和事件接入现有输入组件。默认失焦校验，字段报错后在输入时重新校验。此示例显式使用 vertical，保留紧凑订阅表单的纵向阅读顺序。"
+        description="Field 注册字段与规则，Control 将值、状态和事件接入现有输入组件。默认失焦校验，字段首次校验后在输入时持续重新校验；进入错误态会播放清晰的横向反馈，错误文案从上方淡入下沉。此示例显式使用 vertical，保留紧凑订阅表单的纵向阅读顺序。"
       >
         <Demo
           code={`<Form.Root layout="vertical" onSubmit={(values) => console.log(values)}>
@@ -497,7 +497,7 @@ const LoginSchema = v.object({
             "提交失败聚焦第一个错误字段；异步提交失败保留输入并显示表单级错误。",
             "horizontal 与 inline 只调整视觉布局，Tab 顺序始终遵循 DOM；窄屏按标签、控件、反馈顺序阅读。",
             "pointerleave 不是唯一的报错或清除错误机会；键盘和触摸仍保留 focus、blur、change 与 submit 反馈。",
-            "错误与校验反馈不依赖颜色，reduced motion 下移除非必要动画；布局与标签换行不增加动画。",
+            "字段首次进入错误态时播放一次清晰的横向反馈，错误文案从上方淡入下沉；位移动画在 reduced motion 下移除，错误、aria-invalid 与关联描述不依赖动画存在。",
           ]}
         />
         <Callout title="保留旧版纵向外观" tone="info">
