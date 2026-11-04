@@ -1,0 +1,97 @@
+name: site-drift
+
+on:
+  schedule:
+    # 每天 01:00 UTC 检查一次，兜住「部署成功但同步漏了」的情况。
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 比对线上版本
+        id: check
+        continue-on-error: true
+        run: >-
+          node scripts/check-site-version.mjs
+          https://ui-kit.cn
+          https://chenhaojie9527.github.io/ui-kit
+          --report "$RUNNER_TEMP/site-drift.json"
+
+      - name: 打开或更新 issue
+        if: steps.check.outcome != 'success'
+        uses: actions/github-script@v7
+        env:
+          REPORT: ${{ runner.temp }}/site-drift.json
+        with:
+          script: |
+            const fs = require("node:fs");
+            const report = JSON.parse(fs.readFileSync(process.env.REPORT, "utf8"));
+            const title = "chore(site): 线上站点版本与 packages/ui 不一致";
+
+            const rows = report.results.map((item) => {
+              const live = item.live ? `\`${item.live}\`` : "—";
+              const built = item.builtAt ? `\`${item.builtAt}\`` : "—";
+              const note = item.detail ? item.detail : "已对齐";
+              return `| ${item.site} | ${live} | ${built} | ${note} |`;
+            });
+
+            const body = [
+              "`site-drift` 定时检查发现线上部署落后于仓库版本。",
+              "",
+              `- 期望版本（\`packages/ui/package.json\`）：\`${report.expected}\``,
+              `- 检查时间：\`${report.checkedAt}\``,
+              "",
+              "| 站点 | 线上版本 | 线上构建时间 | 说明 |",
+              "| --- | --- | --- | --- |",
+              ...rows,
+              "",
+              "排查方向：",
+              "",
+              "1. 对应的部署 workflow 是否失败（`pages` 或 VPS 同步 job）；",
+              "2. VPS 目标目录是否被手工改动覆盖；",
+              "3. Caddy 是否返回了缓存的 `index.html`（应为 `Cache-Control: no-cache`）。",
+              "",
+              "_该 issue 由 `site-drift` 自动维护，恢复一致后请手动关闭。_",
+            ].join("\n");
+
+            const { data: open } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+
+            const existing = open.find((issue) => issue.title === title);
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              });
+              core.notice(`已更新 issue #${existing.number}`);
+              return;
+            }
+
+            const { data: created } = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+            });
+            core.notice(`已创建 issue #${created.number}`);
