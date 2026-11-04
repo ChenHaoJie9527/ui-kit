@@ -118,6 +118,13 @@ jobs:
           rsync -az --itemize-changes -e ssh
           site/index.html site/version.json "vps:${{ vars.VPS_PATH }}/"
 
+      - name: 清理预演
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+        run: >-
+          rsync -azn --delete --itemize-changes
+          --exclude .nojekyll
+          -e ssh site/ "vps:${{ vars.VPS_PATH }}/"
+
       - name: 清理旧资源
         if: github.event_name != 'workflow_dispatch' || !inputs.dry_run
         run: >-
@@ -130,4 +137,5 @@ jobs:
         if: github.event_name != 'workflow_dispatch' || !inputs.dry_run
         run: |
           sleep 3
-          node scripts/check-site-version.mjs "https://${{ vars.VPS_HOST }}"
+          # 必须走域名：Caddy 的证书只覆盖 ui-kit.cn，直连 IP 会 TLS 失败。
+          node scripts/check-site-version.mjs "${{ vars.SITE_URL || 'https://ui-kit.cn' }}"
