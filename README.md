@@ -6,7 +6,7 @@
 [![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=black)](https://react.dev/)
 [![Tests](https://img.shields.io/badge/tests-137%20passed-22c55e)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
-[![Docs](https://img.shields.io/badge/docs-online-4f46e5)](https://chenhaojie9527.github.io/ui-kit/)
+[![Docs](https://img.shields.io/badge/docs-online-4f46e5)](https://ui-kit.cn/)
 
 ## 为什么做这个项目
 
