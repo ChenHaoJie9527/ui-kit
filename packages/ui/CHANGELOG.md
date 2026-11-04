@@ -1,5 +1,11 @@
 # seam-react
 
+## 0.13.1
+
+### Patch Changes
+
+- c98562f: Refine Form validation feedback with a slower, more visible shake, field-scoped interactive errors, and change revalidation that continues after a touched field becomes valid.
+
 ## 0.13.0
 
 ### Minor Changes
