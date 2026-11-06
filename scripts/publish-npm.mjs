@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const command = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+const root = fileURLToPath(new URL("..", import.meta.url));
 const packages = [
   {
     name: "seam-hooks",
@@ -13,7 +14,7 @@ const packages = [
     directory: new URL("../packages/ui/", import.meta.url),
   },
 ];
-const dryRunArgs = process.env.NPM_PUBLISH_DRY_RUN === "1" ? ["--dry-run"] : [];
+const dryRun = process.env.NPM_PUBLISH_DRY_RUN === "1";
 const manifests = await Promise.all(
   packages.map(async ({ name, directory }) => {
     const manifest = JSON.parse(
@@ -24,6 +25,8 @@ const manifests = await Promise.all(
   }),
 );
 
+// 已发布的版本不会重新发布，但后面的包可能依赖它的 dist。clean checkout 里
+// 没有构建产物，所以先补一次 build，避免下游包构建失败。
 for (const [index, { name, directory, manifest }] of manifests.entries()) {
   const published = spawnSync(
     "npm",
@@ -31,43 +34,37 @@ for (const [index, { name, directory, manifest }] of manifests.entries()) {
     { encoding: "utf8" },
   );
 
-  if (published.status === 0) {
-    console.log(`${name}@${manifest.version} 已存在，跳过`);
-
-    // A skipped workspace package can still be a local build dependency of a
-    // later package. Build it so the clean CI checkout has its dist artifacts.
-    if (index < manifests.length - 1) {
-      const build = spawnSync(command, ["build"], {
-        cwd: fileURLToPath(directory),
-        stdio: "inherit",
-      });
-
-      if (build.status !== 0) {
-        process.exit(build.status ?? 1);
-      }
-    }
-
+  if (published.status !== 0) {
     continue;
   }
 
-  const result = spawnSync(
-    command,
-    [
-      "--filter",
-      name,
-      "publish",
-      "--access",
-      "public",
-      "--no-git-checks",
-      ...dryRunArgs,
-    ],
-    {
-      cwd: fileURLToPath(directory),
-      stdio: "inherit",
-    },
-  );
+  console.log(`${name}@${manifest.version} 已存在，跳过`);
 
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
+  if (index >= manifests.length - 1) {
+    continue;
+  }
+
+  const build = spawnSync(command, ["build"], {
+    cwd: fileURLToPath(directory),
+    stdio: "inherit",
+  });
+
+  if (build.status !== 0) {
+    process.exit(build.status ?? 1);
   }
 }
+
+// 交给 Changesets 完成发布：按依赖顺序发布未发布版本、创建 annotated git
+// tag，并把 git-tag 事件写入 CHANGESETS_OUTPUT。release 工作流依赖这份事件
+// 输出推送 tag 并创建 GitHub Release。
+const result = spawnSync(
+  command,
+  ["exec", "changeset", dryRun ? "publish-plan" : "publish"],
+  {
+    cwd: root,
+    stdio: "inherit",
+    env: process.env,
+  },
+);
+
+process.exit(result.status ?? 1);

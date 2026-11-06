@@ -38,6 +38,10 @@ jobs:
           version-script: pnpm version-packages
           # Trusted Publishers for seam-hooks and seam-react point at this file.
           publish-script: pnpm publish:npm
+          # 发布脚本通过 changeset publish 写出 git-tag 事件，这两个开关负责
+          # 推送 tag 并用 CHANGELOG 条目创建 GitHub Release。
+          create-github-releases: true
+          push-git-tags: true
           commit-message: "chore(release): version packages"
           pr-title: "chore(release): version packages"
         env:
