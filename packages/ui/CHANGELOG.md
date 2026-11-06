@@ -1,5 +1,11 @@
 # seam-react
 
+## 0.13.3
+
+### Patch Changes
+
+- 2602c2c: Badge 支持状态图标、loading 状态、sm / md 尺寸与状态切换动效。
+
 ## 0.13.2
 
 ### Patch Changes
