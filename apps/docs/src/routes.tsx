@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import { createHashRouter, useParams } from "react-router";
 import { hookByPath } from "./content/hooks";
 import { AppLayout } from "./App";
+import { BadgePage } from "./pages/badge";
 import { ButtonPage } from "./pages/button";
 import { CheckBoxPage } from "./pages/checkbox";
 import { CustomizingPage } from "./pages/customizing";
@@ -22,6 +23,7 @@ import { TooltipPage } from "./pages/tooltip";
 import { UsagePage } from "./pages/usage";
 
 const componentPages: Record<string, ComponentType> = {
+  badge: BadgePage,
   button: ButtonPage,
   input: InputPage,
   form: FormPage,
