@@ -7,6 +7,7 @@ interface ComponentPage {
 }
 
 const COMPONENT_PAGES: ComponentPage[] = [
+  { name: "Badge", path: "/#/components/badge" },
   { name: "Button", path: "/#/components/button" },
   { name: "CheckBox", path: "/#/components/checkbox" },
   { name: "Dialog", path: "/#/components/dialog" },

@@ -26,6 +26,12 @@ const componentDefinitions: Array<
     tags: ["变体", "尺寸", "加载态"],
   },
   {
+    path: "components/badge",
+    name: "Badge",
+    summary: "内联状态标签，自带状态图标、loading 动效、尺寸与可关闭按钮。",
+    tags: ["状态标记", "变体", "可关闭"],
+  },
+  {
     path: "components/input",
     name: "Input",
     summary: "透传原生输入属性，错误态与尺寸由属性驱动。",
