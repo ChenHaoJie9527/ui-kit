@@ -78,5 +78,9 @@
   "useWatch": {
     "introducedIn": "0.12.3",
     "releasedAt": "2026-10-29T11:30:17.793Z"
+  },
+  "Drawer": {
+    "introducedIn": "0.14.0",
+    "releasedAt": "2026-11-09T09:58:31.913Z"
   }
 }
