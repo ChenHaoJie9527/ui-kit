@@ -439,12 +439,21 @@ function DialogLayer({
     };
   }, [closeOnBackdropClick, closeOnEscape, requestClose]);
 
+  // Native light dismiss follows the same split as our own handlers: Escape only
+  // when backdrop closing is off, and no native dismissal at all when Escape is
+  // disabled (backdrop clicks still run through the dialog click handler).
+  const closedBy = !closeOnEscape
+    ? "none"
+    : closeOnBackdropClick
+      ? "any"
+      : "closerequest";
+
   return (
     <dialog
       ref={dialogRef}
       id={contentId}
       className={cx("uk-dialog", className)}
-      closedby={closeOnEscape || closeOnBackdropClick ? "any" : "none"}
+      closedby={closedBy}
       data-state={isPresent ? "open" : "closed"}
       inert={!isPresent}
       aria-label={ariaLabel}
