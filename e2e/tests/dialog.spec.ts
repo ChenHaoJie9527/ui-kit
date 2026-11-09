@@ -1,5 +1,5 @@
 import { test } from "@playwright/test";
-import { expectScrimRamp, sampleScrim } from "../support/scrim";
+import { expectScrimRamp, stepScrimEnter } from "../support/scrim";
 
 test("Dialog: scrim ramps in instead of snapping to full opacity", async ({
   page,
@@ -7,7 +7,7 @@ test("Dialog: scrim ramps in instead of snapping to full opacity", async ({
   await page.goto("/#/components/dialog");
   await page.waitForLoadState("networkidle");
 
-  const scrim = await sampleScrim(page, "打开对话框", "dialog.uk-dialog");
+  const scrim = await stepScrimEnter(page, "打开对话框", "dialog.uk-dialog");
 
   expectScrimRamp(scrim);
 });

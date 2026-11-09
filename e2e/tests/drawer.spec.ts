@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test";
 import {
   expectScrimExit,
   expectScrimRamp,
-  sampleScrim,
-  sampleScrimExit,
+  stepScrimEnter,
+  stepScrimExit,
 } from "../support/scrim";
 
 test("Drawer: opens from the right and keeps focus inside", async ({
@@ -122,7 +122,7 @@ test("Drawer: scrim ramps in instead of snapping to full opacity", async ({
   await page.goto("/#/components/drawer");
   await page.waitForLoadState("networkidle");
 
-  const scrim = await sampleScrim(page, "打开筛选", "dialog.uk-drawer");
+  const scrim = await stepScrimEnter(page, "打开筛选", "dialog.uk-drawer");
 
   expectScrimRamp(scrim);
 });
@@ -137,9 +137,9 @@ test("Drawer: scrim finishes fading before the layer unmounts", async ({
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.waitForTimeout(400);
 
-  const samples = await sampleScrimExit(page, "dialog.uk-drawer", "取消");
+  const exit = await stepScrimExit(page, "dialog.uk-drawer", "取消");
 
-  expectScrimExit(samples);
+  expectScrimExit(exit);
 });
 
 test("Drawer: reduced motion removes the slide transform", async ({ page }) => {
