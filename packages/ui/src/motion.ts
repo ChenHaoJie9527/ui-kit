@@ -2,6 +2,8 @@ import type { Transition } from "motion/react";
 
 export const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 export const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const;
+/** Matches --uk-ease-drawer; used for same-edge drawer movement. */
+export const EASE_DRAWER = [0.32, 0.72, 0, 1] as const;
 
 export const UI_SPRING: Transition = {
   type: "spring",
@@ -13,6 +15,22 @@ export const OVERLAY_SPRING: Transition = {
   type: "spring",
   bounce: 0.04,
   duration: 0.38,
+};
+
+/**
+ * Drawer enters over the overlay range. The short delay lets the off-screen
+ * position paint before the slide starts, so the panel never appears "in place".
+ */
+export const DRAWER_ENTER_TRANSITION: Transition = {
+  duration: 0.26,
+  ease: EASE_DRAWER,
+  delay: 0.06,
+};
+
+/** Drawer exits along the same edge; completes faster than entry. */
+export const DRAWER_EXIT_TRANSITION: Transition = {
+  duration: 0.2,
+  ease: EASE_DRAWER,
 };
 
 export const INDICATOR_SPRING: Transition = {

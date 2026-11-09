@@ -7,6 +7,7 @@ import { ButtonPage } from "./pages/button";
 import { CheckBoxPage } from "./pages/checkbox";
 import { CustomizingPage } from "./pages/customizing";
 import { DialogPage } from "./pages/dialog";
+import { DrawerPage } from "./pages/drawer";
 import { FormPage } from "./pages/form";
 import { HookPage } from "./pages/hook";
 import { InputPage } from "./pages/input";
@@ -34,6 +35,7 @@ const componentPages: Record<string, ComponentType> = {
   sidebar: SidebarPage,
   tabs: TabsPage,
   dialog: DialogPage,
+  drawer: DrawerPage,
   toast: ToastPage,
   tooltip: TooltipPage,
   marquee: MarqueePage,

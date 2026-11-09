@@ -33,6 +33,19 @@ test.describe("Keyboard navigation", () => {
     await expect(dialog).not.toBeVisible();
   });
 
+  test("Drawer: Escape closes", async ({ page }) => {
+    await page.goto("/#/components/drawer");
+    await page.waitForLoadState("networkidle");
+
+    await page.getByRole("button", { name: "打开筛选" }).click();
+
+    const drawer = page.getByRole("dialog");
+    await expect(drawer).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(drawer).not.toBeVisible();
+  });
+
   test("Switch: Space toggles", async ({ page }) => {
     await page.goto("/#/components/switch");
     await page.waitForLoadState("networkidle");

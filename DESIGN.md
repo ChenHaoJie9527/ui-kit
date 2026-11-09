@@ -124,10 +124,13 @@ Use strong, shared curves:
 --uk-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 --uk-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 --uk-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+--uk-ease-scrim: cubic-bezier(0.4, 0, 0.2, 1);
 ```
 
 - Enter and exit use `ease-out`.
 - On-screen movement and morphing use `ease-in-out`.
+- Large flat opacity changes, such as a modal scrim, use `ease-scrim`: `ease-out`
+  puts most of a 200ms fade into its first two frames, which reads as a cut.
 - Hover and color changes use a short eased transition.
 - Continuous progress uses `linear`.
 
@@ -148,8 +151,9 @@ documented rather than repeated as literal values.
 Fast out-in is the default for state replacement and overlay lifecycle:
 
 - On overlay open, establish the dimmed context first, then bring in the
-  surface. Use roughly 70–110ms for the context layer and begin the surface
-  immediately after or with only a small overlap.
+  surface. Use roughly 70–110ms for the context layer to become readable; a
+  scrim may keep a short tail that overlaps the surface once that point is
+  passed.
 - On overlay close, remove the surface first, then clear the context layer.
   Pointer and focus access end when exit begins; the scrim may finish slightly
   later.

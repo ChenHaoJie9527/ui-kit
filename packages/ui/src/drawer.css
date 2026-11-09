@@ -1,0 +1,166 @@
+@layer uk.components {
+  .uk-drawer {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--uk-text);
+    /* The dialog is a clipping frame, never a scroll container: the `hidden`
+       fallback stays scrollable, and a scrollable dialog gets scrolled to
+       reveal a control that is focused while the panel is still translated
+       off-screen, cancelling the slide. `clip` keeps that from happening. */
+    overflow: hidden;
+    overflow: clip;
+    z-index: var(--uk-z-dialog);
+  }
+
+  .uk-drawer::backdrop {
+    background: var(--uk-overlay);
+    backdrop-filter: blur(8px) saturate(125%);
+    opacity: 1;
+    /* 语境层：遮罩在 overlay 时长内做一段可见的渐次变暗，约 100ms 已建立
+       一半语境，面板随后滑入；exit 在下面单独用更短的退出时长。 */
+    transition: opacity var(--uk-duration-overlay) var(--uk-ease-scrim);
+  }
+
+  .uk-drawer[data-state="closed"]::backdrop {
+    opacity: 0;
+    /* 面板的退出是 200ms，层在 200ms 后卸载：遮罩必须在这个窗口内收完，
+       否则它会跟着元素一起消失，看起来又是硬切。先留一拍再走快退出时长。 */
+    transition-duration: var(--uk-duration-fast);
+    transition-delay: 80ms;
+  }
+
+  .uk-drawer[data-state="closed"] {
+    pointer-events: none;
+  }
+
+  @starting-style {
+    .uk-drawer[data-state="open"]::backdrop {
+      opacity: 0;
+    }
+  }
+
+  .uk-drawer__panel {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    width: min(var(--uk-drawer-width, 24rem), 100vw);
+    background: var(--uk-surface-raised);
+    box-shadow: var(--uk-shadow-lg);
+    font-family: var(--uk-font-sans);
+    overflow: hidden;
+  }
+
+  .uk-drawer__panel[data-size="sm"] {
+    --uk-drawer-width: 18rem;
+  }
+
+  .uk-drawer__panel[data-size="md"] {
+    --uk-drawer-width: 24rem;
+  }
+
+  .uk-drawer__panel[data-size="lg"] {
+    --uk-drawer-width: 32rem;
+  }
+
+  .uk-drawer__panel[data-side="right"] {
+    right: 0;
+    border-left: 1px solid var(--uk-border);
+  }
+
+  .uk-drawer__panel[data-side="left"] {
+    left: 0;
+    border-right: 1px solid var(--uk-border);
+  }
+
+  .uk-drawer__header {
+    display: grid;
+    flex: none;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: flex-start;
+    column-gap: var(--uk-space-4);
+    row-gap: 0;
+    padding: var(--uk-space-5);
+    border-bottom: 1px solid var(--uk-border);
+  }
+
+  .uk-drawer__header > .uk-drawer__title,
+  .uk-drawer__header > .uk-drawer__description {
+    grid-column: 1;
+  }
+
+  .uk-drawer__header > .uk-drawer__description {
+    grid-row: 2;
+  }
+
+  .uk-drawer__header > .uk-drawer__close {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .uk-drawer__title {
+    margin: 0;
+    color: var(--uk-text);
+    font-size: var(--uk-text-xl);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .uk-drawer__description {
+    margin: var(--uk-space-1) 0 0;
+    color: var(--uk-text-muted);
+    font-size: var(--uk-text-md);
+    line-height: 1.5;
+  }
+
+  .uk-drawer__body {
+    flex: 1;
+    min-height: 0;
+    padding: var(--uk-space-5);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    font-size: var(--uk-text-md);
+    line-height: 1.6;
+  }
+
+  .uk-drawer__footer {
+    display: flex;
+    flex: none;
+    justify-content: flex-end;
+    gap: var(--uk-space-2);
+    padding: var(--uk-space-4) var(--uk-space-5);
+    border-top: 1px solid var(--uk-border);
+    background: transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .uk-drawer::backdrop {
+      transition-duration: var(--uk-duration-fast);
+      transition-timing-function: ease;
+      transition-delay: 0ms;
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .uk-drawer::backdrop {
+      backdrop-filter: none;
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    .uk-drawer__panel {
+      border-color: var(--uk-text-muted);
+      background: var(--uk-surface-raised);
+      backdrop-filter: none;
+    }
+  }
+}

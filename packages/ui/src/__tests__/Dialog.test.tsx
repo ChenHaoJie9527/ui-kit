@@ -169,6 +169,42 @@ describe("Dialog", () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
+  it("aligns native light dismiss with the close props", () => {
+    const { rerender } = render(
+      <Dialog open onOpenChange={() => {}} title="确认发布">
+        内容
+      </Dialog>,
+    );
+
+    expect(getDialog().getAttribute("closedby")).toBe("any");
+
+    rerender(
+      <Dialog
+        open
+        onOpenChange={() => {}}
+        closeOnBackdropClick={false}
+        title="确认发布"
+      >
+        内容
+      </Dialog>,
+    );
+
+    expect(getDialog().getAttribute("closedby")).toBe("closerequest");
+
+    rerender(
+      <Dialog
+        open
+        onOpenChange={() => {}}
+        closeOnEscape={false}
+        title="确认发布"
+      >
+        内容
+      </Dialog>,
+    );
+
+    expect(getDialog().getAttribute("closedby")).toBe("none");
+  });
+
   it("stays open when escape closing is disabled and Escape is pressed twice", () => {
     const onOpenChange = vi.fn<(open: boolean) => void>();
 
