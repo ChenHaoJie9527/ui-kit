@@ -1,5 +1,16 @@
 # seam-react
 
+## 0.14.0
+
+### Minor Changes
+
+- d34e9d5: 新增 Drawer 组件：从视口边缘滑入的模态抽屉，支持左右方向、三种尺寸、受保护关闭与完整焦点管理。
+
+### Patch Changes
+
+- d5eba8c: 修复 Dialog 的原生 light dismiss：`closedby` 现在跟随 `closeOnEscape` / `closeOnBackdropClick` —— 关闭 `closeOnBackdropClick` 时保留 Escape 关闭，关闭 `closeOnEscape` 时不再由原生取消。
+- ab32457: 调整 Dialog 遮罩的进入过渡：改用 overlay 时长与新增的 `--uk-ease-scrim` 曲线，遮罩不再在头两帧内跳到位；退出一致保持更短的退出时长。`DESIGN.md` 补充该共享曲线与上下文层建立时间的说明。
+
 ## 0.13.3
 
 ### Patch Changes
