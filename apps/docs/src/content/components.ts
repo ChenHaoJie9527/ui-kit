@@ -87,6 +87,12 @@ const componentDefinitions: Array<
     tags: ["模态", "焦点"],
   },
   {
+    path: "components/drawer",
+    name: "Drawer",
+    summary: "从视口边缘滑入的模态抽屉，原生 dialog 语义与焦点管理。",
+    tags: ["左 / 右", "组合式 API", "焦点"],
+  },
+  {
     path: "components/toast",
     name: "Toast",
     summary: "非模态通知队列，支持自动关闭、状态图标、操作和拖拽关闭。",

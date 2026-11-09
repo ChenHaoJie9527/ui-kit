@@ -83,6 +83,22 @@ export type {
   DialogTriggerProps,
 } from "./Dialog";
 
+export { Drawer } from "./Drawer";
+export type {
+  DrawerBodyProps,
+  DrawerCloseProps,
+  DrawerComponent,
+  DrawerContentProps,
+  DrawerDescriptionProps,
+  DrawerFooterProps,
+  DrawerHeaderProps,
+  DrawerRootProps,
+  DrawerSide,
+  DrawerSize,
+  DrawerTitleProps,
+  DrawerTriggerProps,
+} from "./Drawer";
+
 export { ToastStack, useToast } from "./Toast";
 export type {
   Toast,

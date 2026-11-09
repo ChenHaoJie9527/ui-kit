@@ -11,6 +11,7 @@ const COMPONENT_PAGES: ComponentPage[] = [
   { name: "Button", path: "/#/components/button" },
   { name: "CheckBox", path: "/#/components/checkbox" },
   { name: "Dialog", path: "/#/components/dialog" },
+  { name: "Drawer", path: "/#/components/drawer" },
   { name: "Form", path: "/#/components/form" },
   { name: "Input", path: "/#/components/input" },
   { name: "Marquee", path: "/#/components/marquee" },
