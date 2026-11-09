@@ -430,11 +430,12 @@ export function CustomizingPage() {
               description: "Fluid 动效的语义时长。",
             },
             {
-              name: "--uk-ease-out / -in-out / -drawer",
+              name: "--uk-ease-out / -in-out / -drawer / -scrim",
               type: "easing",
               defaultValue:
-                "cubic-bezier(0.23, 1, 0.32, 1) / cubic-bezier(0.77, 0, 0.175, 1) / cubic-bezier(0.32, 0.72, 0, 1)",
-              description: "组件共享的缓动曲线。",
+                "cubic-bezier(0.23, 1, 0.32, 1) / cubic-bezier(0.77, 0, 0.175, 1) / cubic-bezier(0.32, 0.72, 0, 1) / cubic-bezier(0.4, 0, 0.2, 1)",
+              description:
+                "组件共享的缓动曲线；遮罩这类大面积透明度变化用 -scrim。",
             },
             {
               name: "--uk-scale-press",

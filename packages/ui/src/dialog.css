@@ -15,11 +15,14 @@
     background: var(--uk-overlay);
     backdrop-filter: blur(8px) saturate(125%);
     opacity: 1;
-    transition: opacity var(--uk-duration-exit) var(--uk-ease-out);
+    /* 与 Drawer 共用同一套遮罩节奏：进入用 overlay 时长 + 缓入曲线，
+       退出仍走更短的退出时长。 */
+    transition: opacity var(--uk-duration-overlay) var(--uk-ease-scrim);
   }
 
   .uk-dialog[data-state="closed"]::backdrop {
     opacity: 0;
+    transition-duration: var(--uk-duration-exit);
     transition-delay: 220ms;
   }
 
