@@ -5,7 +5,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useId,
   useMemo,
   useRef,
   useState,
@@ -34,7 +33,7 @@ import {
   resolveCarouselVisible,
   type CarouselScaleGeometry,
 } from "./carousel-geometry";
-import { INDICATOR_SPRING, UI_SPRING } from "./motion";
+import { UI_SPRING } from "./motion";
 import { cx } from "./utils/cx";
 
 export type CarouselOrientation = "horizontal" | "vertical";
@@ -70,6 +69,7 @@ interface CarouselContextValue {
   orientation: CarouselOrientation;
   reduceMotion: boolean;
   scale: number | undefined;
+  loop: boolean;
   itemVersion: number;
   scrollPrev: () => void;
   scrollNext: () => void;
@@ -102,6 +102,7 @@ function useCarouselContext(component: string): CarouselContextValue {
 export interface UseCarouselReturn extends CarouselStateContextValue {
   api: CarouselApi | undefined;
   orientation: CarouselOrientation;
+  loop: boolean;
   scrollPrev: () => void;
   scrollNext: () => void;
   scrollTo: (index: number, jump?: boolean) => void;
@@ -123,6 +124,7 @@ export function useCarousel(): UseCarouselReturn {
   return {
     api: context.api,
     orientation: context.orientation,
+    loop: context.loop,
     index: state.index,
     count: state.count,
     slideCount: state.slideCount,
@@ -209,6 +211,8 @@ const CarouselRoot = forwardRef<HTMLElement, CarouselProps>(
     const emitIndexChange = useEventCallback((next: number) => {
       onIndexChange?.(next);
     });
+
+    const loop = opts?.loop ?? false;
 
     const emblaOptions = useMemo<EmblaOptionsType>(() => {
       const options: EmblaOptionsType = {
@@ -612,6 +616,7 @@ const CarouselRoot = forwardRef<HTMLElement, CarouselProps>(
         orientation,
         reduceMotion,
         scale: scaleEnabled ? resolvedScale : undefined,
+        loop,
         itemVersion,
         scrollPrev,
         scrollNext,
@@ -624,6 +629,7 @@ const CarouselRoot = forwardRef<HTMLElement, CarouselProps>(
         reduceMotion,
         scaleEnabled,
         resolvedScale,
+        loop,
         itemVersion,
         scrollPrev,
         scrollNext,
@@ -901,10 +907,21 @@ export interface CarouselDotsProps extends HTMLAttributes<HTMLDivElement> {
   label?: (index: number, count: number) => string;
 }
 
+function interpolateDotCenter(centers: number[], value: number): number {
+  const whole = Math.max(0, Math.min(Math.floor(value), centers.length - 1));
+  const part = Math.max(0, Math.min(value - whole, 1));
+  const from = centers[whole] ?? centers[0] ?? 0;
+  const to = centers[Math.min(whole + 1, centers.length - 1)] ?? from;
+
+  return from + (to - from) * part;
+}
+
 /**
- * 按 snap 渲染 dot 按钮。当前项用共享 pill 标记；点击调用 scrollTo。
+ * 按 snap 渲染 dot 按钮。当前项是容器级 pill，跟随滚动在两个 dot 之间
+ * 连续拉伸：前半程前缘伸向下一项，后半程后缘收拢。点击调用 scrollTo。
  *
  * 分组滚动（slidesToScroll > 1）时 dot 表示 page，而不是 slide。
+ * reduced motion 下 pill 停在当前 dot，不做拉伸动画。
  */
 const CarouselDots: ForwardRefExoticComponent<
   CarouselDotsProps & RefAttributes<HTMLDivElement>
@@ -912,9 +929,148 @@ const CarouselDots: ForwardRefExoticComponent<
   { className, label, "aria-label": ariaLabel, ...rest },
   ref,
 ) {
-  const { index, count, slideCount, scrollTo } = useCarousel();
+  const { index, count, slideCount, scrollTo, api, loop } = useCarousel();
   const reduceMotion = useReducedMotion() ?? false;
-  const pillId = useId();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const pillRef = useRef<HTMLSpanElement | null>(null);
+  const dotCentersRef = useRef<number[]>([]);
+  const baseWidthRef = useRef(20);
+
+  const setPill = useCallback(
+    (start: number, end: number, baseWidth: number) => {
+      const pill = pillRef.current;
+      const centers = dotCentersRef.current;
+
+      if (!pill || centers.length === 0) {
+        return;
+      }
+
+      const x = interpolateDotCenter(centers, start) - baseWidth / 2;
+      const width = Math.max(
+        baseWidth,
+        interpolateDotCenter(centers, end) -
+          interpolateDotCenter(centers, start),
+      );
+
+      pill.style.setProperty("--uk-dots-pill-x", `${x}px`);
+      pill.style.setProperty("--uk-dots-pill-scale", String(width / baseWidth));
+    },
+    [],
+  );
+
+  const setContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      containerRef.current = node;
+      setRef(ref, node);
+    },
+    [ref],
+  );
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const pill = pillRef.current;
+
+    if (!container || !pill) {
+      return;
+    }
+
+    const measure = () => {
+      const containerRect = container.getBoundingClientRect();
+      const dots = Array.from(
+        container.querySelectorAll<HTMLButtonElement>(".uk-carousel__dot"),
+      );
+
+      dotCentersRef.current = dots.map((dot) => {
+        const rect = dot.getBoundingClientRect();
+
+        return rect.left + rect.width / 2 - containerRect.left;
+      });
+      baseWidthRef.current =
+        Number.parseFloat(getComputedStyle(pill).width) || baseWidthRef.current;
+    };
+
+    measure();
+    window.addEventListener("resize", measure);
+
+    return () => {
+      window.removeEventListener("resize", measure);
+    };
+    // eslint-disable-next-line react/exhaustive-effect-dependencies -- count 变化时 dot 数量变化，需要重新测量。
+  }, [count]);
+
+  // reduced motion：pill 固定到当前 dot（select 驱动），不做拉伸。
+  useEffect(() => {
+    if (!api || !reduceMotion) {
+      return;
+    }
+
+    const settle = () => {
+      const current = api.selectedScrollSnap();
+      setPill(current, current, baseWidthRef.current);
+    };
+
+    settle();
+    api.on("select", settle);
+
+    return () => {
+      api.off("select", settle);
+    };
+  }, [api, reduceMotion, setPill]);
+
+  // 正常模式：跟随滚动，rAF 合并，只写 transform。
+  useEffect(() => {
+    if (!api || reduceMotion) {
+      return;
+    }
+
+    let frame = 0;
+
+    const update = () => {
+      frame = 0;
+
+      const snaps = api.scrollSnapList().length;
+      const centers = dotCentersRef.current;
+
+      if (snaps === 0 || centers.length !== snaps) {
+        return;
+      }
+
+      const position = loop
+        ? (((api.scrollProgress() * snaps) % snaps) + snaps) % snaps
+        : Math.max(0, Math.min(api.scrollProgress() * (snaps - 1), snaps - 1));
+      const from = Math.min(Math.floor(position), snaps - 1);
+      const t = position - from;
+      const to = from === snaps - 1 ? (loop ? 0 : from) : from + 1;
+      // 前半程前缘拉伸，后半程后缘收拢。
+      const lead = from + (to - from) * Math.min(1, t * 2);
+      const trail = from + (to - from) * Math.max(0, (t - 0.5) * 2);
+
+      setPill(
+        Math.min(lead, trail),
+        Math.max(lead, trail),
+        baseWidthRef.current,
+      );
+    };
+
+    const onScroll = () => {
+      if (frame === 0) {
+        frame = requestAnimationFrame(update);
+      }
+    };
+
+    api.on("scroll", onScroll);
+    api.on("reInit", onScroll);
+    update();
+
+    return () => {
+      api.off("scroll", onScroll);
+      api.off("reInit", onScroll);
+
+      if (frame !== 0) {
+        cancelAnimationFrame(frame);
+      }
+    };
+  }, [api, loop, reduceMotion, setPill]);
 
   if (count <= 1) {
     return null;
@@ -929,11 +1085,16 @@ const CarouselDots: ForwardRefExoticComponent<
   return (
     <div
       {...rest}
-      ref={ref}
+      ref={setContainerRef}
       role="group"
       aria-label={ariaLabel?.trim() || "Slide controls"}
       className={cx("uk-carousel__dots", className)}
     >
+      <span
+        ref={pillRef}
+        aria-hidden="true"
+        className="uk-carousel__dot-pill"
+      />
       {Array.from({ length: count }, (_, dotIndex) => {
         const active = dotIndex === index;
 
@@ -947,16 +1108,7 @@ const CarouselDots: ForwardRefExoticComponent<
             aria-current={active ? "true" : undefined}
             onClick={() => scrollTo(dotIndex)}
           >
-            {active ? (
-              <motion.span
-                aria-hidden="true"
-                className="uk-carousel__dot-pill"
-                layoutId={`${pillId}-dot-pill`}
-                transition={reduceMotion ? { duration: 0 } : INDICATOR_SPRING}
-              />
-            ) : (
-              <span aria-hidden="true" className="uk-carousel__dot-mark" />
-            )}
+            <span aria-hidden="true" className="uk-carousel__dot-mark" />
           </button>
         );
       })}

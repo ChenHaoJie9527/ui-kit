@@ -284,6 +284,64 @@ test("Carousel: controls remain functional under reduced motion", async ({
   expect(Number.parseFloat(duration)).toBeLessThanOrEqual(0.001);
 });
 
+test("Carousel: dots pill stretches between dots while scrolling", async ({
+  page,
+}) => {
+  await gotoCarousel(page);
+
+  const region = carousel(page, "分页点轮播");
+  const output = readout(region);
+  const pill = region.locator(".uk-carousel__dot-pill");
+
+  await expect(output).toHaveText("1 / 3");
+
+  // 点击第 2 个 dot 触发滚动动画；动画期间 pill 应在 dot 之间被拉长。
+  await page.evaluate(() => {
+    const root = document.querySelector('[aria-label="分页点轮播"]');
+    const pillElement = root?.querySelector(".uk-carousel__dot-pill");
+    const samples: number[] = [];
+    (
+      window as unknown as { carouselPillSamples: number[] }
+    ).carouselPillSamples = samples;
+    let start = performance.now();
+
+    const tick = (now: number) => {
+      samples.push(
+        Number(
+          pillElement?.style.getPropertyValue("--uk-dots-pill-scale") || 1,
+        ),
+      );
+
+      if (now - start < 1000) {
+        requestAnimationFrame(tick);
+      }
+    };
+
+    requestAnimationFrame(tick);
+  });
+
+  await region.getByRole("button", { name: "Go to page 2" }).click();
+  await page.waitForTimeout(1200);
+
+  const samples = await page.evaluate(
+    () =>
+      (window as unknown as { carouselPillSamples: number[] })
+        .carouselPillSamples,
+  );
+  const peak = Math.max(...samples);
+
+  expect(peak).toBeGreaterThan(1.05);
+
+  const settledScale = await pill.evaluate((element) =>
+    Number.parseFloat(
+      element.style.getPropertyValue("--uk-dots-pill-scale") || "1",
+    ),
+  );
+
+  expect(settledScale).toBeGreaterThanOrEqual(0.99);
+  await expect(output).toHaveText("2 / 3");
+});
+
 test("Carousel: dots reflect snap count and move on click", async ({
   page,
 }) => {
