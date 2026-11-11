@@ -115,6 +115,7 @@
 
 @layer uk.components {
   .uk-carousel__dots {
+    position: relative;
     display: flex;
     justify-content: center;
     gap: var(--uk-space-1);
@@ -155,14 +156,24 @@
     background: var(--uk-text-muted);
   }
 
+  .uk-carousel__dot[data-state="active"] .uk-carousel__dot-mark {
+    background: var(--uk-primary);
+  }
+
+  /* 容器级跟随 pill：由 JS 通过 CSS 变量在 dot 之间拉伸，只写 transform。 */
   .uk-carousel__dot-pill {
     position: absolute;
-    inset: 0;
-    margin: auto;
-    width: 1.25rem;
+    top: 50%;
+    left: 0;
+    width: var(--uk-carousel-dot-active-size, 1.25rem);
     height: 0.375rem;
     border-radius: var(--uk-radius-full);
     background: var(--uk-primary);
+    pointer-events: none;
+    transform-origin: left center;
+    transform: translateX(var(--uk-dots-pill-x, 0px))
+      scaleX(var(--uk-dots-pill-scale, 1));
+    translate: 0 -50%;
   }
 
   .uk-carousel__counter {

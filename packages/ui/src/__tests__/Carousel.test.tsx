@@ -411,6 +411,8 @@ describe("Carousel", () => {
 
     expect(dots[0]?.getAttribute("aria-current")).toBe("true");
     expect(dots[1]?.getAttribute("aria-current")).toBeNull();
+    // 连续拉伸 pill 是容器级元素，独立于按钮。
+    expect(document.querySelector(".uk-carousel__dot-pill")).not.toBeNull();
 
     fireEvent.click(dots[1]!);
 

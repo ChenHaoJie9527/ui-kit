@@ -933,9 +933,16 @@ Mock `embla-carousel-react`，覆盖：
 | Safari / Firefox 人工验收  | 待补                                                                             |
 | 4× CPU throttle            | 待补                                                                             |
 
-### 18.4 未完成 / 后续
+### 18.4 遗留项收尾（2026-11-11，随 0.16.1 发布）
 
-- Dots 的连续拉伸 pill（P1）未实现；当前是共享 pill 基线。
-- 4× CPU throttle、Safari/Firefox 人工验收尚未完成；20-slide headless Chromium 拖动已达到 60fps（avg 16.67ms）。
-- 完整视觉基线刷新仍作为独立维护任务。
+- Dots 连续拉伸 pill 已实现：容器级 pill 由 rAF 驱动，在 dot 之间跟随
+  `scrollProgress` 拉伸（前缘前半程伸向下一项，后缘后半程收拢），loop
+  跨端时跨过全部 dot 回收；reduced motion 下 pill 停在当前 dot。
+- 4× CPU throttle 已验证：20-slide 缩放拖动 avg 16.67ms、p95 16.7ms、
+  无 long task（Playwright CDP `setCPUThrottlingRate(4)`，并做了基线对照
+  确认 throttle 生效，ratio≈3.4）。Safari/Firefox 浏览器下载受网络限制
+  失败，自动化未覆盖，仍需人工验收。
+- 完整视觉基线刷新完成：本地重新生成 button / checkbox / input /
+  radio-group / switch / tabs / carousel 的亮暗快照，`pnpm test:e2e`
+  90/90 全部通过（此前 12 个既有页面视觉快照漂移已消除）。
 - autoplay 仍为非目标。
