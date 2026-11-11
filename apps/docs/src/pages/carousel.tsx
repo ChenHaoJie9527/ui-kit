@@ -276,7 +276,37 @@ const GALLERY: GalleryItem[] = [
     location: "箱根 · 2026",
     colors: ["#14b8a6", "#115e59"],
   },
+  {
+    id: "desert",
+    title: "沙漠",
+    location: "瓦迪拉姆 · 2026",
+    colors: ["#f59e0b", "#b45309"],
+  },
+  {
+    id: "lake",
+    title: "湖泊",
+    location: "皇后镇 · 2026",
+    colors: ["#38bdf8", "#1d4ed8"],
+  },
 ];
+
+const SCALE_COLORS: Array<[string, string]> = [
+  ["#38bdf8", "#1d4ed8"],
+  ["#22c55e", "#15803d"],
+  ["#6366f1", "#312e81"],
+  ["#14b8a6", "#115e59"],
+  ["#f59e0b", "#b45309"],
+  ["#ec4899", "#9d174d"],
+  ["#a3e635", "#4d7c0f"],
+  ["#c084fc", "#6b21a8"],
+];
+
+const SCALE_SLIDES: GalleryItem[] = Array.from({ length: 20 }, (_, index) => ({
+  id: `scale-${index + 1}`,
+  title: `作品 ${String(index + 1).padStart(2, "0")}`,
+  location: `系列 ${Math.floor(index / 4) + 1} · 2026`,
+  colors: SCALE_COLORS[index % SCALE_COLORS.length]!,
+}));
 
 const TRACKS: Track[] = [
   {
@@ -525,7 +555,7 @@ function GalleryThumbnails({ items }: { items: GalleryItem[] }) {
   return (
     <div
       aria-label="选择图片"
-      className="mt-3 grid grid-cols-4 gap-2"
+      className="mt-3 grid grid-cols-3 gap-2"
       role="group"
     >
       {items.map((item, itemIndex) => {
@@ -672,6 +702,96 @@ function StoryDemo() {
   );
 }
 
+function ScaleDemo() {
+  return (
+    <Carousel
+      aria-label="缩放轮播"
+      gap="1rem"
+      visible={3}
+      scale={0.8}
+      opts={{ loop: true }}
+    >
+      <Carousel.Content>
+        {SCALE_SLIDES.map((item) => (
+          <Carousel.Item key={item.id}>
+            <GallerySlide item={item} />
+          </Carousel.Item>
+        ))}
+      </Carousel.Content>
+      <CarouselReadout />
+      <InlineCarouselControls />
+    </Carousel>
+  );
+}
+
+function ScaleRtlDemo() {
+  return (
+    <div dir="rtl">
+      <Carousel
+        aria-label="RTL 缩放轮播"
+        gap="1rem"
+        visible={3}
+        scale={0.8}
+        opts={{ direction: "rtl", loop: true }}
+      >
+        <Carousel.Content>
+          {SCALE_SLIDES.map((item) => (
+            <Carousel.Item key={item.id}>
+              <GallerySlide item={item} />
+            </Carousel.Item>
+          ))}
+        </Carousel.Content>
+        <CarouselReadout />
+        <InlineCarouselControls />
+      </Carousel>
+    </div>
+  );
+}
+
+function ScaleVerticalCard({ item }: { item: GalleryItem }) {
+  return (
+    <div className="flex h-full items-center gap-3 overflow-hidden rounded-xl border border-line bg-surface p-3">
+      <span
+        aria-hidden="true"
+        className="h-12 w-12 shrink-0 rounded-lg"
+        style={{
+          background: `linear-gradient(135deg, ${item.colors[0]}, ${item.colors[1]})`,
+        }}
+      />
+      <div className="min-w-0">
+        <p className="m-0 truncate text-sm font-medium text-ink">
+          {item.title}
+        </p>
+        <p className="m-0 text-[11px] text-muted">{item.location}</p>
+      </div>
+    </div>
+  );
+}
+
+function ScaleVerticalDemo() {
+  return (
+    <Carousel
+      aria-label="纵向缩放轮播"
+      className="max-w-[480px]"
+      gap="0.75rem"
+      orientation="vertical"
+      visible={3}
+      scale={0.85}
+      opts={{ loop: true }}
+    >
+      <Carousel.Content className="h-[320px]">
+        {GALLERY.slice(0, 5).map((item) => (
+          <Carousel.Item key={item.id}>
+            <ScaleVerticalCard item={item} />
+          </Carousel.Item>
+        ))}
+      </Carousel.Content>
+      <CarouselReadout />
+      <InlineCarouselControls />
+    </Carousel>
+  );
+}
+
 function LoopDemo() {
   return (
     <Carousel aria-label="循环轮播" gap="0.75rem" opts={{ loop: true }}>
@@ -790,6 +910,41 @@ function RtlDemo() {
   );
 }
 
+function DotsDemo() {
+  return (
+    <Carousel aria-label="分页点轮播" gap="0.75rem" visible={2}>
+      <Carousel.Content>
+        {PRODUCTS.map((product) => (
+          <Carousel.Item key={product.id}>
+            <ProductCard product={product} />
+          </Carousel.Item>
+        ))}
+      </Carousel.Content>
+      <CarouselReadout />
+      <Carousel.Dots />
+    </Carousel>
+  );
+}
+
+function CounterDemo() {
+  return (
+    <Carousel aria-label="计数器轮播" gap="0.75rem">
+      <Carousel.Content>
+        {QUOTES.map((quote) => (
+          <Carousel.Item key={quote.id}>
+            <QuoteCard quote={quote} />
+          </Carousel.Item>
+        ))}
+      </Carousel.Content>
+      <CarouselReadout />
+      <Carousel.Dots />
+      <div className="mt-2 flex justify-center">
+        <Carousel.Counter />
+      </div>
+    </Carousel>
+  );
+}
+
 function GalleryDemo() {
   return (
     <Carousel aria-label="缩略图轮播" gap="0.75rem">
@@ -901,8 +1056,8 @@ export function CarouselPage() {
     <Page
       kind="组件"
       title="Carousel"
-      description="基于 Embla 的横向/纵向轮播。支持拖拽、受控 snap 索引、变宽 slide、RTL、键盘焦点与 reduced-motion 降级。"
-      tags={["Embla", "拖拽", "受控", "RTL", "可访问性"]}
+      description="基于 Embla 的横向/纵向轮播。支持拖拽、缩放聚焦、Dots、Counter、受控 snap 索引、变宽 slide、RTL、键盘焦点与 reduced-motion 降级。"
+      tags={["Embla", "拖拽", "scale", "受控", "RTL", "可访问性"]}
     >
       <Section title="引入">
         <CodeBlock
@@ -966,6 +1121,52 @@ export function CarouselPage() {
             默认 Previous/Next 是覆盖在 viewport 边缘的浮层按钮。变宽
             slide、quote 文本、表单或右侧有内容的卡片，建议用 useCarousel
             把控件放到内容外，避免遮挡。
+          </p>
+        </Callout>
+      </Section>
+
+      <Section
+        title="scale"
+        description="scale 开启邻居缩放：中心 slide 最大，两侧按距离递减，远处滑到后面。它默认把 align 设为 center、containScroll 设为 false；下面用 20 张图片验证连续缩放与 loop，RTL 和纵向使用同一套几何。"
+      >
+        <Demo
+          code={`<Carousel
+  aria-label="缩放轮播"
+  visible={3}
+  scale={0.8}
+  opts={{ loop: true }}
+>
+  <Carousel.Content>
+    {images.map((image) => (
+      <Carousel.Item key={image.id}>
+        <GallerySlide image={image} />
+      </Carousel.Item>
+    ))}
+  </Carousel.Content>
+  {/* 内容贴边时用外部控件 */}
+</Carousel>`}
+        >
+          <ScaleDemo />
+        </Demo>
+        <div className="rounded-xl border border-line bg-surface p-4">
+          <p className="m-0 mb-3 text-[11px] font-semibold tracking-[0.08em] text-muted uppercase">
+            RTL scale
+          </p>
+          <ScaleRtlDemo />
+        </div>
+        <div className="rounded-xl border border-line bg-surface p-4">
+          <p className="m-0 mb-3 text-[11px] font-semibold tracking-[0.08em] text-muted uppercase">
+            Vertical scale
+          </p>
+          <ScaleVerticalDemo />
+        </div>
+        <Callout tone="warning" title="opt-in 与性能">
+          <p>
+            scale 默认关闭；开启后会逐帧写入 CSS 变量。slide
+            数量较多时先验证性能；reduced motion 下保持原始尺寸。RTL 版本只需加
+            dir=&quot;rtl&quot; 和 opts.direction=&quot;rtl&quot;。scale 需要
+            slidesToScroll=1；分组滚动时效果会跳过，不要覆盖
+            align/containScroll，除非明确知道布局影响。
           </p>
         </Callout>
       </Section>
@@ -1128,6 +1329,53 @@ const total = steps.length;
       </Section>
 
       <Section
+        title="Carousel.Dots"
+        description="按 snap 渲染分页点；当前项用共享 pill 标记，点击调用 scrollTo。分组滚动时 dot 表示 page，而不是 slide。"
+      >
+        <Demo
+          code={`<Carousel aria-label="分页点轮播" visible={2}>
+  <Carousel.Content>
+    {products.map((product) => (
+      <Carousel.Item key={product.id}>
+        <ProductCard product={product} />
+      </Carousel.Item>
+    ))}
+  </Carousel.Content>
+  <Carousel.Dots />
+</Carousel>`}
+        >
+          <DotsDemo />
+        </Demo>
+        <Callout title="snap / page 语义">
+          <p>
+            Dots 的数量来自 scrollSnapList，不是 slide 数。分组滚动时默认文案会
+            使用 Go to page N；需要自定义时传 label。
+          </p>
+        </Callout>
+      </Section>
+
+      <Section
+        title="Carousel.Counter"
+        description="显示当前 snap 文本。默认只让数字滑动，aria-hidden 由 slide 的 x of y 标签负责位置播报；可以用 format 完全自定义。"
+      >
+        <Demo
+          code={`<Carousel aria-label="计数器轮播">
+  <Carousel.Content>...</Carousel.Content>
+  <Carousel.Dots />
+  <Carousel.Counter />
+</Carousel>`}
+        >
+          <CounterDemo />
+        </Demo>
+        <Callout title="不要重复播报">
+          <p>
+            默认 aria-hidden=true，因为每个 slide 已经有 x of y 标签。若要让
+            Counter 被读屏读取，传 aria-hidden=false 并提供有意义的 format。
+          </p>
+        </Callout>
+      </Section>
+
+      <Section
         title="setApi"
         description="setApi 暴露原始 Embla API。增删 slide 会触发 reInit；这里用 api.slideNodes() 读取实际 slide 数，和 carousel 的 snap 数区分开。0 张时不崩溃，控件保持禁用。"
       >
@@ -1266,6 +1514,12 @@ useEffect(() => {
                 "可见 slide 数，可传小数露出半张。4 张卡片 + visible=2 通常产生 3 个 snap。",
             },
             {
+              name: "scale",
+              type: "number",
+              description:
+                "0–1，opt-in。开启后默认 align=center、containScroll=false；逐帧写 CSS 变量，reduced motion 下保持原始尺寸。",
+            },
+            {
               name: "aria-label / aria-labelledby",
               type: "string",
               required: true,
@@ -1293,6 +1547,18 @@ useEffect(() => {
               description: "覆盖自动生成的 x of y 位置标签。",
             },
             {
+              name: "Carousel.Dots",
+              type: "CarouselDotsProps",
+              description:
+                "按 snap 渲染分页点；aria-current 标记当前项；label 自定义无障碍名称；count <= 1 不渲染。",
+            },
+            {
+              name: "Carousel.Counter",
+              type: "CarouselCounterProps",
+              description:
+                "默认 Slide N of M；format 自定义；默认 aria-hidden=true；count <= 1 不渲染。",
+            },
+            {
               name: "Carousel.Previous / Next",
               type: "ButtonProps",
               description:
@@ -1300,10 +1566,10 @@ useEffect(() => {
             },
           ]}
         />
-        <Callout title="M1 范围">
+        <Callout title="M2 范围">
           <p>
-            Dots、Counter 与 scale 缩放聚焦效果在 M2 提供。当前可以用
-            useCarousel 自行渲染缩略图、进度条和计数器。
+            Dots、Counter 与 scale 已提供；autoplay、暂停按钮和 aria-live
+            轮播播报仍不在组件内。
           </p>
         </Callout>
       </Section>

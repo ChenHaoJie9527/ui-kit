@@ -6,7 +6,7 @@ async function gotoCarousel(page: Page) {
 }
 
 function carousel(page: Page, name: string): Locator {
-  return page.getByRole("region", { name });
+  return page.getByRole("region", { name, exact: true });
 }
 
 function readout(region: Locator): Locator {
@@ -282,4 +282,223 @@ test("Carousel: controls remain functional under reduced motion", async ({
   );
 
   expect(Number.parseFloat(duration)).toBeLessThanOrEqual(0.001);
+});
+
+test("Carousel: dots reflect snap count and move on click", async ({
+  page,
+}) => {
+  await gotoCarousel(page);
+
+  const region = carousel(page, "分页点轮播");
+  const output = readout(region);
+  const dots = region.locator(".uk-carousel__dot");
+
+  await expect(output).toHaveText("1 / 3");
+  await expect(dots).toHaveCount(3);
+  await expect(dots.nth(0)).toHaveAttribute("aria-current", "true");
+
+  await dots.nth(1).click();
+
+  await expect(output).toHaveText("2 / 3");
+  await expect(dots.nth(1)).toHaveAttribute("aria-current", "true");
+  await expect(dots.nth(0)).not.toHaveAttribute("aria-current", "true");
+});
+
+test("Carousel: counter follows the active snap", async ({ page }) => {
+  await gotoCarousel(page);
+
+  const region = carousel(page, "计数器轮播");
+  const output = readout(region);
+  const counter = region.locator(".uk-carousel__counter");
+  const dots = region.locator(".uk-carousel__dot");
+
+  await expect(output).toHaveText("1 / 3");
+  await expect(counter).toHaveAttribute("aria-hidden", "true");
+  await expect(counter).toContainText("1");
+
+  await dots.nth(1).click();
+
+  await expect(output).toHaveText("2 / 3");
+  await expect(counter).toContainText("2");
+});
+
+test("Carousel: scale keeps a full-size center and shrinks neighbours", async ({
+  page,
+}) => {
+  await gotoCarousel(page);
+
+  const region = carousel(page, "缩放轮播");
+  const output = readout(region);
+  const next = region.getByRole("button", { name: "下一张" });
+
+  await expect(region).toHaveAttribute("data-scale", "true");
+  await expect(output).toHaveText("1 / 20");
+
+  const scales = async () =>
+    await region.locator(".uk-carousel__item").evaluateAll((items) =>
+      items.map((item) => {
+        const inner = item.querySelector(".uk-carousel__item-inner");
+        return Number(
+          inner?.style.getPropertyValue("--uk-carousel-slide-scale") || 1,
+        );
+      }),
+    );
+
+  await expect
+    .poll(async () => (await scales()).some((scale) => scale > 0.99))
+    .toBe(true);
+  expect((await scales()).some((scale) => scale < 1)).toBe(true);
+
+  await next.click();
+  await expect(output).toHaveText("2 / 20");
+  await expect
+    .poll(async () => (await scales()).some((scale) => scale > 0.99))
+    .toBe(true);
+
+  await next.click();
+  await expect(output).toHaveText("3 / 20");
+  await expect
+    .poll(async () => (await scales()).some((scale) => scale > 0.99))
+    .toBe(true);
+});
+
+test("Carousel: scale transition does not jump to centre", async ({ page }) => {
+  await gotoCarousel(page);
+
+  const region = carousel(page, "缩放轮播");
+  const next = region.getByRole("button", { name: "下一张" });
+
+  await expect(readout(region)).toHaveText("1 / 20");
+  await region.scrollIntoViewIfNeeded();
+
+  await page.evaluate(() => {
+    const root = document.querySelector('[aria-label="缩放轮播"]');
+    const target = root?.querySelectorAll(".uk-carousel__item")[1];
+    const inner = target?.querySelector(".uk-carousel__item-inner");
+    const samples: Array<{ scale: number; shift: number }> = [];
+    (
+      window as unknown as {
+        carouselScaleSamples: Array<{ scale: number; shift: number }>;
+      }
+    ).carouselScaleSamples = samples;
+    const start = performance.now();
+
+    const tick = (now: number) => {
+      samples.push({
+        scale: Number(
+          inner?.style.getPropertyValue("--uk-carousel-slide-scale") || 1,
+        ),
+        shift: Number.parseFloat(
+          inner?.style.getPropertyValue("--uk-carousel-slide-shift") || "0",
+        ),
+      });
+
+      if (now - start < 1000) {
+        requestAnimationFrame(tick);
+      }
+    };
+
+    requestAnimationFrame(tick);
+  });
+
+  await next.click();
+  await page.waitForTimeout(1200);
+
+  const samples = await page.evaluate(
+    () =>
+      window.carouselScaleSamples as Array<{ scale: number; shift: number }>,
+  );
+  // 目标 slide 的 shift 应该从 -22px 单调靠近 0。
+  // 旧实现会在距离中心 0.08 时直接跳到中心：shift 从 -1.9 突然变成 -18.4，
+  // 形成一次明显的反向位移。用“反向位移”而不是单帧 delta 做断言，
+  // 避免 CI 掉帧导致的误报。
+  const reversals = samples.slice(1).filter((sample, index) => {
+    const previous = samples[index]!;
+    return sample.shift < previous.shift - 2;
+  });
+
+  expect(reversals).toEqual([]);
+});
+
+test("Carousel: scale keeps its geometry in RTL", async ({ page }) => {
+  await gotoCarousel(page);
+
+  const region = carousel(page, "RTL 缩放轮播");
+  const output = readout(region);
+
+  await expect(region).toHaveCSS("direction", "rtl");
+  await expect(output).toHaveText("1 / 20");
+
+  const scales = await region
+    .locator(".uk-carousel__item")
+    .evaluateAll((items) =>
+      items.map((item) =>
+        Number(
+          item
+            .querySelector(".uk-carousel__item-inner")
+            ?.style.getPropertyValue("--uk-carousel-slide-scale") || 1,
+        ),
+      ),
+    );
+
+  expect(scales.some((scale) => scale > 0.99)).toBe(true);
+  expect(scales.some((scale) => scale < 1)).toBe(true);
+
+  await region.getByRole("button", { name: "下一张" }).click();
+  await expect(output).toHaveText("2 / 20");
+});
+
+test("Carousel: scale keeps its geometry when vertical", async ({ page }) => {
+  await gotoCarousel(page);
+
+  const region = carousel(page, "纵向缩放轮播");
+  const output = readout(region);
+
+  await expect(region).toHaveAttribute("data-orientation", "vertical");
+  await expect(output).toHaveText("1 / 5");
+
+  const scales = await region
+    .locator(".uk-carousel__item")
+    .evaluateAll((items) =>
+      items.map((item) =>
+        Number(
+          item
+            .querySelector(".uk-carousel__item-inner")
+            ?.style.getPropertyValue("--uk-carousel-slide-scale") || 1,
+        ),
+      ),
+    );
+
+  expect(scales.some((scale) => scale > 0.99)).toBe(true);
+  expect(scales.some((scale) => scale < 1)).toBe(true);
+
+  await region.getByRole("button", { name: "下一张" }).click();
+  await expect(output).toHaveText("2 / 5");
+});
+
+test("Carousel: scale is disabled visually under reduced motion", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await gotoCarousel(page);
+
+  const region = carousel(page, "缩放轮播");
+
+  await expect(region).toHaveAttribute("data-scale", "true");
+
+  const transforms = await region
+    .locator(".uk-carousel__item-inner")
+    .evaluateAll((inners) =>
+      inners.map((inner) => ({
+        scale: inner.style.getPropertyValue("--uk-carousel-slide-scale"),
+        transform: getComputedStyle(inner).transform,
+      })),
+    );
+
+  expect(transforms.every(({ scale }) => scale === "")).toBe(true);
+  expect(
+    transforms.every(
+      ({ transform }) => transform === "matrix(1, 0, 0, 1, 0, 0)",
+    ),
+  ).toBe(true);
 });

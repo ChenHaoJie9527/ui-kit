@@ -74,6 +74,8 @@ export type {
   CarouselComponent,
   CarouselContentProps,
   CarouselControlProps,
+  CarouselCounterProps,
+  CarouselDotsProps,
   CarouselItemProps,
   CarouselOptions,
   CarouselOrientation,
