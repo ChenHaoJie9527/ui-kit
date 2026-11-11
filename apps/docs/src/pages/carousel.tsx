@@ -69,6 +69,18 @@ const NETEASE_PLAYLISTS: NeteasePlaylist[] = [
     subtitle: "188 万次播放",
     colors: ["#06b6d4", "#155e75"],
   },
+  {
+    id: "playlist-live",
+    title: "现场 Live 高光时刻",
+    subtitle: "156 万次播放",
+    colors: ["#d946ef", "#701a75"],
+  },
+  {
+    id: "playlist-retro",
+    title: "复古迪斯科派对",
+    subtitle: "96 万次播放",
+    colors: ["#f97316", "#7c2d12"],
+  },
 ];
 
 const NETEASE_ALBUMS: NeteasePlaylist[] = [
@@ -811,6 +823,7 @@ function NeteaseFiveDemo() {
       aria-label="5 连屏歌单"
       gap="0.5rem"
       visible={5}
+      opts={{ slidesToScroll: 5 }}
       className="max-w-[720px]"
     >
       <Carousel.Content>
@@ -833,6 +846,7 @@ function NeteaseThreeDemo() {
       aria-label="3 连屏新歌"
       gap="0.75rem"
       visible={3}
+      opts={{ slidesToScroll: 3 }}
       className="max-w-[560px]"
     >
       <Carousel.Content>
@@ -1250,7 +1264,7 @@ export function CarouselPage() {
 
       <Section
         title="visible"
-        description="visible 决定一屏显示多少张，网易云风格的多连屏（5 连屏歌单、3 连屏新歌）和商品卡片都是同一个 API。visible=2 时 4 张卡片会产生 3 个 snap 位置；useCarousel 的 count 也是 snap 数，不是 slide 数。"
+        description="visible 决定一屏显示多少张，网易云风格的多连屏（5 连屏歌单、3 连屏新歌）和商品卡片都是同一个 API。配合 opts.slidesToScroll 可以让一次切换正好翻一屏（比如 3 连屏每次前进 3 张）。useCarousel 的 count 是 snap 数，不是 slide 数。"
       >
         <Demo
           code={`const products = [...];
@@ -1276,6 +1290,7 @@ export function CarouselPage() {
   aria-label="5 连屏歌单"
   gap="0.5rem"
   visible={5}
+  opts={{ slidesToScroll: 5 }}
   className="max-w-[720px]"
 >
   <Carousel.Content>
@@ -1298,6 +1313,7 @@ export function CarouselPage() {
   aria-label="3 连屏新歌"
   gap="0.75rem"
   visible={3}
+  opts={{ slidesToScroll: 3 }}
   className="max-w-[560px]"
 >
   <Carousel.Content>
