@@ -68,6 +68,20 @@ export type {
   TabsTriggerProps,
 } from "./Tabs";
 
+export { Carousel, useCarousel } from "./Carousel";
+export type {
+  CarouselApi,
+  CarouselComponent,
+  CarouselContentProps,
+  CarouselControlProps,
+  CarouselItemProps,
+  CarouselOptions,
+  CarouselOrientation,
+  CarouselPlugin,
+  CarouselProps,
+  UseCarouselReturn,
+} from "./Carousel";
+
 export { Dialog } from "./Dialog";
 export type {
   DialogBodyProps,

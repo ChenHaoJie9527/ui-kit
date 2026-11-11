@@ -1,0 +1,114 @@
+@layer uk.components {
+  .uk-carousel {
+    position: relative;
+    color: var(--uk-text);
+    font-family: var(--uk-font-sans);
+  }
+
+  .uk-carousel__viewport {
+    overflow: hidden;
+  }
+
+  .uk-carousel__track {
+    display: flex;
+    margin-inline-start: calc(-1 * var(--uk-carousel-gap, 0px));
+    touch-action: pan-y pinch-zoom;
+  }
+
+  .uk-carousel__item {
+    box-sizing: border-box;
+    flex: 0 0 calc(100% / var(--uk-carousel-visible, 1));
+    min-width: 0;
+    padding-inline-start: var(--uk-carousel-gap, 0px);
+  }
+
+  .uk-carousel[data-orientation="vertical"] .uk-carousel__track {
+    flex-direction: column;
+    /* 与横向的负 margin 对齐：track 需要比 viewport 多一个 gap，
+       否则第一个 item 的 padding 会把内容高度压小。 */
+    height: calc(100% + var(--uk-carousel-gap, 0px));
+    margin-inline-start: 0;
+    margin-block-start: calc(-1 * var(--uk-carousel-gap, 0px));
+    touch-action: pan-x pinch-zoom;
+  }
+
+  .uk-carousel[data-orientation="vertical"] .uk-carousel__item {
+    padding-inline-start: 0;
+    padding-block-start: var(--uk-carousel-gap, 0px);
+  }
+
+  .uk-carousel .uk-carousel__control {
+    position: absolute;
+    top: 50%;
+    z-index: 1;
+    --uk-button-radius: var(--uk-radius-full);
+    translate: 0 -50%;
+  }
+
+  .uk-carousel .uk-carousel__control[data-variant="outline"] {
+    background: var(--uk-surface-raised);
+  }
+
+  .uk-carousel .uk-carousel__control[data-side="previous"] {
+    inset-inline-start: var(--uk-space-2);
+  }
+
+  .uk-carousel .uk-carousel__control[data-side="next"] {
+    inset-inline-end: var(--uk-space-2);
+  }
+
+  /* 命中区域至少 44px；视觉尺寸仍由 Button 的 size 控制。 */
+  .uk-carousel .uk-carousel__control::before {
+    content: "";
+    position: absolute;
+    inset: calc((100% - var(--uk-carousel-control-hit, 2.75rem)) / 2);
+  }
+
+  .uk-carousel[data-orientation="vertical"] .uk-carousel__control {
+    /* 纵向控件始终在物理水平中心；RTL 下也不能被 logical inset 带偏。 */
+    inset-inline-start: auto;
+    inset-inline-end: auto;
+    left: 50%;
+    right: auto;
+    translate: -50% 0;
+  }
+
+  .uk-carousel[data-orientation="vertical"]
+    .uk-carousel__control[data-side="previous"] {
+    top: var(--uk-space-2);
+    bottom: auto;
+  }
+
+  .uk-carousel[data-orientation="vertical"]
+    .uk-carousel__control[data-side="next"] {
+    top: auto;
+    bottom: var(--uk-space-2);
+  }
+
+  .uk-carousel__control-icon {
+    display: block;
+    transition: transform var(--uk-duration-fast) var(--uk-ease-out);
+  }
+
+  [dir="rtl"]
+    .uk-carousel[data-orientation="horizontal"]
+    .uk-carousel__control-icon,
+  .uk-carousel[dir="rtl"][data-orientation="horizontal"]
+    .uk-carousel__control-icon {
+    transform: scaleX(-1);
+  }
+
+  .uk-carousel[data-orientation="vertical"] .uk-carousel__control-icon {
+    transform: rotate(90deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .uk-carousel__control-icon {
+      transition: none;
+    }
+
+    .uk-carousel .uk-carousel__control:active:not(:disabled) {
+      transform: none;
+    }
+  }
+}

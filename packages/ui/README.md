@@ -35,9 +35,10 @@ export function Root() {
 }
 ```
 
-组件包含：Button、Input、Form、Switch、Tabs、Dialog、Toast、Tooltip、Sidebar。
+组件包含：Button、Input、Form、Switch、Tabs、Carousel、Dialog、Toast、Tooltip、Sidebar。
 
 - Tabs 支持方向键切换、ARIA 关联与 fluid 指示器。
+- Carousel 基于 Embla，支持横向/纵向、拖拽、受控 snap 索引、RTL 与 reduced-motion 降级。
 - Switch 支持点击、键盘和拖拽 spring。
 - Dialog 提供 Root / Trigger / Content 与语义化内容层，自带 Motion 进出场、焦点陷阱、Esc 关闭与滚动锁定。
 - Toast 提供 `useToast` 状态队列与 `ToastStack` 呈现层，支持六向定位、自动关闭、状态图标、操作和拖拽关闭。

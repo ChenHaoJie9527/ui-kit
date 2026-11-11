@@ -4,6 +4,7 @@ import { hookByPath } from "./content/hooks";
 import { AppLayout } from "./App";
 import { BadgePage } from "./pages/badge";
 import { ButtonPage } from "./pages/button";
+import { CarouselPage } from "./pages/carousel";
 import { CheckBoxPage } from "./pages/checkbox";
 import { CustomizingPage } from "./pages/customizing";
 import { DialogPage } from "./pages/dialog";
@@ -26,6 +27,7 @@ import { UsagePage } from "./pages/usage";
 const componentPages: Record<string, ComponentType> = {
   badge: BadgePage,
   button: ButtonPage,
+  carousel: CarouselPage,
   input: InputPage,
   form: FormPage,
   checkbox: CheckBoxPage,
