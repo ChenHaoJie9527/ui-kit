@@ -3,13 +3,16 @@
   "version": "0.14.0",
   "description": "基于 seam-hooks 与 Motion 的 Fluid React 组件库",
   "keywords": [
+    "carousel",
     "component-library",
     "dialog",
+    "embla",
     "fluid",
     "marquee",
     "motion",
     "react",
     "sidebar",
+    "slider",
     "tabs",
     "tooltip",
     "typescript",
@@ -62,6 +65,8 @@
     "prepublishOnly": "pnpm build && pnpm test"
   },
   "dependencies": {
+    "embla-carousel": "8.6.0",
+    "embla-carousel-react": "8.6.0",
     "lucide-animated": "^1.0.5",
     "motion": "^14.4.0",
     "seam-hooks": "workspace:*"

@@ -75,6 +75,13 @@ const componentDefinitions: Array<
     tags: ["导航", "键盘"],
   },
   {
+    path: "components/carousel",
+    name: "Carousel",
+    summary:
+      "基于 Embla 的横向/纵向轮播，受控 snap 索引、可访问控件、RTL 与 reduced-motion 降级。",
+    tags: ["Embla", "拖拽", "受控", "可访问性"],
+  },
+  {
     path: "components/sidebar",
     name: "Sidebar",
     summary: "分组文档导航，当前项与鼠标预览使用独立且连续的共享指示器。",
