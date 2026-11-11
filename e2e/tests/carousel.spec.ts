@@ -284,16 +284,18 @@ test("Carousel: controls remain functional under reduced motion", async ({
   expect(Number.parseFloat(duration)).toBeLessThanOrEqual(0.001);
 });
 
-test("Carousel: netease five-pane shows 5 cards per snap", async ({ page }) => {
+test("Carousel: netease five-pane flips a whole screen per next", async ({
+  page,
+}) => {
   await gotoCarousel(page);
 
   const region = carousel(page, "5 连屏歌单");
   const output = readout(region);
   const viewport = region.locator(".uk-carousel__viewport");
 
-  await expect(output).toHaveText("1 / 4");
-  await expect(region.getByRole("group")).toHaveCount(8);
-  await expect(region.getByRole("button", { name: /^播放/ })).toHaveCount(8);
+  await expect(output).toHaveText("1 / 2");
+  await expect(region.getByRole("group")).toHaveCount(10);
+  await expect(region.getByRole("button", { name: /^播放/ })).toHaveCount(10);
 
   const itemBox = await region
     .locator(".uk-carousel__item")
@@ -306,11 +308,40 @@ test("Carousel: netease five-pane shows 5 cards per snap", async ({ page }) => {
     Math.abs((itemBox?.width ?? 0) * 5 - (viewportBox?.width ?? 0)),
   ).toBeLessThanOrEqual(12);
 
+  const firstVisible = async () =>
+    await region.evaluate((root) => {
+      const viewportRect = root
+        .querySelector(".uk-carousel__viewport")
+        ?.getBoundingClientRect();
+      const items = [...root.querySelectorAll(".uk-carousel__item")];
+
+      for (const item of items) {
+        const rect = item.getBoundingClientRect();
+
+        if (
+          viewportRect &&
+          rect.left < viewportRect.right &&
+          rect.right > viewportRect.left
+        ) {
+          return item.textContent?.slice(0, 6);
+        }
+      }
+
+      return null;
+    });
+
+  expect((await firstVisible())?.startsWith("夜曲")).toBe(true);
+
   await region.getByRole("button", { name: "Next slide" }).click();
-  await expect(output).toHaveText("2 / 4");
+  await expect(output).toHaveText("2 / 2");
+
+  // 一次切换前进 5 张：下一屏从第 6 张「欧美流行热歌榜」开始。
+  await expect
+    .poll(async () => (await firstVisible())?.startsWith("欧美"))
+    .toBe(true);
 });
 
-test("Carousel: netease three-pane shows 3 cards per snap", async ({
+test("Carousel: netease three-pane flips a whole screen per next", async ({
   page,
 }) => {
   await gotoCarousel(page);
@@ -318,21 +349,41 @@ test("Carousel: netease three-pane shows 3 cards per snap", async ({
   const region = carousel(page, "3 连屏新歌");
   const output = readout(region);
 
-  await expect(output).toHaveText("1 / 4");
+  await expect(output).toHaveText("1 / 2");
   await expect(region.getByRole("group")).toHaveCount(6);
   await expect(region.getByRole("button", { name: /^播放/ })).toHaveCount(6);
 
-  const itemBox = await region
-    .locator(".uk-carousel__item")
-    .first()
-    .boundingBox();
-  const viewportBox = await region
-    .locator(".uk-carousel__viewport")
-    .boundingBox();
+  const firstVisible = async () =>
+    await region.evaluate((root) => {
+      const viewport = root
+        .querySelector(".uk-carousel__viewport")
+        ?.getBoundingClientRect();
+      const items = [...root.querySelectorAll(".uk-carousel__item")];
 
-  expect(
-    Math.abs((itemBox?.width ?? 0) * 3 - (viewportBox?.width ?? 0)),
-  ).toBeLessThanOrEqual(12);
+      for (const item of items) {
+        const rect = item.getBoundingClientRect();
+
+        if (
+          viewport &&
+          rect.left < viewport.right &&
+          rect.right > viewport.left
+        ) {
+          return item.textContent?.slice(0, 4);
+        }
+      }
+
+      return null;
+    });
+
+  expect((await firstVisible())?.startsWith("晴天")).toBe(true);
+
+  await region.getByRole("button", { name: "Next slide" }).click();
+  await expect(output).toHaveText("2 / 2");
+
+  // 一次切换前进 3 张：下一屏从「夜曲」开始。等待滚动 settle 后再断言。
+  await expect
+    .poll(async () => (await firstVisible())?.startsWith("夜曲"))
+    .toBe(true);
 });
 
 test("Carousel: netease play button reveals on hover and focus", async ({
