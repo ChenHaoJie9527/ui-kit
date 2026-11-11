@@ -284,6 +284,75 @@ test("Carousel: controls remain functional under reduced motion", async ({
   expect(Number.parseFloat(duration)).toBeLessThanOrEqual(0.001);
 });
 
+test("Carousel: netease five-pane shows 5 cards per snap", async ({ page }) => {
+  await gotoCarousel(page);
+
+  const region = carousel(page, "5 连屏歌单");
+  const output = readout(region);
+  const viewport = region.locator(".uk-carousel__viewport");
+
+  await expect(output).toHaveText("1 / 4");
+  await expect(region.getByRole("group")).toHaveCount(8);
+  await expect(region.getByRole("button", { name: /^播放/ })).toHaveCount(8);
+
+  const itemBox = await region
+    .locator(".uk-carousel__item")
+    .first()
+    .boundingBox();
+  const viewportBox = await viewport.boundingBox();
+
+  // 5 张卡片 + 4 个 gap 占满一屏（含首尾 padding，误差在 gap 内）。
+  expect(
+    Math.abs((itemBox?.width ?? 0) * 5 - (viewportBox?.width ?? 0)),
+  ).toBeLessThanOrEqual(12);
+
+  await region.getByRole("button", { name: "Next slide" }).click();
+  await expect(output).toHaveText("2 / 4");
+});
+
+test("Carousel: netease three-pane shows 3 cards per snap", async ({
+  page,
+}) => {
+  await gotoCarousel(page);
+
+  const region = carousel(page, "3 连屏新歌");
+  const output = readout(region);
+
+  await expect(output).toHaveText("1 / 4");
+  await expect(region.getByRole("group")).toHaveCount(6);
+  await expect(region.getByRole("button", { name: /^播放/ })).toHaveCount(6);
+
+  const itemBox = await region
+    .locator(".uk-carousel__item")
+    .first()
+    .boundingBox();
+  const viewportBox = await region
+    .locator(".uk-carousel__viewport")
+    .boundingBox();
+
+  expect(
+    Math.abs((itemBox?.width ?? 0) * 3 - (viewportBox?.width ?? 0)),
+  ).toBeLessThanOrEqual(12);
+});
+
+test("Carousel: netease play button reveals on hover and focus", async ({
+  page,
+}) => {
+  await gotoCarousel(page);
+
+  const region = carousel(page, "5 连屏歌单");
+  const play = region.getByRole("button", { name: "播放夜曲 · 周杰伦精选" });
+
+  await expect(play).toHaveCSS("opacity", "0");
+  await play.hover();
+  await expect(play).toHaveCSS("opacity", "1");
+  await play.blur();
+  await play.focus();
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Shift+Tab");
+  await expect(play).toHaveCSS("opacity", "1");
+});
+
 test("Carousel: dots pill stretches between dots while scrolling", async ({
   page,
 }) => {
