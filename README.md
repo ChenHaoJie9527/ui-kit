@@ -75,7 +75,7 @@
 - `Input`：透传原生输入属性，`invalid` 映射到 `aria-invalid`，焦点状态使用共享动效 token。
 - `Switch`：基于原生 checkbox，受控与非受控写法一致，支持点击、键盘和拖拽 spring。
 - `Tabs`：组合式 API，roving tabindex、方向键循环、Home/End、完整 ARIA 关联与共享布局指示器。
-- `Carousel`：基于 Embla 的横向/纵向轮播，支持拖拽、受控 snap 索引、键盘可访问控件、RTL 与 reduced-motion 降级。
+- `Carousel`：基于 Embla 的横向/纵向轮播，支持拖拽、`scale` 缩放聚焦、Dots、Counter、受控 snap 索引、RTL、键盘可访问控件与 reduced-motion 降级。
 - `Dialog`：组合式 Root / Trigger / Content / Header / Title / Description / Body / Footer / Close 语义层，基于原生 `<dialog>` 并内置焦点、Esc、遮罩与滚动锁定。
 
 在应用根部渲染一次 `<SeamStyles />` 即可引入组件样式；颜色、间距、圆角、阴影、时长和缓动都是 CSS 变量，支持 `light-dark()` 与 reduced-motion。

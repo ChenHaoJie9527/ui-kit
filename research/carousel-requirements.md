@@ -1,6 +1,6 @@
 # Carousel 组件需求文档
 
-> 状态：M1 已实现（2026-11-11）
+> 状态：M1 已发布，M2 已实现待发布（2026-11-11）
 > 目标包：`seam-react`
 > 关联文档：`research/carousel-feasibility.md`、`DESIGN.md`、`AGENTS.md`
 > 参考：Animate UI Carousel（视觉参考）、shadcn/ui Carousel（结构参考）、Embla Carousel 8.6.0（滚动引擎）
@@ -149,6 +149,8 @@ interface CarouselState {
   index: number;
   /** snap 总数。分组滚动时可能小于 slide 数。 */
   count: number;
+  /** 实际 slide 数。 */
+  slideCount: number;
   canScrollPrev: boolean;
   canScrollNext: boolean;
   orientation: "horizontal" | "vertical";
@@ -310,6 +312,7 @@ export interface UseCarouselReturn {
   orientation: "horizontal" | "vertical";
   index: number;
   count: number;
+  slideCount: number;
   canScrollPrev: boolean;
   canScrollNext: boolean;
   scrollPrev: () => void;
@@ -886,8 +889,53 @@ Mock `embla-carousel-react`，覆盖：
 
 ### 17.3 M2 待办
 
+> M2 已实现，见第 18 节；本节保留 M1 时的待办记录。
+
 - `scale` / `visible` 签名效果：需要三方向原型与 60fps 性能门槛。
 - `Carousel.Dots`：共享 pill 或连续拉伸 pill。
 - `Carousel.Counter`：默认格式的数字滑动。
 - autoplay：仍为非目标；如果实现，必须补暂停按钮、hover/focus 暂停与 `aria-live`。
 - 完整视觉基线刷新：作为独立改动处理，不混入 Carousel。
+
+## 18. M2 实现记录（2026-11-11）
+
+> 用户已在此前锁定 Animate UI 参考方向；M2 未再运行三方向 picker，直接实现参考方向，并以文档中的 20-slide scale 示例作为功能验证。正式性能 trace、Safari/Firefox 人工验收仍需在合并前补。
+
+### 18.1 API 与实现
+
+- `scale?: number`：0–1，opt-in；开启时默认 `align: "center"`、`containScroll: false`。
+- `Carousel.Dots`：按 snap 渲染，当前项共享 pill，`aria-current`，支持 `label`；`count <= 1` 隐藏。
+- `Carousel.Counter`：默认 `Slide N of M`，默认数字滑动，`aria-hidden`，支持 `format`；`count <= 1` 隐藏。
+- `useCarousel()` 新增 `slideCount`，用于区分 slide 数与 snap 数。
+- `scale` 使用 `carousel-geometry.ts` 的纯函数计算 base/scale/target；Item 在 scale 模式下多一层 `uk-carousel__item-inner`。
+- scale 逐帧读取 slide rect，rAF 合并，先读后写；循环/RTL/纵向均使用同一套几何；reduced motion 下跳过逐帧写入。
+- 分组滚动（`slidesToScroll > 1`）没有 1:1 snap 几何，scale 效果会跳过，保留 CSS 布局。
+
+### 18.2 文档
+
+- 文档目录新增 API 名称：`scale`、`Carousel.Dots`、`Carousel.Counter`。
+- `scale` section 包含：20-slide 横向示例、RTL scale、vertical scale、reduced motion/性能说明。
+- `Carousel.Dots` section：共享 pill、snap/page 语义。
+- `Carousel.Counter` section：默认数字滑动、aria-hidden、format。
+
+### 18.3 验证结果
+
+| 检查                       | 结果                                                                             |
+| -------------------------- | -------------------------------------------------------------------------------- |
+| Carousel 单元测试          | 20/20                                                                            |
+| carousel-geometry 单元测试 | 7/7                                                                              |
+| Carousel e2e               | 16/16（含 Dots/Counter/scale/RTL scale/vertical scale/reduced motion）           |
+| Carousel a11y              | 16/16，axe-core 无 critical/serious 违规                                         |
+| `pnpm check`               | 通过                                                                             |
+| `pnpm -r build`            | 通过                                                                             |
+| 视觉快照                   | 亮/暗 2/2 通过                                                                   |
+| 20-slide 性能              | headless Chromium 拖动 110 帧，avg 16.67ms，p95 16.7ms，max 16.8ms，无 long task |
+| Safari / Firefox 人工验收  | 待补                                                                             |
+| 4× CPU throttle            | 待补                                                                             |
+
+### 18.4 未完成 / 后续
+
+- Dots 的连续拉伸 pill（P1）未实现；当前是共享 pill 基线。
+- 4× CPU throttle、Safari/Firefox 人工验收尚未完成；20-slide headless Chromium 拖动已达到 60fps（avg 16.67ms）。
+- 完整视觉基线刷新仍作为独立维护任务。
+- autoplay 仍为非目标。

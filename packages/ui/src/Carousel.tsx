@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -22,9 +23,18 @@ import type {
   EmblaOptionsType,
   EmblaPluginType,
 } from "embla-carousel";
-import { useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useControllableState, useEventCallback } from "seam-hooks";
 import { Button, type ButtonProps } from "./Button";
+import {
+  getCarouselCenterOffset,
+  getCarouselScaleAt,
+  getCarouselScaleGeometry,
+  resolveCarouselScale,
+  resolveCarouselVisible,
+  type CarouselScaleGeometry,
+} from "./carousel-geometry";
+import { INDICATOR_SPRING, UI_SPRING } from "./motion";
 import { cx } from "./utils/cx";
 
 export type CarouselOrientation = "horizontal" | "vertical";
@@ -50,6 +60,7 @@ export type CarouselProps = Omit<
     onIndexChange?: (index: number) => void;
     gap?: string;
     visible?: number;
+    scale?: number;
     children?: ReactNode;
   };
 
@@ -58,6 +69,7 @@ interface CarouselContextValue {
   api: CarouselApi | undefined;
   orientation: CarouselOrientation;
   reduceMotion: boolean;
+  scale: number | undefined;
   itemVersion: number;
   scrollPrev: () => void;
   scrollNext: () => void;
@@ -67,6 +79,7 @@ interface CarouselContextValue {
 interface CarouselStateContextValue {
   index: number;
   count: number;
+  slideCount: number;
   canScrollPrev: boolean;
   canScrollNext: boolean;
 }
@@ -112,6 +125,7 @@ export function useCarousel(): UseCarouselReturn {
     orientation: context.orientation,
     index: state.index,
     count: state.count,
+    slideCount: state.slideCount,
     canScrollPrev: state.canScrollPrev,
     canScrollNext: state.canScrollNext,
     scrollPrev: context.scrollPrev,
@@ -151,6 +165,7 @@ const CarouselRoot = forwardRef<HTMLElement, CarouselProps>(
       onIndexChange,
       gap = "0px",
       visible = 1,
+      scale,
       className,
       style,
       children,
@@ -161,6 +176,13 @@ const CarouselRoot = forwardRef<HTMLElement, CarouselProps>(
   ) {
     const resolvedVisible =
       Number.isFinite(visible) && visible > 0 ? visible : 1;
+    const resolvedScale = useMemo(() => resolveCarouselScale(scale), [scale]);
+    const scaleVisible = useMemo(
+      () => resolveCarouselVisible(visible),
+      [visible],
+    );
+    const scaleEnabled = resolvedScale !== undefined && scaleVisible >= 2;
+    const geometryRef = useRef<CarouselScaleGeometry | null>(null);
 
     /**
      * 初始位置只读一次：受控 index 后续变化由 scrollTo 同步，避免把
@@ -174,6 +196,7 @@ const CarouselRoot = forwardRef<HTMLElement, CarouselProps>(
       defaultValue: initialIndex,
     });
     const [count, setCount] = useState(0);
+    const [slideCount, setSlideCount] = useState(0);
     const [canScrollPrev, setCanScrollPrev] = useState(false);
     const [canScrollNext, setCanScrollNext] = useState(false);
     const [itemVersion, setItemVersion] = useState(0);
@@ -187,15 +210,21 @@ const CarouselRoot = forwardRef<HTMLElement, CarouselProps>(
       onIndexChange?.(next);
     });
 
-    const emblaOptions = useMemo<EmblaOptionsType>(
-      () => ({
-        align: "start",
+    const emblaOptions = useMemo<EmblaOptionsType>(() => {
+      const options: EmblaOptionsType = {
+        align: opts?.align ?? (scaleEnabled ? "center" : "start"),
         ...opts,
         axis: orientation === "horizontal" ? "x" : "y",
         startIndex: initialIndex,
-      }),
-      [opts, orientation, initialIndex],
-    );
+      };
+
+      // 只在 scale 模式写 containScroll；普通模式保持 Embla 默认 trimSnaps。
+      if (scaleEnabled) {
+        options.containScroll = opts?.containScroll ?? false;
+      }
+
+      return options;
+    }, [opts, orientation, initialIndex, scaleEnabled]);
 
     const [viewportRef, api] = useEmblaCarousel(emblaOptions, plugins);
 
@@ -204,6 +233,7 @@ const CarouselRoot = forwardRef<HTMLElement, CarouselProps>(
       const nextCount = emblaApi.scrollSnapList().length;
 
       setCount(nextCount);
+      setSlideCount(emblaApi.slideNodes().length);
       setCanScrollPrev(emblaApi.canScrollPrev());
       setCanScrollNext(emblaApi.canScrollNext());
 
@@ -359,12 +389,233 @@ const CarouselRoot = forwardRef<HTMLElement, CarouselProps>(
       api.scrollTo((current + 1) % snaps, true);
     });
 
+    useEffect(() => {
+      if (!api || !resolvedScale) {
+        return;
+      }
+
+      const measure = () => {
+        const slides = api.slideNodes();
+        const viewport = api.rootNode();
+        const first = slides[0];
+
+        if (!first || !viewport) {
+          geometryRef.current = null;
+          return;
+        }
+
+        const horizontal = orientation === "horizontal";
+        const length = horizontal
+          ? viewport.clientWidth
+          : viewport.clientHeight;
+        const slideStyle = getComputedStyle(first);
+        const gapPx =
+          Number.parseFloat(
+            horizontal
+              ? slideStyle.paddingInlineStart
+              : slideStyle.paddingBlockStart,
+          ) || 0;
+
+        if (length <= 0) {
+          geometryRef.current = null;
+          return;
+        }
+
+        const geometry = getCarouselScaleGeometry({
+          length,
+          gap: gapPx,
+          visible: scaleVisible,
+          scale: resolvedScale,
+        });
+
+        if (!Number.isFinite(geometry.base) || geometry.base <= 0) {
+          geometryRef.current = null;
+          return;
+        }
+
+        geometryRef.current = geometry;
+
+        // 分组滚动没有 1:1 的 slide/snap 对应关系，保留 CSS 布局。
+        if (api.scrollSnapList().length !== slides.length) {
+          for (const slide of slides) {
+            slide.style.flexBasis = "";
+          }
+          return;
+        }
+
+        const basis = `${Math.max(0, Math.floor(geometry.base + gapPx))}px`;
+
+        for (const slide of slides) {
+          if (slide.style.flexBasis !== basis) {
+            slide.style.flexBasis = basis;
+          }
+        }
+      };
+
+      measure();
+      api.on("reInit", measure);
+      api.on("resize", measure);
+
+      return () => {
+        api.off("reInit", measure);
+        api.off("resize", measure);
+
+        for (const slide of api.slideNodes()) {
+          slide.style.flexBasis = "";
+        }
+      };
+      // eslint-disable-next-line react/exhaustive-effect-dependencies -- gap changes the computed padding and basis.
+    }, [api, gap, orientation, resolvedScale, scaleVisible]);
+
+    useEffect(() => {
+      if (!api || !resolvedScale || reduceMotion) {
+        return;
+      }
+
+      let frame = 0;
+
+      const reset = () => {
+        for (const slide of api.slideNodes()) {
+          slide.style.removeProperty("--uk-carousel-slide-z");
+          const inner = slide.querySelector<HTMLElement>(
+            ".uk-carousel__item-inner",
+          );
+
+          if (inner) {
+            inner.style.removeProperty("--uk-carousel-slide-scale");
+            inner.style.removeProperty("--uk-carousel-slide-shift");
+            inner.style.removeProperty("--uk-carousel-slide-opacity");
+          }
+        }
+      };
+
+      const update = () => {
+        frame = 0;
+
+        const geometry = geometryRef.current;
+        const slides = api.slideNodes();
+        const viewport = api.rootNode();
+
+        if (!geometry || !viewport || slides.length === 0) {
+          return;
+        }
+
+        if (api.scrollSnapList().length !== slides.length) {
+          return;
+        }
+
+        const horizontal = orientation === "horizontal";
+        const viewportRect = viewport.getBoundingClientRect();
+        const viewportCenter = horizontal
+          ? viewportRect.left + viewportRect.width / 2
+          : viewportRect.top + viewportRect.height / 2;
+        const rtl =
+          horizontal && getComputedStyle(viewport).direction === "rtl";
+
+        // 先一次性读完，再统一写，避免读写交错触发布局抖动。
+        const rects = slides.map((slide) => slide.getBoundingClientRect());
+        const values = slides.map((slide, slideIndex) => {
+          const rect = rects[slideIndex]!;
+          const contentCenter = horizontal
+            ? rtl
+              ? rect.right - geometry.gap - geometry.base / 2
+              : rect.left + geometry.gap + geometry.base / 2
+            : rect.top + geometry.gap + geometry.base / 2;
+          const actualOffset = contentCenter - viewportCenter;
+          const distance = actualOffset / (geometry.base + geometry.gap);
+          const away = Math.abs(distance);
+          // snap 对齐可能有 1–2px 的取整误差；中心附近直接归一到 scale 1，
+          // 避免中心 slide 在吸附后仍然略小于 1。
+          const centered = away <= 0.08;
+          const slideScale = centered
+            ? 1
+            : getCarouselScaleAt(distance, resolvedScale, geometry.side);
+          const target = centered
+            ? 0
+            : getCarouselCenterOffset(
+                distance,
+                geometry.base,
+                geometry.gap,
+                resolvedScale,
+                geometry.side,
+              );
+          const opacity = centered
+            ? 1
+            : away > geometry.side + 1
+              ? 0
+              : away <= geometry.side
+                ? 1
+                : 1 - (away - geometry.side);
+          const z = centered ? 100 : Math.max(1, 100 - Math.round(away * 10));
+
+          return {
+            slide,
+            scale: slideScale,
+            shift: target - actualOffset,
+            opacity,
+            z,
+          };
+        });
+
+        for (const value of values) {
+          const inner = value.slide.querySelector<HTMLElement>(
+            ".uk-carousel__item-inner",
+          );
+
+          if (!inner) {
+            continue;
+          }
+
+          inner.style.setProperty(
+            "--uk-carousel-slide-scale",
+            String(value.scale),
+          );
+          inner.style.setProperty(
+            "--uk-carousel-slide-shift",
+            `${value.shift}px`,
+          );
+          inner.style.setProperty(
+            "--uk-carousel-slide-opacity",
+            String(value.opacity),
+          );
+          value.slide.style.setProperty(
+            "--uk-carousel-slide-z",
+            String(value.z),
+          );
+        }
+      };
+
+      const onScroll = () => {
+        if (frame === 0) {
+          frame = requestAnimationFrame(update);
+        }
+      };
+
+      api.on("scroll", onScroll);
+      api.on("reInit", onScroll);
+      api.on("resize", onScroll);
+      update();
+
+      return () => {
+        api.off("scroll", onScroll);
+        api.off("reInit", onScroll);
+        api.off("resize", onScroll);
+
+        if (frame !== 0) {
+          cancelAnimationFrame(frame);
+        }
+
+        reset();
+      };
+    }, [api, orientation, reduceMotion, resolvedScale]);
+
     const contextValue = useMemo<CarouselContextValue>(
       () => ({
         viewportRef,
         api,
         orientation,
         reduceMotion,
+        scale: scaleEnabled ? resolvedScale : undefined,
         itemVersion,
         scrollPrev,
         scrollNext,
@@ -375,6 +626,8 @@ const CarouselRoot = forwardRef<HTMLElement, CarouselProps>(
         api,
         orientation,
         reduceMotion,
+        scaleEnabled,
+        resolvedScale,
         itemVersion,
         scrollPrev,
         scrollNext,
@@ -386,10 +639,11 @@ const CarouselRoot = forwardRef<HTMLElement, CarouselProps>(
       () => ({
         index,
         count,
+        slideCount,
         canScrollPrev,
         canScrollNext,
       }),
-      [index, count, canScrollPrev, canScrollNext],
+      [index, count, slideCount, canScrollPrev, canScrollNext],
     );
 
     return (
@@ -400,6 +654,7 @@ const CarouselRoot = forwardRef<HTMLElement, CarouselProps>(
             ref={ref}
             aria-roledescription={ariaRoleDescription ?? "carousel"}
             data-orientation={orientation}
+            data-scale={scaleEnabled ? "true" : undefined}
             className={cx("uk-carousel", className)}
             style={{
               ...style,
@@ -465,7 +720,7 @@ const CarouselItem: ForwardRefExoticComponent<
   },
   ref,
 ) {
-  const { itemVersion } = useCarouselContext("Carousel.Item");
+  const { itemVersion, scale } = useCarouselContext("Carousel.Item");
   const internalRef = useRef<HTMLDivElement | null>(null);
   const [position, setPosition] = useState<{
     index: number;
@@ -518,7 +773,11 @@ const CarouselItem: ForwardRefExoticComponent<
       data-uk-carousel-item=""
       className={cx("uk-carousel__item", className)}
     >
-      {children}
+      {scale ? (
+        <div className="uk-carousel__item-inner">{children}</div>
+      ) : (
+        children
+      )}
     </div>
   );
 });
@@ -641,6 +900,137 @@ const CarouselNext: ForwardRefExoticComponent<
   );
 });
 
+export interface CarouselDotsProps extends HTMLAttributes<HTMLDivElement> {
+  /** 每个 dot 的无障碍名称；默认按 snap 数决定 slide/page 文案。 */
+  label?: (index: number, count: number) => string;
+}
+
+/**
+ * 按 snap 渲染 dot 按钮。当前项用共享 pill 标记；点击调用 scrollTo。
+ *
+ * 分组滚动（slidesToScroll > 1）时 dot 表示 page，而不是 slide。
+ */
+const CarouselDots: ForwardRefExoticComponent<
+  CarouselDotsProps & RefAttributes<HTMLDivElement>
+> = forwardRef<HTMLDivElement, CarouselDotsProps>(function CarouselDots(
+  { className, label, "aria-label": ariaLabel, ...rest },
+  ref,
+) {
+  const { index, count, slideCount, scrollTo } = useCarousel();
+  const reduceMotion = useReducedMotion() ?? false;
+  const pillId = useId();
+
+  if (count <= 1) {
+    return null;
+  }
+
+  const grouped = slideCount > 0 && slideCount !== count;
+  const getLabel =
+    label ??
+    ((dotIndex: number) =>
+      `Go to ${grouped ? "page" : "slide"} ${dotIndex + 1}`);
+
+  return (
+    <div
+      {...rest}
+      ref={ref}
+      role="group"
+      aria-label={ariaLabel?.trim() || "Slide controls"}
+      className={cx("uk-carousel__dots", className)}
+    >
+      {Array.from({ length: count }, (_, dotIndex) => {
+        const active = dotIndex === index;
+
+        return (
+          <button
+            key={dotIndex}
+            type="button"
+            className="uk-carousel__dot"
+            data-state={active ? "active" : "inactive"}
+            aria-label={getLabel(dotIndex, count)}
+            aria-current={active ? "true" : undefined}
+            onClick={() => scrollTo(dotIndex)}
+          >
+            {active ? (
+              <motion.span
+                aria-hidden="true"
+                className="uk-carousel__dot-pill"
+                layoutId={`${pillId}-dot-pill`}
+                transition={reduceMotion ? { duration: 0 } : INDICATOR_SPRING}
+              />
+            ) : (
+              <span aria-hidden="true" className="uk-carousel__dot-mark" />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+});
+
+export interface CarouselCounterProps extends HTMLAttributes<HTMLDivElement> {
+  /** 自定义文本；默认 Slide {current} of {count}。 */
+  format?: (current: number, count: number) => ReactNode;
+}
+
+/**
+ * 当前 snap 文本。默认只让数字滑动；自定义 format 即时替换。
+ *
+ * 位置已由 slide 的 x of y 标签提供，所以默认对读屏隐藏，避免重复播报。
+ */
+const CarouselCounter: ForwardRefExoticComponent<
+  CarouselCounterProps & RefAttributes<HTMLDivElement>
+> = forwardRef<HTMLDivElement, CarouselCounterProps>(function CarouselCounter(
+  { className, format, "aria-hidden": ariaHidden, dir = "ltr", ...rest },
+  ref,
+) {
+  const { index, count } = useCarousel();
+  const reduceMotion = useReducedMotion() ?? false;
+
+  if (count <= 1) {
+    return null;
+  }
+
+  const current = index + 1;
+
+  return (
+    <div
+      {...rest}
+      ref={ref}
+      dir={dir}
+      aria-hidden={ariaHidden ?? true}
+      className={cx("uk-carousel__counter", className)}
+    >
+      {format ? (
+        <span key={current} className="uk-carousel__counter-custom">
+          {format(current, count)}
+        </span>
+      ) : (
+        <>
+          <span>Slide</span>
+          <span className="uk-carousel__counter-number">
+            <AnimatePresence initial={false} mode="popLayout">
+              <motion.span
+                key={current}
+                className="uk-carousel__counter-value"
+                initial={reduceMotion ? false : { y: "0.35em", opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={
+                  reduceMotion ? { opacity: 0 } : { y: "-0.35em", opacity: 0 }
+                }
+                transition={reduceMotion ? { duration: 0 } : UI_SPRING}
+              >
+                {current}
+              </motion.span>
+            </AnimatePresence>
+          </span>
+          <span>of {count}</span>
+        </>
+      )}
+    </div>
+  );
+});
+
 export type CarouselComponent = ForwardRefExoticComponent<
   CarouselProps & RefAttributes<HTMLElement>
 > & {
@@ -648,18 +1038,23 @@ export type CarouselComponent = ForwardRefExoticComponent<
   Item: typeof CarouselItem;
   Previous: typeof CarouselPrevious;
   Next: typeof CarouselNext;
+  Dots: typeof CarouselDots;
+  Counter: typeof CarouselCounter;
 };
 
 /**
  * 轮播。
  *
  * 组合式 API：Carousel / Carousel.Content / Carousel.Item /
- * Carousel.Previous / Carousel.Next。滚动、吸附与拖拽由 Embla 提供；
- * 组件负责受控 snap 索引、ARIA、RTL、reduced-motion 与样式。
+ * Carousel.Previous / Carousel.Next / Carousel.Dots / Carousel.Counter。
+ * 滚动、吸附与拖拽由 Embla 提供；组件负责受控 snap 索引、ARIA、RTL、
+ * reduced-motion 与样式。
  */
 export const Carousel: CarouselComponent = Object.assign(CarouselRoot, {
   Content: CarouselContent,
   Item: CarouselItem,
   Previous: CarouselPrevious,
   Next: CarouselNext,
+  Dots: CarouselDots,
+  Counter: CarouselCounter,
 });

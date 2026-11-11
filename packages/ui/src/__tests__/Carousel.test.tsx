@@ -35,6 +35,8 @@ interface FakeEmblaApi {
   scrollPrev: ReturnType<typeof vi.fn>;
   scrollNext: ReturnType<typeof vi.fn>;
   scrollTo: ReturnType<typeof vi.fn>;
+  slideNodes: () => HTMLElement[];
+  rootNode: () => HTMLElement | null;
   on: (event: string, listener: Listener) => FakeEmblaApi;
   off: (event: string, listener: Listener) => FakeEmblaApi;
   emit: (event: string) => void;
@@ -79,6 +81,11 @@ function createFakeApi(initialCount: number, initialIndex = 0): FakeEmblaApi {
       }
     }),
     scrollTo,
+    slideNodes: () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>("[data-uk-carousel-item]"),
+      ),
+    rootNode: () => null,
     on: (event, listener) => {
       const set = listeners.get(event) ?? new Set<Listener>();
       listeners.set(event, set);
@@ -150,6 +157,20 @@ function CarouselExample(props: CarouselExampleProps = {}) {
   );
 }
 
+function CarouselPartsExample({ items = 3 }: { items?: number }) {
+  return (
+    <Carousel aria-label="Gallery">
+      <Carousel.Content>
+        {Array.from({ length: items }, (_, index) => (
+          <Carousel.Item key={index}>Slide {index + 1}</Carousel.Item>
+        ))}
+      </Carousel.Content>
+      <Carousel.Dots />
+      <Carousel.Counter />
+    </Carousel>
+  );
+}
+
 function OutsideHook() {
   useCarousel();
   return null;
@@ -205,6 +226,38 @@ describe("Carousel", () => {
 
     expect(slide.getAttribute("aria-labelledby")).toBe("slide-title");
     expect(slide.hasAttribute("aria-label")).toBe(false);
+  });
+
+  it("enables scale defaults and wraps slides in an inner layer", () => {
+    render(<CarouselExample scale={0.8} visible={3} />);
+
+    expect(emblaMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        align: "center",
+        containScroll: false,
+      }),
+      undefined,
+    );
+    expect(document.querySelectorAll(".uk-carousel__item-inner")).toHaveLength(
+      3,
+    );
+    expect(screen.getByRole("region").getAttribute("data-scale")).toBe("true");
+  });
+
+  it("keeps the M1 DOM when scale is absent or 1", () => {
+    const { rerender } = render(<CarouselExample />);
+
+    expect(document.querySelectorAll(".uk-carousel__item-inner")).toHaveLength(
+      0,
+    );
+    expect(screen.getByRole("region").getAttribute("data-scale")).toBeNull();
+
+    rerender(<CarouselExample scale={1} />);
+
+    expect(document.querySelectorAll(".uk-carousel__item-inner")).toHaveLength(
+      0,
+    );
+    expect(screen.getByRole("region").getAttribute("data-scale")).toBeNull();
   });
 
   it("passes orientation, default align, and start index to Embla", () => {
@@ -343,6 +396,102 @@ describe("Carousel", () => {
     );
 
     spy.mockRestore();
+  });
+
+  it("renders dots, marks the active dot, and scrolls on click", async () => {
+    render(<CarouselPartsExample />);
+
+    await waitFor(() => {
+      expect(document.querySelectorAll(".uk-carousel__dot")).toHaveLength(3);
+    });
+
+    const dots = screen.getAllByRole("button", {
+      name: /Go to slide/,
+    });
+
+    expect(dots[0]?.getAttribute("aria-current")).toBe("true");
+    expect(dots[1]?.getAttribute("aria-current")).toBeNull();
+
+    fireEvent.click(dots[1]!);
+
+    await waitFor(() => {
+      expect(fakeApi.scrollTo).toHaveBeenCalledWith(1, false);
+      expect(dots[1]?.getAttribute("aria-current")).toBe("true");
+    });
+  });
+
+  it("uses page labels when snap count differs from slide count", async () => {
+    initialCount = 2;
+    render(<CarouselPartsExample items={4} />);
+
+    await waitFor(() => {
+      expect(document.querySelectorAll(".uk-carousel__dot")).toHaveLength(2);
+    });
+
+    expect(screen.getByRole("button", { name: "Go to page 1" })).not.toBeNull();
+  });
+
+  it("hides dots and counter when there is at most one snap", async () => {
+    initialCount = 1;
+    render(<CarouselPartsExample items={1} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("group").getAttribute("aria-label")).toBe(
+        "1 of 1",
+      );
+    });
+
+    expect(document.querySelector(".uk-carousel__dots")).toBeNull();
+    expect(document.querySelector(".uk-carousel__counter")).toBeNull();
+  });
+
+  it("renders the default counter and supports a custom format", async () => {
+    const { rerender } = render(<CarouselPartsExample />);
+
+    await waitFor(() => {
+      expect(document.querySelector(".uk-carousel__counter")).not.toBeNull();
+    });
+
+    const counter = document.querySelector(
+      ".uk-carousel__counter",
+    ) as HTMLElement;
+
+    expect(counter.getAttribute("aria-hidden")).toBe("true");
+    expect(counter.getAttribute("dir")).toBe("ltr");
+    expect(
+      counter.querySelector(".uk-carousel__counter-value")?.textContent,
+    ).toBe("1");
+
+    act(() => {
+      fakeApi.scrollNext();
+    });
+
+    await waitFor(() => {
+      expect(
+        document.querySelector(".uk-carousel__counter-value")?.textContent,
+      ).toBe("2");
+    });
+
+    rerender(
+      <Carousel aria-label="Gallery">
+        <Carousel.Content>
+          <Carousel.Item>One</Carousel.Item>
+          <Carousel.Item>Two</Carousel.Item>
+          <Carousel.Item>Three</Carousel.Item>
+        </Carousel.Content>
+        <Carousel.Counter
+          dir="rtl"
+          format={(current, count) => `${current} / ${count}`}
+        />
+      </Carousel>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("1 / 3")).not.toBeNull();
+    });
+    expect(
+      document.querySelector(".uk-carousel__counter")?.getAttribute("dir"),
+    ).toBe("rtl");
   });
 
   it("updates slide labels after reInit", async () => {
