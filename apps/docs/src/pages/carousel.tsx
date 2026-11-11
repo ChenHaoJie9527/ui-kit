@@ -13,6 +13,103 @@ import {
   Section,
 } from "../components/docs";
 
+interface NeteasePlaylist {
+  id: string;
+  title: string;
+  subtitle: string;
+  colors: [string, string];
+}
+
+const NETEASE_PLAYLISTS: NeteasePlaylist[] = [
+  {
+    id: "playlist-night",
+    title: "夜曲 · 周杰伦精选",
+    subtitle: "3286 万次播放",
+    colors: ["#0ea5e9", "#1e3a8a"],
+  },
+  {
+    id: "playlist-cantonese",
+    title: "粤语经典百听不厌",
+    subtitle: "1280 万次播放",
+    colors: ["#f43f5e", "#7f1d1d"],
+  },
+  {
+    id: "playlist-sleep",
+    title: "轻音乐助眠电台",
+    subtitle: "892 万次播放",
+    colors: ["#8b5cf6", "#312e81"],
+  },
+  {
+    id: "playlist-dj",
+    title: "DJ 舞曲能量补给",
+    subtitle: "654 万次播放",
+    colors: ["#f59e0b", "#78350f"],
+  },
+  {
+    id: "playlist-piano",
+    title: "治愈系钢琴独奏",
+    subtitle: "467 万次播放",
+    colors: ["#10b981", "#065f46"],
+  },
+  {
+    id: "playlist-pop",
+    title: "欧美流行热歌榜",
+    subtitle: "395 万次播放",
+    colors: ["#ec4899", "#831843"],
+  },
+  {
+    id: "playlist-folk",
+    title: "民谣小屋与故事",
+    subtitle: "273 万次播放",
+    colors: ["#84cc16", "#3f6212"],
+  },
+  {
+    id: "playlist-acg",
+    title: "ACG 神曲收藏夹",
+    subtitle: "188 万次播放",
+    colors: ["#06b6d4", "#155e75"],
+  },
+];
+
+const NETEASE_ALBUMS: NeteasePlaylist[] = [
+  {
+    id: "album-sunny",
+    title: "晴天",
+    subtitle: "周杰伦",
+    colors: ["#fbbf24", "#b45309"],
+  },
+  {
+    id: "album-qili",
+    title: "七里香",
+    subtitle: "周杰伦",
+    colors: ["#34d399", "#065f46"],
+  },
+  {
+    id: "album-rice",
+    title: "稻香",
+    subtitle: "周杰伦",
+    colors: ["#a3e635", "#4d7c0f"],
+  },
+  {
+    id: "album-nocturne",
+    title: "夜曲",
+    subtitle: "周杰伦",
+    colors: ["#6366f1", "#1e1b4b"],
+  },
+  {
+    id: "album-mom",
+    title: "听妈妈的话",
+    subtitle: "周杰伦",
+    colors: ["#f472b6", "#9d174d"],
+  },
+  {
+    id: "album-stranded",
+    title: "搁浅",
+    subtitle: "周杰伦",
+    colors: ["#22d3ee", "#155e75"],
+  },
+];
+
 interface Product {
   id: string;
   name: string;
@@ -401,6 +498,48 @@ function InlineCarouselControls() {
   );
 }
 
+/**
+ * 网易云风格歌单卡片：封面渐变 + hover/focus 播放按钮 + 标题 + 播放量。
+ * 播放按钮始终在 DOM 里并可聚焦，hover 只做透明度显示，不隐藏语义。
+ */
+function NeteasePlaylistCard({ item }: { item: NeteasePlaylist }) {
+  return (
+    <article className="group flex h-full flex-col gap-2 overflow-hidden rounded-xl border border-line bg-surface">
+      <div
+        className="relative aspect-square overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${item.colors[0]}, ${item.colors[1]})`,
+        }}
+      >
+        <button
+          type="button"
+          aria-label={`播放${item.title}`}
+          className="absolute inset-0 flex items-center justify-center bg-black/25 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100"
+        >
+          <span
+            aria-hidden="true"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-md"
+          >
+            <svg
+              viewBox="0 0 20 20"
+              className="ms-0.5 h-4 w-4"
+              fill="currentColor"
+            >
+              <path d="M7 5.5v9l7-4.5-7-4.5z" />
+            </svg>
+          </span>
+        </button>
+      </div>
+      <div className="px-1">
+        <h3 className="m-0 truncate text-[13px] font-medium text-ink">
+          {item.title}
+        </h3>
+        <p className="m-0 truncate text-[11px] text-muted">{item.subtitle}</p>
+      </div>
+    </article>
+  );
+}
+
 function ProductCard({ product }: { product: Product }) {
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface">
@@ -663,6 +802,50 @@ function SearchResultCard({
         )}
       </div>
     </div>
+  );
+}
+
+function NeteaseFiveDemo() {
+  return (
+    <Carousel
+      aria-label="5 连屏歌单"
+      gap="0.5rem"
+      visible={5}
+      className="max-w-[720px]"
+    >
+      <Carousel.Content>
+        {NETEASE_PLAYLISTS.map((item) => (
+          <Carousel.Item key={item.id}>
+            <NeteasePlaylistCard item={item} />
+          </Carousel.Item>
+        ))}
+      </Carousel.Content>
+      <Carousel.Previous />
+      <Carousel.Next />
+      <CarouselReadout />
+    </Carousel>
+  );
+}
+
+function NeteaseThreeDemo() {
+  return (
+    <Carousel
+      aria-label="3 连屏新歌"
+      gap="0.75rem"
+      visible={3}
+      className="max-w-[560px]"
+    >
+      <Carousel.Content>
+        {NETEASE_ALBUMS.map((item) => (
+          <Carousel.Item key={item.id}>
+            <NeteasePlaylistCard item={item} />
+          </Carousel.Item>
+        ))}
+      </Carousel.Content>
+      <Carousel.Previous />
+      <Carousel.Next />
+      <CarouselReadout />
+    </Carousel>
   );
 }
 
@@ -1067,7 +1250,7 @@ export function CarouselPage() {
 
       <Section
         title="visible"
-        description="一次显示两张商品卡片；4 张卡片会产生 3 个 snap 位置，所以左上角读数显示 1 / 3。useCarousel 的 count 也是 snap 数，不是 slide 数。"
+        description="visible 决定一屏显示多少张，网易云风格的多连屏（5 连屏歌单、3 连屏新歌）和商品卡片都是同一个 API。visible=2 时 4 张卡片会产生 3 个 snap 位置；useCarousel 的 count 也是 snap 数，不是 slide 数。"
       >
         <Demo
           code={`const products = [...];
@@ -1086,10 +1269,77 @@ export function CarouselPage() {
         >
           <BasicDemo />
         </Demo>
+        <Demo
+          code={`const playlists = [...];
+
+<Carousel
+  aria-label="5 连屏歌单"
+  gap="0.5rem"
+  visible={5}
+  className="max-w-[720px]"
+>
+  <Carousel.Content>
+    {playlists.map((item) => (
+      <Carousel.Item key={item.id}>
+        <PlaylistCard item={item} />
+      </Carousel.Item>
+    ))}
+  </Carousel.Content>
+  <Carousel.Previous />
+  <Carousel.Next />
+</Carousel>`}
+        >
+          <NeteaseFiveDemo />
+        </Demo>
+        <Demo
+          code={`const albums = [...];
+
+<Carousel
+  aria-label="3 连屏新歌"
+  gap="0.75rem"
+  visible={3}
+  className="max-w-[560px]"
+>
+  <Carousel.Content>
+    {albums.map((item) => (
+      <Carousel.Item key={item.id}>
+        <AlbumCard item={item} />
+      </Carousel.Item>
+    ))}
+  </Carousel.Content>
+  <Carousel.Previous />
+  <Carousel.Next />
+</Carousel>`}
+        >
+          <NeteaseThreeDemo />
+        </Demo>
+        <Callout title="响应式多连屏">
+          <p>
+            visible 写入 --uk-carousel-visible，媒体查询直接覆盖就能从 5
+            连屏收窄到 3 连屏甚至 2 连屏，不需要重新渲染：
+          </p>
+          <CodeBlock
+            code={`.playlist-carousel {
+  --uk-carousel-visible: 5;
+}
+
+@media (max-width: 900px) {
+  .playlist-carousel {
+    --uk-carousel-visible: 3;
+  }
+}`}
+            label="css"
+          />
+          <p>
+            在组件上写 className=&quot;playlist-carousel&quot; 即可生效。
+            播放按钮用 hover/focus 显示，始终在 DOM 中可聚焦。
+          </p>
+        </Callout>
         <Callout title="snap 数不等于 slide 数">
           <p>
-            visible=2 时，4 张卡片只有 3 个可停靠位置。需要 slide 级位置时， 从
-            useCarousel().api 读取 slideNodes 并自行换算。
+            visible=2 时，4 张卡片只有 3 个可停靠位置。5 连屏下 8 张歌单产生 4
+            个 snap。需要 slide 级位置时， 从 useCarousel().api 读取 slideNodes
+            并自行换算。
           </p>
         </Callout>
       </Section>
