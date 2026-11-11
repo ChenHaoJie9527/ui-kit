@@ -344,16 +344,80 @@ test("Carousel: scale keeps a full-size center and shrinks neighbours", async ({
       }),
     );
 
-  await expect.poll(scales).toContain(1);
+  await expect
+    .poll(async () => (await scales()).some((scale) => scale > 0.99))
+    .toBe(true);
   expect((await scales()).some((scale) => scale < 1)).toBe(true);
 
   await next.click();
   await expect(output).toHaveText("2 / 20");
-  await expect.poll(scales).toContain(1);
+  await expect
+    .poll(async () => (await scales()).some((scale) => scale > 0.99))
+    .toBe(true);
 
   await next.click();
   await expect(output).toHaveText("3 / 20");
-  await expect.poll(scales).toContain(1);
+  await expect
+    .poll(async () => (await scales()).some((scale) => scale > 0.99))
+    .toBe(true);
+});
+
+test("Carousel: scale transition does not jump to centre", async ({ page }) => {
+  await gotoCarousel(page);
+
+  const region = carousel(page, "缩放轮播");
+  const next = region.getByRole("button", { name: "下一张" });
+
+  await expect(readout(region)).toHaveText("1 / 20");
+  await region.scrollIntoViewIfNeeded();
+
+  await page.evaluate(() => {
+    const root = document.querySelector('[aria-label="缩放轮播"]');
+    const target = root?.querySelectorAll(".uk-carousel__item")[1];
+    const inner = target?.querySelector(".uk-carousel__item-inner");
+    const samples: Array<{ scale: number; shift: number }> = [];
+    (
+      window as unknown as {
+        carouselScaleSamples: Array<{ scale: number; shift: number }>;
+      }
+    ).carouselScaleSamples = samples;
+    const start = performance.now();
+
+    const tick = (now: number) => {
+      samples.push({
+        scale: Number(
+          inner?.style.getPropertyValue("--uk-carousel-slide-scale") || 1,
+        ),
+        shift: Number.parseFloat(
+          inner?.style.getPropertyValue("--uk-carousel-slide-shift") || "0",
+        ),
+      });
+
+      if (now - start < 1000) {
+        requestAnimationFrame(tick);
+      }
+    };
+
+    requestAnimationFrame(tick);
+  });
+
+  await next.click();
+  await page.waitForTimeout(1200);
+
+  const samples = await page.evaluate(
+    () =>
+      window.carouselScaleSamples as Array<{ scale: number; shift: number }>,
+  );
+  // 目标 slide 的 shift 应该从 -22px 单调靠近 0。
+  // 旧实现会在距离中心 0.08 时直接跳到中心：shift 从 -1.9 突然变成 -18.4，
+  // 形成一次明显的反向位移。用“反向位移”而不是单帧 delta 做断言，
+  // 避免 CI 掉帧导致的误报。
+  const reversals = samples.slice(1).filter((sample, index) => {
+    const previous = samples[index]!;
+    return sample.shift < previous.shift - 2;
+  });
+
+  expect(reversals).toEqual([]);
 });
 
 test("Carousel: scale keeps its geometry in RTL", async ({ page }) => {
@@ -377,7 +441,7 @@ test("Carousel: scale keeps its geometry in RTL", async ({ page }) => {
       ),
     );
 
-  expect(scales).toContain(1);
+  expect(scales.some((scale) => scale > 0.99)).toBe(true);
   expect(scales.some((scale) => scale < 1)).toBe(true);
 
   await region.getByRole("button", { name: "下一张" }).click();
@@ -405,7 +469,7 @@ test("Carousel: scale keeps its geometry when vertical", async ({ page }) => {
       ),
     );
 
-  expect(scales).toContain(1);
+  expect(scales.some((scale) => scale > 0.99)).toBe(true);
   expect(scales.some((scale) => scale < 1)).toBe(true);
 
   await region.getByRole("button", { name: "下一张" }).click();

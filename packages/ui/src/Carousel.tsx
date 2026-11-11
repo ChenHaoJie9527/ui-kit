@@ -524,29 +524,25 @@ const CarouselRoot = forwardRef<HTMLElement, CarouselProps>(
           const actualOffset = contentCenter - viewportCenter;
           const distance = actualOffset / (geometry.base + geometry.gap);
           const away = Math.abs(distance);
-          // snap 对齐可能有 1–2px 的取整误差；中心附近直接归一到 scale 1，
-          // 避免中心 slide 在吸附后仍然略小于 1。
-          const centered = away <= 0.08;
-          const slideScale = centered
-            ? 1
-            : getCarouselScaleAt(distance, resolvedScale, geometry.side);
-          const target = centered
-            ? 0
-            : getCarouselCenterOffset(
-                distance,
-                geometry.base,
-                geometry.gap,
-                resolvedScale,
-                geometry.side,
-              );
-          const opacity = centered
-            ? 1
-            : away > geometry.side + 1
+          const slideScale = getCarouselScaleAt(
+            distance,
+            resolvedScale,
+            geometry.side,
+          );
+          const target = getCarouselCenterOffset(
+            distance,
+            geometry.base,
+            geometry.gap,
+            resolvedScale,
+            geometry.side,
+          );
+          const opacity =
+            away > geometry.side + 1
               ? 0
               : away <= geometry.side
                 ? 1
                 : 1 - (away - geometry.side);
-          const z = centered ? 100 : Math.max(1, 100 - Math.round(away * 10));
+          const z = Math.max(1, 100 - Math.round(away * 10));
 
           return {
             slide,

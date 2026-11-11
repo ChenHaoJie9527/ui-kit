@@ -924,7 +924,7 @@ Mock `embla-carousel-react`，覆盖：
 | -------------------------- | -------------------------------------------------------------------------------- |
 | Carousel 单元测试          | 20/20                                                                            |
 | carousel-geometry 单元测试 | 7/7                                                                              |
-| Carousel e2e               | 16/16（含 Dots/Counter/scale/RTL scale/vertical scale/reduced motion）           |
+| Carousel e2e               | 17/17（含 Dots/Counter/scale/平滑性/RTL scale/vertical scale/reduced motion）    |
 | Carousel a11y              | 16/16，axe-core 无 critical/serious 违规                                         |
 | `pnpm check`               | 通过                                                                             |
 | `pnpm -r build`            | 通过                                                                             |
