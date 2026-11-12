@@ -1,51 +1,22 @@
 import {
-  createContext,
   forwardRef,
-  useContext,
   useEffect,
   useId,
-  useMemo,
   useState,
   type ChangeEvent,
-  type HTMLAttributes,
   type InputHTMLAttributes,
   type KeyboardEvent,
-  type ReactElement,
   type ReactNode,
 } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { useControllableState, useEventCallback } from "seam-hooks";
+
 import {
   RADIO_GROUP_INDICATOR_SPRING,
   REDUCED_MOTION_TRANSITION,
   UI_SPRING,
-} from "./motion";
-import { markControl } from "./control-contract";
-import { cx } from "./utils/cx";
-
-export type RadioGroupOrientation = "horizontal" | "vertical";
-
-export interface RadioGroupProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
-  "defaultValue" | "onChange" | "children"
-> {
-  /** Controlled selected value. */
-  value?: string;
-  /** Initial selected value for an uncontrolled group. */
-  defaultValue?: string;
-  /** Called with the newly selected value. */
-  onValueChange?: (value: string) => void;
-  /** Layout direction. Defaults to "vertical". */
-  orientation?: RadioGroupOrientation;
-  /** RadioGroupItem children. */
-  children?: ReactNode;
-  /** Merged onto the group root. */
-  className?: string;
-  /** Accessible name when no visible external label exists. */
-  "aria-label"?: string;
-  /** ID of an external element that labels the group. */
-  "aria-labelledby"?: string;
-}
+} from "../motion";
+import { cx } from "../utils/cx";
+import { useRadioGroupContext } from "./radio-context";
 
 export interface RadioGroupItemProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
@@ -71,183 +42,7 @@ export interface RadioGroupItemProps extends Omit<
   id?: string;
 }
 
-export type UseRadioGroupOptions = Pick<
-  RadioGroupProps,
-  "value" | "defaultValue" | "onValueChange"
->;
-
-export interface UseRadioGroupReturn {
-  value: string | undefined;
-  onValueChange: (value: string) => void;
-}
-
-export function useRadioGroup({
-  value,
-  defaultValue,
-  onValueChange,
-}: UseRadioGroupOptions = {}): UseRadioGroupReturn {
-  const [current, setCurrent] = useControllableState<string>({
-    value,
-    defaultValue: defaultValue ?? "",
-    onChange: onValueChange,
-  });
-
-  return { value: current || undefined, onValueChange: setCurrent };
-}
-
-interface RadioGroupContextValue {
-  value: string | undefined;
-  setValue: (value: string) => void;
-  orientation: RadioGroupOrientation;
-  groupId: string;
-  items: ReadonlyArray<{ value: string; id: string; disabled: boolean }>;
-  registerItem: (value: string, id: string, disabled: boolean) => void;
-  unregisterItem: (value: string, id: string) => void;
-  getEnabledValues: () => string[];
-}
-
-const RadioGroupContext = createContext<RadioGroupContextValue | null>(null);
-
-function useRadioGroupContext(component: string): RadioGroupContextValue {
-  const context = useContext(RadioGroupContext);
-  if (!context) {
-    throw new Error(`<${component}> must be rendered inside <RadioGroup>`);
-  }
-  return context;
-}
-
-function RadioGroupRoot({
-  value,
-  defaultValue,
-  onValueChange,
-  orientation = "vertical",
-  children,
-  className,
-  "aria-label": ariaLabel,
-  "aria-labelledby": ariaLabelledBy,
-  ...rest
-}: RadioGroupProps): ReactElement {
-  const groupId = useId();
-  const { value: current, onValueChange: setCurrent } = useRadioGroup({
-    value,
-    defaultValue,
-    onValueChange,
-  });
-  const [items, setItems] = useState<
-    ReadonlyArray<{ value: string; id: string; disabled: boolean }>
-  >([]);
-
-  const registerItem = useEventCallback(
-    (itemValue: string, id: string, disabled: boolean) => {
-      setItems((previous) => {
-        const index = previous.findIndex((item) => item.id === id);
-        if (index === -1) {
-          return [...previous, { value: itemValue, id, disabled }];
-        }
-
-        const existing = previous[index];
-        if (existing?.value === itemValue && existing.disabled === disabled) {
-          return previous;
-        }
-
-        const next = [...previous];
-        next[index] = { value: itemValue, id, disabled };
-        return next;
-      });
-    },
-  );
-
-  const unregisterItem = useEventCallback((itemValue: string, id: string) => {
-    setItems((previous) => {
-      const next = previous.filter(
-        (item) => item.id !== id || item.value !== itemValue,
-      );
-      return next.length === previous.length ? previous : next;
-    });
-  });
-
-  useEffect(() => {
-    if (process.env.NODE_ENV === "production") return;
-
-    const values = new Set<string>();
-    const ids = new Set<string>();
-    for (const item of items) {
-      if (values.has(item.value)) {
-        console.warn(
-          `RadioGroup: duplicate item value "${item.value}" detected.`,
-        );
-      }
-      if (ids.has(item.id)) {
-        console.warn(`RadioGroup: duplicate item id "${item.id}" detected.`);
-      }
-      values.add(item.value);
-      ids.add(item.id);
-    }
-  }, [items]);
-
-  const getEnabledValues = useEventCallback(() => {
-    const root = document.getElementById(groupId);
-    if (!root) return [];
-    const inputs = Array.from(
-      root.querySelectorAll<HTMLInputElement>('input[type="radio"]'),
-    );
-    return inputs
-      .filter((input) => !input.disabled)
-      .map((input) => input.value);
-  });
-
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "production") {
-      if (!ariaLabel && !ariaLabelledBy) {
-        console.warn(
-          "RadioGroup: an accessible name is required. Provide aria-label or aria-labelledby.",
-        );
-      }
-    }
-  }, [ariaLabel, ariaLabelledBy]);
-
-  const context = useMemo<RadioGroupContextValue>(
-    () => ({
-      value: current,
-      setValue: setCurrent,
-      orientation,
-      groupId,
-      items,
-      registerItem,
-      unregisterItem,
-      getEnabledValues,
-    }),
-    [
-      current,
-      setCurrent,
-      orientation,
-      groupId,
-      items,
-      registerItem,
-      unregisterItem,
-      getEnabledValues,
-    ],
-  );
-
-  return (
-    <RadioGroupContext.Provider value={context}>
-      <div
-        {...rest}
-        id={groupId}
-        role="radiogroup"
-        aria-orientation={orientation}
-        aria-label={ariaLabel}
-        aria-labelledby={ariaLabelledBy}
-        className={cx("radio-group", className)}
-        data-orientation={orientation}
-      >
-        {children}
-      </div>
-    </RadioGroupContext.Provider>
-  );
-}
-
-const RadioGroupItem = forwardRef<HTMLInputElement, RadioGroupItemProps>(
+export const RadioGroupItem = forwardRef<HTMLInputElement, RadioGroupItemProps>(
   function RadioGroupItem(
     {
       value,
@@ -409,12 +204,3 @@ const RadioGroupItem = forwardRef<HTMLInputElement, RadioGroupItemProps>(
     );
   },
 );
-
-export const RadioGroup = markControl(
-  Object.assign(RadioGroupRoot, {
-    Item: RadioGroupItem,
-  }),
-  "value",
-);
-export { RadioGroupItem };
-export type RadioGroupComponent = typeof RadioGroup;

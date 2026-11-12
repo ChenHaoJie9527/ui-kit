@@ -5,7 +5,7 @@ import {
   type ReactNode,
   type RefAttributes,
 } from "react";
-import { cx } from "./utils/cx";
+import { cx } from "../utils/cx";
 
 export type ButtonVariant =
   | "primary"

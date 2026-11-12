@@ -7,8 +7,8 @@ import {
   type RefAttributes,
 } from "react";
 import { useControllableState } from "seam-hooks";
-import { markControl } from "./control-contract";
-import { cx } from "./utils/cx";
+import { markControl } from "../control-contract";
+import { cx } from "../utils/cx";
 
 export interface CheckBoxProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,

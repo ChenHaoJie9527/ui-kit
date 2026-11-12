@@ -16,9 +16,9 @@ import {
   useReducedMotion,
 } from "motion/react";
 import { useControllableState } from "seam-hooks";
-import { markControl } from "./control-contract";
-import { UI_SPRING } from "./motion";
-import { cx } from "./utils/cx";
+import { markControl } from "../control-contract";
+import { UI_SPRING } from "../motion";
+import { cx } from "../utils/cx";
 
 export interface SwitchProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,

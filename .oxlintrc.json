@@ -50,7 +50,7 @@
       }
     },
     {
-      "files": ["packages/ui/src/Select.tsx"],
+      "files": ["packages/ui/src/Select/**"],
       "rules": {
         "jsx-a11y/prefer-tag-over-role": "off",
         "jsx-a11y/no-noninteractive-element-to-interactive-role": "off",

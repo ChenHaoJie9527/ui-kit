@@ -14,8 +14,8 @@ import {
   type HTMLMotionProps,
   type Variants,
 } from "motion/react";
-import { EASE_OUT, UI_SPRING } from "./motion";
-import { cx } from "./utils/cx";
+import { EASE_OUT, UI_SPRING } from "../motion";
+import { cx } from "../utils/cx";
 
 export type BadgeVariant =
   | "default"
