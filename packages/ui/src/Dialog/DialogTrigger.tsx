@@ -1,8 +1,4 @@
-import {
-  cloneElement,
-  type MouseEvent,
-  type ReactElement,
-} from "react";
+import { cloneElement, type MouseEvent, type ReactElement } from "react";
 
 import { useDialogContext } from "./dialog-context";
 import { composeHandler } from "./dialog-context";
