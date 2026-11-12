@@ -6,7 +6,7 @@ import {
   getCarouselScaleGeometry,
   resolveCarouselScale,
   resolveCarouselVisible,
-} from "../carousel-geometry";
+} from "../Carousel/carousel-geometry";
 
 describe("carousel-geometry", () => {
   it("normalizes scale and visible inputs", () => {
