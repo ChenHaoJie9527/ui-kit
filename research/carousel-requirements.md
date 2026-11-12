@@ -863,7 +863,7 @@ Mock `embla-carousel-react`，覆盖：
 ### 17.1 交付文件
 
 - `packages/ui/src/Carousel.tsx`
-- `packages/ui/src/carousel.css`
+- `packages/ui/src/Carousel/carousel.css`
 - `packages/ui/src/index.ts`、`packages/ui/src/styles.css`、`packages/ui/src/styles.generated.ts`
 - `packages/ui/package.json`、`packages/ui/vite.config.ts`
 - `packages/ui/src/__tests__/Carousel.test.tsx`

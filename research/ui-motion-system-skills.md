@@ -180,7 +180,7 @@ Motion 版本和真实浏览器 profiling 为准，不能只靠规则文字决�
 - 使用命名的 `--uk-transition`，没有大面积 `transition: all`：
   [tokens.css](../packages/ui/src/styles/tokens.css:57)。
 - Dialog 从 `scale(0.98)` 进入，没有从 `scale(0)` 出现：
-  [dialog.css](../packages/ui/src/dialog.css:83)。
+  [dialog.css](../packages/ui/src/Dialog/dialog.css:83)。
 - `prefers-reduced-motion` 已覆盖 token 与 Dialog。
 
 但系统还没有真正形成：
@@ -193,10 +193,10 @@ Motion 版本和真实浏览器 profiling 为准，不能只靠规则文字决�
 
 关键位置：
 
-- [button.css](../packages/ui/src/button.css:16)
-- [dialog.css](../packages/ui/src/dialog.css:19)
-- [switch.css](../packages/ui/src/switch.css:25)
-- [tabs.css](../packages/ui/src/tabs.css:13)
+- [button.css](../packages/ui/src/Button/button.css:16)
+- [dialog.css](../packages/ui/src/Dialog/dialog.css:19)
+- [switch.css](../packages/ui/src/Switch/switch.css:25)
+- [tabs.css](../packages/ui/src/Tabs/tabs.css:13)
 
 ## 推荐的 motion system
 

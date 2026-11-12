@@ -540,7 +540,7 @@ function buildContext(run: AgentRun) {
 ## Changed Files
 
 - packages/ui/src/Tooltip.tsx
-- packages/ui/src/tooltip.css
+- packages/ui/src/Tooltip/tooltip.css
 
 ## Evidence
 
