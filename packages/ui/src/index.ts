@@ -150,3 +150,15 @@ export type {
   TooltipSide,
   TooltipTriggerProps,
 } from "./Tooltip";
+
+export { ImageViewer, useImageViewer } from "./ImageViewer";
+export type {
+  ImageViewerComponent,
+  ImageViewerContentProps,
+  ImageViewerImage,
+  ImageViewerLabelKey,
+  ImageViewerLabels,
+  ImageViewerProps,
+  ImageViewerThumbnailProps,
+} from "./ImageViewer";
+export { imageViewerLabels } from "./ImageViewer";

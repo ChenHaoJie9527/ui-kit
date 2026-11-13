@@ -11,6 +11,7 @@ import { DialogPage } from "./pages/dialog";
 import { DrawerPage } from "./pages/drawer";
 import { FormPage } from "./pages/form";
 import { HookPage } from "./pages/hook";
+import { ImageViewerPage } from "./pages/image-viewer";
 import { InputPage } from "./pages/input";
 import { MarqueePage } from "./pages/marquee";
 import { NotFoundPage } from "./pages/not-found";
@@ -38,6 +39,7 @@ const componentPages: Record<string, ComponentType> = {
   tabs: TabsPage,
   dialog: DialogPage,
   drawer: DrawerPage,
+  "image-viewer": ImageViewerPage,
   toast: ToastPage,
   tooltip: TooltipPage,
   marquee: MarqueePage,
