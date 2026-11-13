@@ -102,6 +102,7 @@ const componentDefinitions: Array<
   {
     path: "components/image-viewer",
     name: "Image Viewer",
+    releaseName: "ImageViewer",
     summary:
       "图片画廊与形态变换灯箱：缩略图形变到全屏，支持滑动、缩放平移与受控选中。",
     tags: ["画廊", "灯箱", "共享布局", "受控"],
