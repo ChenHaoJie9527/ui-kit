@@ -1,0 +1,272 @@
+@layer uk.components {
+  .uk-image-viewer {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--uk-text);
+    /* dialog 是裁剪框，不是滚动容器；`clip` 防止面板在退出平移时被
+       滚动到露出的控件改变位置。 */
+    overflow: hidden;
+    overflow: clip;
+    z-index: var(--uk-z-dialog);
+  }
+
+  .uk-image-viewer::backdrop {
+    background: var(--uk-overlay);
+    backdrop-filter: blur(8px) saturate(125%);
+    opacity: 1;
+    /* 语境层：遮罩在 overlay 时长内做一段可见的渐次变暗；退出用更短的
+       时长，并在面板退出结束前收完，避免跟着元素一起消失变成硬切。 */
+    transition: opacity var(--uk-duration-overlay) var(--uk-ease-scrim);
+  }
+
+  .uk-image-viewer[data-state="closed"]::backdrop {
+    opacity: 0;
+    /* 退出：面板由 header/footer 的 140ms 淡出决定卸载窗口，遮罩必须在
+       该窗口内收完，否则会在 dialog 卸载时被硬切。 */
+    transition-duration: var(--uk-duration-fast);
+    transition-delay: 0ms;
+  }
+
+  .uk-image-viewer[data-state="closed"] {
+    pointer-events: none;
+  }
+
+  @starting-style {
+    .uk-image-viewer[data-state="open"]::backdrop {
+      opacity: 0;
+    }
+  }
+
+  .uk-image-viewer__panel {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    inset: var(--uk-space-3);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-family: var(--uk-font-sans);
+  }
+
+  .uk-image-viewer__header,
+  .uk-image-viewer__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--uk-space-3);
+    flex: none;
+    color: #fff;
+  }
+
+  .uk-image-viewer__header {
+    padding-bottom: var(--uk-space-3);
+  }
+
+  .uk-image-viewer__footer {
+    padding-top: var(--uk-space-3);
+  }
+
+  .uk-image-viewer__counter {
+    font-size: var(--uk-text-sm);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .uk-image-viewer__caption {
+    min-width: 0;
+    font-size: var(--uk-text-md);
+    text-align: center;
+  }
+
+  .uk-image-viewer__control {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 0;
+    border-radius: var(--uk-radius-full);
+    background: rgb(255 255 255 / 0.12);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color var(--uk-duration-base) var(--uk-ease-out);
+  }
+
+  .uk-image-viewer__control:hover:not(:disabled) {
+    background: rgb(255 255 255 / 0.24);
+  }
+
+  .uk-image-viewer__control:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+
+  .uk-image-viewer__control:disabled {
+    cursor: default;
+    opacity: 0.3;
+  }
+
+  .uk-image-viewer__frame {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .uk-image-viewer__viewport {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: var(--uk-radius-lg);
+  }
+
+  .uk-image-viewer__image-box {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .uk-image-viewer__stage {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* 非缩放态裁剪到 frame，避免图片溢出视口。 */
+  .uk-image-viewer__stage--fit {
+    overflow: hidden;
+  }
+
+  .uk-image-viewer__slide {
+    position: absolute;
+    inset: 0;
+  }
+
+  .uk-image-viewer__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    user-select: none;
+    object-fit: contain;
+  }
+
+  .uk-image-viewer__zoom {
+    position: absolute;
+    right: var(--uk-space-3);
+    bottom: var(--uk-space-3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 0;
+    border-radius: var(--uk-radius-full);
+    background: rgb(0 0 0 / 0.6);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color var(--uk-duration-base) var(--uk-ease-out);
+  }
+
+  .uk-image-viewer__zoom:hover {
+    background: rgb(0 0 0 / 0.75);
+  }
+
+  .uk-image-viewer__zoom:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+
+  .uk-image-viewer__error {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: var(--uk-space-4);
+    background: #171717;
+    color: #fff;
+    font-size: var(--uk-text-md);
+    text-align: center;
+  }
+
+  .uk-image-viewer__visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    border: 0;
+    white-space: nowrap;
+  }
+
+  .uk-image-viewer__gallery {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--uk-space-2);
+  }
+
+  .uk-image-viewer__thumbnail {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: var(--uk-radius-lg);
+    background: var(--uk-surface);
+    cursor: zoom-in;
+  }
+
+  .uk-image-viewer__thumbnail:focus-visible {
+    outline: 2px solid var(--uk-focus-ring);
+    outline-offset: 2px;
+  }
+
+  .uk-image-viewer__thumbnail-img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  @media (min-width: 640px) {
+    .uk-image-viewer__panel {
+      inset: var(--uk-space-6);
+    }
+
+    .uk-image-viewer__gallery {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--uk-space-3);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .uk-image-viewer::backdrop {
+      transition-duration: var(--uk-duration-fast);
+      transition-timing-function: ease;
+      transition-delay: 0ms;
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .uk-image-viewer::backdrop {
+      backdrop-filter: none;
+    }
+  }
+}
