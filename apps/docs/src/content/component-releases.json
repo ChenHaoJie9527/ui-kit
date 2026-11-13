@@ -90,5 +90,17 @@
   "useCarousel": {
     "introducedIn": "0.15.0",
     "releasedAt": "2026-11-11T05:59:55.747Z"
+  },
+  "ImageViewer": {
+    "introducedIn": "0.17.0",
+    "releasedAt": "2026-11-13T12:44:25.314Z"
+  },
+  "useImageViewer": {
+    "introducedIn": "0.17.0",
+    "releasedAt": "2026-11-13T12:44:25.314Z"
+  },
+  "imageViewerLabels": {
+    "introducedIn": "0.17.0",
+    "releasedAt": "2026-11-13T12:44:25.314Z"
   }
 }
