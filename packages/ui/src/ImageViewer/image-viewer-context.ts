@@ -54,6 +54,8 @@ export interface ImageViewerContextValue {
   label: string;
   reduce: boolean;
   labels: ImageViewerLabels;
+  /** 当前实例的缩略图注册表（imageId → img 元素），供灯箱测量弹出原点。 */
+  thumbnails: Map<string, HTMLImageElement>;
   renderCaption?: (image: ImageViewerImage) => React.ReactNode;
   select: (id: string | null) => void;
   move: (direction: -1 | 1) => void;

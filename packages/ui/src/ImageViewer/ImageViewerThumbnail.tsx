@@ -1,5 +1,11 @@
 import { type HTMLMotionProps, motion } from "motion/react";
-import { type MouseEvent, type ReactElement, type ReactNode } from "react";
+import {
+  type MouseEvent,
+  type ReactElement,
+  type ReactNode,
+  useLayoutEffect,
+  useRef,
+} from "react";
 
 import { EASE_OUT } from "../motion";
 import { cx } from "../utils/cx";
@@ -30,14 +36,26 @@ export function ImageViewerThumbnail({
   disabled,
   ...props
 }: ImageViewerThumbnailProps): ReactElement {
-  const { images, value, reduce, select, t } = useImageViewerContext(
-    "ImageViewer.Thumbnail",
-  );
+  const { images, value, reduce, select, t, thumbnails } =
+    useImageViewerContext("ImageViewer.Thumbnail");
   const image = images.find((item) => item.id === imageId);
 
   if (!image) {
     throw new Error(`ImageViewer.Thumbnail: 未知的图片 id "${imageId}"。`);
   }
+
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // 把本实例的缩略图注册到灯箱可查的表里（按 id），卸载时注销。
+  useLayoutEffect(() => {
+    if (imgRef.current) {
+      thumbnails.set(image.id, imgRef.current);
+    }
+
+    return () => {
+      thumbnails.delete(image.id);
+    };
+  }, [image.id, thumbnails]);
 
   return (
     <motion.button
@@ -59,6 +77,7 @@ export function ImageViewerThumbnail({
       className={cx("uk-image-viewer__thumbnail", className)}
     >
       <img
+        ref={imgRef}
         src={image.src}
         alt={image.alt}
         width={image.width}
