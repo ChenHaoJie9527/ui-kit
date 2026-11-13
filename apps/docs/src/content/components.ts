@@ -100,6 +100,13 @@ const componentDefinitions: Array<
     tags: ["左 / 右", "组合式 API", "焦点"],
   },
   {
+    path: "components/image-viewer",
+    name: "Image Viewer",
+    summary:
+      "图片画廊与形态变换灯箱：缩略图形变到全屏，支持滑动、缩放平移与受控选中。",
+    tags: ["画廊", "灯箱", "共享布局", "受控"],
+  },
+  {
     path: "components/toast",
     name: "Toast",
     summary: "非模态通知队列，支持自动关闭、状态图标、操作和拖拽关闭。",
