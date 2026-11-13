@@ -314,7 +314,7 @@ function ImageViewerFrame({
   reduce,
   onSwipe,
 }: ImageViewerFrameProps): ReactElement {
-  const { t } = useImageViewerContext("ImageViewer.Content");
+  const { t, thumbnails } = useImageViewerContext("ImageViewer.Content");
   const [zoom, setZoom] = useState(false);
   const [failed, setFailed] = useState(false);
   const session = `${image.id}-${image.src}`;
@@ -368,17 +368,9 @@ function ImageViewerFrame({
       return null;
     }
 
-    const thumbs = document.querySelectorAll<HTMLImageElement>(
-      ".uk-image-viewer__thumbnail-img",
-    );
-    let thumb: HTMLImageElement | null = null;
-
-    for (const candidate of thumbs) {
-      if (candidate.getAttribute("src") === image.src) {
-        thumb = candidate;
-        break;
-      }
-    }
+    // 只取当前实例自己注册的缩略图（按 id），避免页面多个实例共用相同
+    // src 时匹配到别的实例的缩略图、从错误位置弹出。
+    const thumb = thumbnails.get(image.id) ?? null;
 
     if (!thumb) {
       return null;
@@ -401,7 +393,7 @@ function ImageViewerFrame({
       targetWidth: R.width,
       targetHeight: R.height,
     };
-  }, [image, reduce]);
+  }, [image, reduce, thumbnails]);
 
   // 打开：从缩略图矩形（位置 + 尺寸）浮出——点开哪张就从哪张的位置
   // 放大到全屏并淡入；缩略图本身不参与动画，始终留在网格里。

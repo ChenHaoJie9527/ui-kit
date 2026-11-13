@@ -1,4 +1,4 @@
-import { type ReactElement, type ReactNode, useMemo } from "react";
+import { type ReactElement, type ReactNode, useMemo, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import { useControllableState, useEventCallback } from "seam-hooks";
 
@@ -66,6 +66,12 @@ function ImageViewerRoot({
   labels,
 }: ImageViewerProps): ReactElement {
   const reduce = useReducedMotion() ?? false;
+  // 实例级缩略图注册表：每个 ImageViewer 只认自己的缩略图，多个实例
+  // 共用相同图片 src 时不会串到别的实例的缩略图。
+  // 实例级缩略图注册表：每个 ImageViewer 只认自己的缩略图，多个实例
+  // 共用相同图片 src 时不会串到别的实例的缩略图。useState 惰性初始化，
+  // 引用在生命周期内稳定。
+  const [thumbnails] = useState(() => new Map<string, HTMLImageElement>());
   const resolvedLabels = useMemo<ImageViewerLabels>(
     () => ({ ...imageViewerLabels, ...labels }),
     [labels],
@@ -125,6 +131,7 @@ function ImageViewerRoot({
       label: labelProp ?? resolvedLabels.label,
       reduce,
       labels: resolvedLabels,
+      thumbnails,
       renderCaption,
       select,
       move,
@@ -138,6 +145,7 @@ function ImageViewerRoot({
       labelProp,
       resolvedLabels,
       reduce,
+      thumbnails,
       renderCaption,
       select,
       move,
