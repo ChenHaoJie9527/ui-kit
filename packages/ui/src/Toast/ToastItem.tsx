@@ -16,6 +16,7 @@ import type {
   Toast,
   ToastClassNames,
   ToastIcons,
+  ToastPosition,
   ToastStatus,
 } from "./toast-types";
 
@@ -60,6 +61,7 @@ function StatusIcon({
 
 const ToastItem = memo(function ToastItem({
   toast,
+  position,
   onDismiss,
   onPauseToast,
   onResumeToast,
@@ -68,6 +70,7 @@ const ToastItem = memo(function ToastItem({
   renderToast,
 }: {
   toast: Toast;
+  position?: ToastPosition;
   onDismiss?: (id: string) => void;
   onPauseToast?: (id: string) => void;
   onResumeToast?: (id: string) => void;
@@ -79,7 +82,12 @@ const ToastItem = memo(function ToastItem({
   const status = toast.status ?? "neutral";
   const canDismiss = toast.dismissible !== false && Boolean(onDismiss);
   const transition = reduce ? REDUCED_MOTION_TRANSITION : UI_SPRING;
-  const initial = reduce ? { opacity: 0 } : { opacity: 0, y: 18, scale: 0.98 };
+  // 最新一条总是位于栈顶；top 位置的栈从屏幕顶部向下生长，
+  // 因此从上方进入，bottom 位置则保持从下方进入。
+  const entersFromTop = position?.startsWith("top") === true;
+  const initial = reduce
+    ? { opacity: 0 }
+    : { opacity: 0, y: entersFromTop ? -18 : 18, scale: 0.98 };
   const animate = reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 };
   const exit = reduce
     ? { opacity: 0 }

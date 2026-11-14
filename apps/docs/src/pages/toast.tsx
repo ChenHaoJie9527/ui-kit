@@ -131,19 +131,20 @@ function DirectionDemo() {
 }
 
 function ManualDemo() {
-  const manualToastIdRef = useRef<string | null>(null);
+  const manualToastIdsRef = useRef<string[]>([]);
   const { toasts, showToast, dismissToast } = useToast();
 
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Button
         onClick={() => {
-          manualToastIdRef.current = showToast({
+          const id = showToast({
             title: "等待确认",
             description: "通知不会自动消失，由按钮控制关闭。",
             duration: 0,
             dismissible: false,
           });
+          manualToastIdsRef.current.push(id);
         }}
       >
         手动打开
@@ -151,7 +152,7 @@ function ManualDemo() {
       <Button
         variant="outline"
         onClick={() => {
-          const id = manualToastIdRef.current;
+          const id = manualToastIdsRef.current.shift();
           if (id) {
             dismissToast(id);
           }
@@ -243,18 +244,19 @@ const basicCode = [
 
 const manualCode = [
   "const { toasts, showToast, dismissToast } = useToast();",
-  "const manualToastIdRef = useRef<string | null>(null);",
+  "const manualToastIdsRef = useRef<string[]>([]);",
   "",
   "<Button",
   "  onClick={() => {",
-  '    manualToastIdRef.current = showToast({ title: "等待确认", duration: 0 });',
+  '    const id = showToast({ title: "等待确认", duration: 0 });',
+  "    manualToastIdsRef.current.push(id);",
   "  }}",
   ">",
   "  手动打开",
   "</Button>",
   "<Button",
   "  onClick={() => {",
-  "    const id = manualToastIdRef.current;",
+  "    const id = manualToastIdsRef.current.shift();",
   "    if (id) dismissToast(id);",
   "  }}",
   ">",

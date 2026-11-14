@@ -1,7 +1,7 @@
 @layer uk.components {
   .uk-toast {
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
     gap: var(--uk-space-2);
     width: min(
       var(--uk-toast-max-width, 24rem),
@@ -52,14 +52,6 @@
   .uk-toast[data-position="bottom-right"] {
     bottom: var(--uk-space-6);
     right: var(--uk-space-4);
-  }
-
-  .uk-toast[data-position^="top-"] .uk-toast__item:first-child {
-    margin-top: 0;
-  }
-
-  .uk-toast[data-position^="bottom-"] {
-    flex-direction: column-reverse;
   }
 
   .uk-toast__item {
