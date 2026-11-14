@@ -44,6 +44,7 @@ export function ToastStack({
           <ToastItem
             key={toast.id}
             toast={toast}
+            position={position}
             onDismiss={onDismiss}
             onPauseToast={onPauseToast}
             onResumeToast={onResumeToast}
