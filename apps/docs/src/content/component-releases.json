@@ -102,5 +102,21 @@
   "imageViewerLabels": {
     "introducedIn": "0.17.0",
     "releasedAt": "2026-11-13T12:44:25.314Z"
+  },
+  "Progress": {
+    "introducedIn": "0.17.3",
+    "releasedAt": "2026-11-16T04:44:56.008Z"
+  },
+  "ProgressDescription": {
+    "introducedIn": "0.17.3",
+    "releasedAt": "2026-11-16T04:44:56.008Z"
+  },
+  "ProgressLabel": {
+    "introducedIn": "0.17.3",
+    "releasedAt": "2026-11-16T04:44:56.008Z"
+  },
+  "ProgressValue": {
+    "introducedIn": "0.17.3",
+    "releasedAt": "2026-11-16T04:44:56.008Z"
   }
 }
