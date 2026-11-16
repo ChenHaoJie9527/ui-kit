@@ -97,32 +97,47 @@ function indicator(): HTMLElement {
 
 /** jsdom 没有布局，给轨道一个 0–100 的矩形，让指针坐标可换算。 */
 function mockTrackRect(track: HTMLElement, left = 0, width = 100): void {
-  Object.defineProperty(track, "getBoundingClientRect", {
+  mockSurfaceRect(track, left, 0, width, 10);
+}
+
+/** jsdom 没有布局，用假矩形让指针坐标可换算。 */
+function mockSurfaceRect(
+  element: HTMLElement,
+  left = 0,
+  top = 0,
+  width = 100,
+  height = width,
+): void {
+  Object.defineProperty(element, "getBoundingClientRect", {
     configurable: true,
     value: () => ({
       left,
-      top: 0,
+      top,
       right: left + width,
-      bottom: 10,
+      bottom: top + height,
       width,
-      height: 10,
+      height,
       x: left,
-      y: 0,
+      y: top,
       toJSON: () => ({}),
     }),
   });
 }
 
-function interactiveTrack(): HTMLElement {
+function interactiveSurface(): HTMLElement {
   const slider = screen.getByRole("slider");
-  const track = slider.nextElementSibling as HTMLElement | null;
+  const surface = slider.nextElementSibling as HTMLElement | null;
 
-  if (!track || !track.classList.contains("uk-progress__track")) {
-    throw new Error("interactive track not found");
+  if (
+    !surface ||
+    (!surface.classList.contains("uk-progress__track") &&
+      !surface.classList.contains("uk-progress__ring"))
+  ) {
+    throw new Error("interactive surface not found");
   }
 
-  mockTrackRect(track);
-  return track;
+  mockTrackRect(surface);
+  return surface;
 }
 
 describe("Progress（只读）", () => {
@@ -322,7 +337,7 @@ describe("Progress（交互）", () => {
       <InteractiveExample defaultValue={10} onValueChange={onValueChange} />,
     );
 
-    const track = interactiveTrack();
+    const track = interactiveSurface();
 
     fireEvent.pointerDown(track, { clientX: 25, pointerId: 1 });
     fireEvent.pointerUp(track, { pointerId: 1 });
@@ -340,7 +355,7 @@ describe("Progress（交互）", () => {
       <InteractiveExample defaultValue={10} onValueChange={onValueChange} />,
     );
 
-    const track = interactiveTrack();
+    const track = interactiveSurface();
 
     fireEvent.pointerDown(track, { clientX: 25, pointerId: 1 });
     fireEvent.pointerMove(track, { clientX: 75, pointerId: 1 });
@@ -357,7 +372,7 @@ describe("Progress（交互）", () => {
   it("clamps the drag to min / max", () => {
     render(<InteractiveExample defaultValue={10} />);
 
-    const track = interactiveTrack();
+    const track = interactiveSurface();
 
     fireEvent.pointerDown(track, { clientX: 10, pointerId: 1 });
     fireEvent.pointerMove(track, { clientX: 400, pointerId: 1 });
@@ -411,7 +426,7 @@ describe("Progress（交互）", () => {
     fireEvent.keyDown(slider, { key: "ArrowRight" });
     expect(slider.getAttribute("value")).toBe("5");
 
-    const track = interactiveTrack();
+    const track = interactiveSurface();
     fireEvent.pointerDown(track, { clientX: 23, pointerId: 1 });
     // 23 / 100 * 100 = 23 → 就近步长 25
     expect(slider.getAttribute("value")).toBe("25");
@@ -421,7 +436,7 @@ describe("Progress（交互）", () => {
     const onValueChange = vi.fn<(value: number) => void>();
 
     render(<InteractiveExample value={30} onValueChange={onValueChange} />);
-    const track = interactiveTrack();
+    const track = interactiveSurface();
     fireEvent.pointerDown(track, { clientX: 50, pointerId: 1 });
 
     expect(onValueChange).toHaveBeenCalledWith(50);
@@ -451,7 +466,7 @@ describe("Progress（交互）", () => {
     expect(slider.getAttribute("max")).toBe("75");
     expect(slider.getAttribute("value")).toBe("50");
 
-    const track = interactiveTrack();
+    const track = interactiveSurface();
     fireEvent.pointerDown(track, { clientX: 0, pointerId: 1 });
     expect(slider.getAttribute("value")).toBe("25");
   });
@@ -473,8 +488,303 @@ describe("Progress（交互）", () => {
     expect(slider.getAttribute("value")).toBe("30");
     expect(onValueChange).not.toHaveBeenCalled();
 
-    const track = interactiveTrack();
+    const track = interactiveSurface();
     fireEvent.pointerDown(track, { clientX: 80, pointerId: 1 });
     expect(slider.getAttribute("value")).toBe("30");
+  });
+});
+
+describe("Progress（圆形）", () => {
+  function CircleExample({
+    value,
+    min,
+    max,
+    size,
+    thickness,
+    description,
+  }: {
+    value: number | null;
+    min?: number;
+    max?: number;
+    size?: number;
+    thickness?: number;
+    description?: string;
+  }) {
+    return (
+      <Progress
+        variant="circle"
+        value={value}
+        min={min}
+        max={max}
+        size={size}
+        thickness={thickness}
+      >
+        <Progress.Label>上传进度</Progress.Label>
+        <Progress.Value />
+        {description ? (
+          <Progress.Description>{description}</Progress.Description>
+        ) : null}
+      </Progress>
+    );
+  }
+
+  function ring(): HTMLElement {
+    const element = document.querySelector(".uk-progress__ring");
+
+    if (!element) {
+      throw new Error("ring not found");
+    }
+
+    return element as HTMLElement;
+  }
+
+  function indicatorCircle(): SVGCircleElement {
+    const element = document.querySelector(".uk-progress__ring-indicator");
+
+    if (!element) {
+      throw new Error("ring indicator not found");
+    }
+
+    return element as SVGCircleElement;
+  }
+
+  it("renders a circular progressbar with aria attributes", () => {
+    render(<CircleExample value={72} />);
+
+    const bar = ring();
+
+    expect(bar.getAttribute("role")).toBe("progressbar");
+    expect(bar.getAttribute("aria-valuemin")).toBe("0");
+    expect(bar.getAttribute("aria-valuemax")).toBe("100");
+    expect(bar.getAttribute("aria-valuenow")).toBe("72");
+    expect(bar.getAttribute("aria-valuetext")).toBe("72%");
+    expect(wrapper().classList.contains("uk-progress--circle")).toBe(true);
+    expect(bar.querySelector("svg")).not.toBeNull();
+  });
+
+  it("centers the value inside the ring and keeps the label on top", () => {
+    render(<CircleExample value={72} />);
+
+    const center = document.querySelector(".uk-progress__ring-value");
+
+    expect(center?.textContent).toBe("72%");
+    expect(center?.contains(screen.getByText("72%"))).toBe(true);
+    // Label 留在顶部标签行，不进环心。
+    expect(document.querySelector(".uk-progress__bar")?.textContent).toBe(
+      "上传进度",
+    );
+  });
+
+  it("sizes the ring with size and thickness", () => {
+    render(<CircleExample value={50} size={160} thickness={12} />);
+
+    const svg = ring().querySelector("svg");
+    const track = ring().querySelector(".uk-progress__ring-track");
+
+    expect(svg?.getAttribute("viewBox")).toBe("0 0 160 160");
+    expect(track?.getAttribute("r")).toBe("74");
+    expect(track?.getAttribute("stroke-width")).toBe("12");
+  });
+
+  it("offsets the indicator arc by the value", () => {
+    render(<CircleExample value={50} size={160} thickness={12} />);
+
+    const dashArray = Number(
+      indicatorCircle().getAttribute("stroke-dasharray"),
+    );
+    const dashOffset = Number(
+      indicatorCircle().getAttribute("stroke-dashoffset"),
+    );
+    const circumference = 2 * Math.PI * 74;
+
+    expect(dashArray).toBeCloseTo(circumference, 2);
+    expect(dashOffset).toBeCloseTo(circumference * 0.5, 2);
+  });
+
+  it("renders an indeterminate ring without a now value", () => {
+    render(<CircleExample value={null} />);
+
+    expect(ring().getAttribute("aria-valuenow")).toBeNull();
+    expect(ring().getAttribute("data-indeterminate")).toBe("true");
+    // 1/4 弧
+    const dashArray = Number(
+      indicatorCircle().getAttribute("stroke-dasharray"),
+    );
+    const circumference = 2 * Math.PI * 55;
+
+    expect(dashArray).toBeCloseTo(circumference * 0.25, 2);
+  });
+
+  it("positions the value text and description below the ring", () => {
+    render(<CircleExample value={42} description="正在上传..." />);
+
+    const status = screen.getByRole("status");
+
+    expect(status.textContent).toBe("正在上传...");
+    expect(ring().compareDocumentPosition(status)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+});
+
+describe("Progress（圆形交互旋钮）", () => {
+  function DialExample({
+    defaultValue,
+    value,
+    onValueChange,
+    size,
+  }: {
+    defaultValue?: number;
+    value?: number | null;
+    onValueChange?: (value: number) => void;
+    size?: number;
+  }) {
+    return (
+      <Progress
+        variant="circle"
+        interactive
+        value={value}
+        defaultValue={defaultValue}
+        onValueChange={onValueChange}
+        size={size}
+      >
+        <Progress.Label>音量</Progress.Label>
+        <Progress.Value />
+      </Progress>
+    );
+  }
+
+  it("exposes a native slider for the dial", () => {
+    render(<DialExample defaultValue={25} />);
+
+    const slider = screen.getByRole("slider");
+
+    expect(slider.tagName).toBe("INPUT");
+    expect(slider.getAttribute("type")).toBe("range");
+    expect(slider.getAttribute("value")).toBe("25");
+    expect(screen.queryByRole("progressbar")).toBeNull();
+  });
+
+  it("maps a pointer angle to the value clockwise from 12 o'clock", () => {
+    render(<DialExample defaultValue={0} />);
+
+    const slider = screen.getByRole("slider");
+    const surface = slider.nextElementSibling as HTMLElement | null;
+
+    if (!surface || !surface.classList.contains("uk-progress__ring")) {
+      throw new Error("dial ring not found");
+    }
+
+    // 以 120×120 的环心为原点。
+    mockSurfaceRect(surface, 0, 0, 120, 120);
+    const center = 60;
+
+    // 6 点方向 → 50%
+    fireEvent.pointerDown(surface, {
+      clientX: center,
+      clientY: 120,
+      pointerId: 1,
+    });
+    expect(slider.getAttribute("value")).toBe("50");
+
+    // 3 点方向 → 25%
+    fireEvent.pointerDown(surface, {
+      clientX: 120,
+      clientY: center,
+      pointerId: 1,
+    });
+    expect(slider.getAttribute("value")).toBe("25");
+
+    // 12 点方向 → 0%
+    fireEvent.pointerDown(surface, {
+      clientX: center,
+      clientY: 0,
+      pointerId: 1,
+    });
+    expect(slider.getAttribute("value")).toBe("0");
+
+    // 9 点方向 → 75%
+    fireEvent.pointerDown(surface, {
+      clientX: 0,
+      clientY: center,
+      pointerId: 1,
+    });
+    expect(slider.getAttribute("value")).toBe("75");
+  });
+
+  it("rotates the value while dragging and disables the transition", () => {
+    const onValueChange = vi.fn<(value: number) => void>();
+    render(<DialExample defaultValue={25} onValueChange={onValueChange} />);
+
+    const slider = screen.getByRole("slider");
+    const surface = slider.nextElementSibling as HTMLElement | null;
+
+    if (!surface || !surface.classList.contains("uk-progress__ring")) {
+      throw new Error("dial ring not found");
+    }
+
+    mockSurfaceRect(surface, 0, 0, 120, 120);
+
+    fireEvent.pointerDown(surface, { clientX: 105, clientY: 60, pointerId: 1 });
+    fireEvent.pointerMove(surface, { clientX: 60, clientY: 120, pointerId: 1 });
+
+    expect(surface.getAttribute("data-dragging")).toBe("true");
+    expect(slider.getAttribute("value")).toBe("50");
+    expect(onValueChange).toHaveBeenLastCalledWith(50);
+
+    fireEvent.pointerUp(surface, { pointerId: 1 });
+    expect(surface.getAttribute("data-dragging")).toBeNull();
+  });
+
+  it("keeps the transition for a plain click", () => {
+    render(<DialExample defaultValue={10} />);
+
+    const slider = screen.getByRole("slider");
+    const surface = slider.nextElementSibling as HTMLElement | null;
+
+    if (!surface || !surface.classList.contains("uk-progress__ring")) {
+      throw new Error("dial ring not found");
+    }
+
+    mockSurfaceRect(surface, 0, 0, 120, 120);
+
+    fireEvent.pointerDown(surface, { clientX: 60, clientY: 120, pointerId: 1 });
+    fireEvent.pointerUp(surface, { pointerId: 1 });
+
+    expect(surface.getAttribute("data-dragging")).toBeNull();
+    expect(slider.getAttribute("value")).toBe("50");
+  });
+
+  it("positions the dial thumb on the ring edge", () => {
+    render(<DialExample defaultValue={25} size={160} />);
+
+    const thumb = document.querySelector(".uk-progress__dial-thumb");
+
+    if (!thumb) {
+      throw new Error("dial thumb not found");
+    }
+
+    const style = (thumb as HTMLElement).style;
+    const thickness = 13; // Math.max(6, round(160 * 0.08))
+    const radius = (160 - thickness) / 2;
+
+    // 25% → 3 点方向：(center + r, center)
+    expect(Number.parseFloat(style.left)).toBeCloseTo(80 + radius, 1);
+    expect(Number.parseFloat(style.top)).toBeCloseTo(80, 1);
+  });
+
+  it("adjusts the dial with the keyboard", () => {
+    render(<DialExample defaultValue={50} />);
+
+    const slider = screen.getByRole("slider");
+
+    fireEvent.keyDown(slider, { key: "ArrowRight" });
+    expect(slider.getAttribute("value")).toBe("51");
+
+    fireEvent.keyDown(slider, { key: "Home" });
+    expect(slider.getAttribute("value")).toBe("0");
+
+    fireEvent.keyDown(slider, { key: "End" });
+    expect(slider.getAttribute("value")).toBe("100");
   });
 });

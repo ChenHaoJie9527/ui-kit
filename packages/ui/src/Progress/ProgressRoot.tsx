@@ -15,6 +15,7 @@ import {
   type HTMLAttributes,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
+  type Ref,
   type ReactElement,
   type ReactNode,
 } from "react";
@@ -23,11 +24,18 @@ import { useControllableState } from "seam-hooks";
 import { cx } from "../utils/cx";
 import { ProgressContext, type ProgressContextValue } from "./progress-context";
 import { ProgressDescription } from "./ProgressDescription";
+import { ProgressValue } from "./ProgressValue";
 
 interface ProgressBaseProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
   "children" | "className" | "onChange"
 > {
+  /** 外观变体：条形（默认）或圆形圆环。 */
+  variant?: "line" | "circle";
+  /** 圆形变体的直径（px）。默认 120。 */
+  size?: number;
+  /** 圆形变体的环粗细（px）。默认按直径 8% 计算。 */
+  thickness?: number;
   /** 范围下限。默认 0。 */
   min?: number;
   /** 范围上限。默认 100。 */
@@ -76,12 +84,19 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+/** 圆环默认粗细：直径的 8%，至少 6px。 */
+function defaultThickness(size: number): number {
+  return Math.max(6, Math.round(size * 0.08));
+}
+
 /**
- * 进度条根组件：渲染标签行（Label + Value）+ 轨道 + 填充条 + 交互圆点。
+ * 进度条根组件。条形变体渲染轨道 + 填充条 + 交互圆点；
+ * 圆形变体渲染 SVG 圆环（stroke-dashoffset 控制填充弧），
+ * 数值部件居中显示在环内，interactive 时环边缘出现旋钮圆点。
  *
- * 只读模式渲染 role="progressbar"；交互模式（interactive）渲染原生
- * <input type="range"> 承载 slider 语义，视觉轨道处理点击与拖拽，
- * 填充与圆点跟随 value 用 CSS 线性过渡。
+ * 交互模式渲染原生 <input type="range"> 承载 slider 语义，
+ * 视觉轨道 / 圆环处理点击与拖拽；填充与圆点 / 旋钮用 CSS 线性过渡，
+ * 拖拽时关闭过渡直接跟手。
  *
  * Progress.Description 提取到轨道下方的 role="status" 区域（原生 <output>），
  * 与 progressbar / slider 的数值播报互不干扰。
@@ -92,6 +107,9 @@ export function ProgressRoot(props: ProgressProps): ReactElement {
     defaultValue,
     onValueChange,
     interactive = false,
+    variant = "line",
+    size = 120,
+    thickness = defaultThickness(size),
     min = 0,
     max = 100,
     step = 1,
@@ -146,23 +164,31 @@ export function ProgressRoot(props: ProgressProps): ReactElement {
     [clamped, min, max, normalized, labelId, setLabelIdStable],
   );
 
-  // Description 提取到独立的状态区域；其余部件（Label / Value 等）
-  // 进入标签行。
+  // 部件分流：Description 提取到状态区域；圆形变体的 Value 提取到环心；
+  // 其余部件（Label 等）进入标签行。
   const descriptionNodes: ReactNode[] = [];
+  const valueNodes: ReactNode[] = [];
   const headerNodes: ReactNode[] = [];
   Children.forEach(children, (child) => {
     if (isValidElement(child) && child.type === ProgressDescription) {
       descriptionNodes.push(child);
+    } else if (
+      variant === "circle" &&
+      isValidElement(child) &&
+      child.type === ProgressValue
+    ) {
+      valueNodes.push(child);
     } else {
       headerNodes.push(child);
     }
   });
 
-  // 指针交互：点击轨道直接跳转（保留过渡），超过阈值后进入拖拽（关闭过渡）。
-  const trackRef = useRef<HTMLDivElement>(null);
+  // 指针交互：点击直接跳转（保留过渡），超过阈值后进入拖拽（关闭过渡）。
+  const surfaceRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
     pointerId: number;
     startX: number;
+    startY: number;
     moved: boolean;
   } | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -176,9 +202,27 @@ export function ProgressRoot(props: ProgressProps): ReactElement {
   );
 
   const updateFromPointer = useCallback(
-    (clientX: number): void => {
-      const rect = trackRef.current?.getBoundingClientRect();
-      if (!rect || rect.width === 0) {
+    (clientX: number, clientY: number): void => {
+      const rect = surfaceRef.current?.getBoundingClientRect();
+      if (!rect) {
+        return;
+      }
+
+      if (variant === "circle") {
+        if (rect.width === 0 || rect.height === 0) {
+          return;
+        }
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        // 屏幕坐标角度：0 = 3 点方向，顺时针递增；换算成从 12 点顺时针的占比。
+        const degrees =
+          (Math.atan2(clientY - centerY, clientX - centerX) * 180) / Math.PI;
+        const fraction = ((((degrees + 360) % 360) + 90) % 360) / 360;
+        setCurrent(roundToStep(min + fraction * (max - min)));
+        return;
+      }
+
+      if (rect.width === 0) {
         return;
       }
       const ratio = Math.min(
@@ -187,7 +231,7 @@ export function ProgressRoot(props: ProgressProps): ReactElement {
       );
       setCurrent(roundToStep(min + ratio * (max - min)));
     },
-    [min, max, roundToStep, setCurrent],
+    [min, max, roundToStep, setCurrent, variant],
   );
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -197,13 +241,14 @@ export function ProgressRoot(props: ProgressProps): ReactElement {
     dragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
+      startY: event.clientY,
       moved: false,
     };
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
     }
     // 点击跳转：此时尚未进入拖拽，填充保留线性过渡动画。
-    updateFromPointer(event.clientX);
+    updateFromPointer(event.clientX, event.clientY);
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -212,14 +257,18 @@ export function ProgressRoot(props: ProgressProps): ReactElement {
       return;
     }
     if (!drag.moved) {
-      if (Math.abs(event.clientX - drag.startX) <= 4) {
+      const distance = Math.hypot(
+        event.clientX - drag.startX,
+        event.clientY - drag.startY,
+      );
+      if (distance <= 4) {
         return;
       }
       drag.moved = true;
       setDragging(true);
     }
     event.preventDefault();
-    updateFromPointer(event.clientX);
+    updateFromPointer(event.clientX, event.clientY);
   };
 
   const handlePointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -253,74 +302,148 @@ export function ProgressRoot(props: ProgressProps): ReactElement {
 
   const labelReference = ariaLabelledBy ?? labelId ?? undefined;
 
+  // 交互表面的属性：交互模式承载指针事件，只读模式承载 progressbar 语义。
+  interface SurfaceAttrs extends HTMLAttributes<HTMLDivElement> {
+    "data-dragging"?: string;
+    "data-indeterminate"?: string;
+    ref?: Ref<HTMLDivElement>;
+  }
+
+  const surfaceAttrs: SurfaceAttrs = interactive
+    ? {
+        "aria-hidden": "true",
+        "data-dragging": dragging ? "true" : undefined,
+        ref: surfaceRef,
+        onPointerDown: handlePointerDown,
+        onPointerMove: handlePointerMove,
+        onPointerUp: handlePointerEnd,
+        onPointerCancel: handlePointerEnd,
+      }
+    : {
+        role: "progressbar",
+        "aria-label": ariaLabel,
+        "aria-labelledby": labelReference,
+        "aria-valuemin": min,
+        "aria-valuemax": max,
+        "aria-valuenow": clamped ?? undefined,
+        "aria-valuetext":
+          normalized == null ? undefined : `${Math.round(normalized)}%`,
+        "data-indeterminate": isIndeterminate ? "true" : undefined,
+      };
+
+  // 圆形变体的 SVG 几何：1:1 viewBox，圆环从 12 点顺时针填充。
+  const radius = (size - thickness) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const center = size / 2;
+  const fraction = normalized == null ? null : normalized / 100;
+  const indicatorDashArray =
+    fraction == null ? circumference * 0.25 : circumference;
+  const indicatorDashOffset =
+    fraction == null ? circumference * 0.75 : circumference * (1 - fraction);
+  const thumbFraction = fraction ?? 0;
+  const thumbAngle = ((thumbFraction * 360 - 90) * Math.PI) / 180;
+  const thumbSize = Math.min(24, Math.max(14, thickness * 1.6));
+
+  const ring = (
+    <div
+      className="uk-progress__ring"
+      style={{ width: size, height: size }}
+      {...surfaceAttrs}
+    >
+      <svg className="uk-progress__ring-svg" viewBox={`0 0 ${size} ${size}`}>
+        <circle
+          className="uk-progress__ring-track"
+          cx={center}
+          cy={center}
+          r={radius}
+          strokeWidth={thickness}
+        />
+        <circle
+          className="uk-progress__ring-indicator"
+          cx={center}
+          cy={center}
+          r={radius}
+          strokeWidth={thickness}
+          strokeDasharray={indicatorDashArray}
+          strokeDashoffset={indicatorDashOffset}
+          transform={`rotate(-90 ${center} ${center})`}
+        />
+      </svg>
+      <div
+        className="uk-progress__ring-value"
+        style={{ fontSize: Math.max(12, size * 0.2) }}
+      >
+        {valueNodes}
+      </div>
+      {interactive ? (
+        <div
+          className="uk-progress__dial-thumb"
+          style={{
+            left: center + radius * Math.cos(thumbAngle),
+            top: center + radius * Math.sin(thumbAngle),
+            width: thumbSize,
+            height: thumbSize,
+          }}
+        />
+      ) : null}
+    </div>
+  );
+
+  const rangeInput = interactive ? (
+    <input
+      type="range"
+      className="uk-progress__input"
+      value={numeric ?? min}
+      min={min}
+      max={max}
+      step={step}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      aria-labelledby={labelReference}
+      aria-valuetext={
+        normalized == null ? undefined : `${Math.round(normalized)}%`
+      }
+      onChange={(event) => setCurrent(Number(event.target.value))}
+      onKeyDown={handleKeyDown}
+    />
+  ) : null;
+
   return (
     <ProgressContext.Provider value={context}>
       <div
         {...rest}
-        className={cx("uk-progress", className)}
+        className={cx(
+          "uk-progress",
+          variant === "circle" && "uk-progress--circle",
+          className,
+        )}
         data-interactive={interactive ? "true" : undefined}
         data-disabled={disabled ? "true" : undefined}
       >
         <div className="uk-progress__bar">{headerNodes}</div>
-        {interactive ? (
+        {variant === "circle" ? (
           <>
-            <input
-              type="range"
-              className="uk-progress__input"
-              value={numeric ?? min}
-              min={min}
-              max={max}
-              step={step}
-              disabled={disabled}
-              aria-label={ariaLabel}
-              aria-labelledby={labelReference}
-              aria-valuetext={
-                normalized == null ? undefined : `${Math.round(normalized)}%`
-              }
-              onChange={(event) => setCurrent(Number(event.target.value))}
-              onKeyDown={handleKeyDown}
-            />
-            <div
-              className="uk-progress__track"
-              aria-hidden="true"
-              data-dragging={dragging ? "true" : undefined}
-              ref={trackRef}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerEnd}
-              onPointerCancel={handlePointerEnd}
-            >
-              <div
-                className="uk-progress__indicator"
-                style={{ width: `${normalized ?? 0}%` }}
-              />
-              <div
-                className="uk-progress__thumb"
-                style={{ left: `${normalized ?? 0}%` }}
-              />
-            </div>
+            {rangeInput}
+            {ring}
           </>
         ) : (
-          <div
-            className="uk-progress__track"
-            role="progressbar"
-            aria-label={ariaLabel}
-            aria-labelledby={labelReference}
-            aria-valuemin={min}
-            aria-valuemax={max}
-            aria-valuenow={clamped ?? undefined}
-            aria-valuetext={
-              normalized == null ? undefined : `${Math.round(normalized)}%`
-            }
-            data-indeterminate={isIndeterminate ? "true" : undefined}
-          >
-            <div
-              className="uk-progress__indicator"
-              style={{
-                width: normalized == null ? undefined : `${normalized}%`,
-              }}
-            />
-          </div>
+          <>
+            {rangeInput}
+            <div className="uk-progress__track" {...surfaceAttrs}>
+              <div
+                className="uk-progress__indicator"
+                style={{
+                  width: normalized == null ? undefined : `${normalized}%`,
+                }}
+              />
+              {interactive ? (
+                <div
+                  className="uk-progress__thumb"
+                  style={{ left: `${fraction == null ? 0 : fraction * 100}%` }}
+                />
+              ) : null}
+            </div>
+          </>
         )}
         {descriptionNodes.length > 0 ? descriptionNodes : null}
       </div>
