@@ -74,6 +74,7 @@
 - `Button`：primary / secondary / outline / ghost / danger 五种变体，三种尺寸，fluid 按压反馈，loading 自动禁用。
 - `Input`：透传原生输入属性，`invalid` 映射到 `aria-invalid`，焦点状态使用共享动效 token。
 - `Switch`：基于原生 checkbox，受控与非受控写法一致，支持点击、键盘和拖拽 spring。
+- `Progress`：progressbar 语义根组件，`Progress.Label` / `Progress.Value` / `Progress.Description` 组合使用；`interactive` 模式切换为原生 slider，支持点击、拖拽与键盘调整，填充线性过渡，支持不确定进度与动态状态文案。
 - `Tabs`：组合式 API，roving tabindex、方向键循环、Home/End、完整 ARIA 关联与共享布局指示器。
 - `Carousel`：基于 Embla 的横向/纵向轮播，支持拖拽、`scale` 缩放聚焦、Dots、Counter、受控 snap 索引、RTL、键盘可访问控件与 reduced-motion 降级。
 - `Dialog`：组合式 Root / Trigger / Content / Header / Title / Description / Body / Footer / Close 语义层，基于原生 `<dialog>` 并内置焦点、Esc、遮罩与滚动锁定。

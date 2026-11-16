@@ -16,6 +16,7 @@ import { InputPage } from "./pages/input";
 import { MarqueePage } from "./pages/marquee";
 import { NotFoundPage } from "./pages/not-found";
 import { OverviewPage } from "./pages/overview";
+import { ProgressPage } from "./pages/progress";
 import { RadioGroupPage } from "./pages/radio-group";
 import { SidebarPage } from "./pages/sidebar";
 import { SelectPage } from "./pages/select";
@@ -33,6 +34,7 @@ const componentPages: Record<string, ComponentType> = {
   form: FormPage,
   checkbox: CheckBoxPage,
   "radio-group": RadioGroupPage,
+  progress: ProgressPage,
   select: SelectPage,
   switch: SwitchPage,
   sidebar: SidebarPage,

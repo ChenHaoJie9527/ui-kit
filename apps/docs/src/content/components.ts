@@ -63,6 +63,13 @@ const componentDefinitions: Array<
     tags: ["表单", "键盘", "浮层"],
   },
   {
+    path: "components/progress",
+    name: "Progress",
+    summary:
+      "progressbar 语义，Label / Value / Description 组合，interactive 模式支持点击 / 拖拽 / 键盘调整。",
+    tags: ["progressbar", "slider 交互", "受控", "不确定进度"],
+  },
+  {
     path: "components/switch",
     name: "Switch",
     summary: "基于原生 checkbox，受控与非受控共享同一套语义。",
