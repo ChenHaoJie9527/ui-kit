@@ -30,6 +30,7 @@
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
     "@playwright/test": "^1.64.1",
+    "@typescript/typescript6": "^6.0.2",
     "commitizen": "^4.3.2",
     "cz-git": "^1.14.0",
     "husky": "^9.1.7",
@@ -37,6 +38,8 @@
     "oxlint": "^1.88.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "rollup": "^4.68.3",
+    "rollup-plugin-dts": "^6.5.1",
     "tsrs": "0.18.0-ts7.1.0-dev.20260929",
     "typescript": "^7.0.2",
     "vite": "^7.0.0"

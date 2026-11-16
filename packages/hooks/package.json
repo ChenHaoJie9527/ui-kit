@@ -39,7 +39,7 @@
     }
   },
   "scripts": {
-    "build": "vite build && pnpm exec tsrs -p tsconfig.build.json",
+    "build": "vite build && pnpm exec tsrs -p tsconfig.build.json && node ../../scripts/bundle-declarations.mjs packages/hooks",
     "test": "vitest run",
     "typecheck": "pnpm exec tsrs --noEmit",
     "prepublishOnly": "pnpm build && pnpm test"

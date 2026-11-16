@@ -59,7 +59,7 @@
   },
   "scripts": {
     "generate:styles": "node scripts/generate-styles.mjs",
-    "build": "pnpm generate:styles && pnpm exec oxfmt src/styles.generated.ts && vite build && pnpm exec tsrs -p tsconfig.build.json",
+    "build": "pnpm generate:styles && pnpm exec oxfmt src/styles.generated.ts && vite build && pnpm exec tsrs -p tsconfig.build.json && node ../../scripts/bundle-declarations.mjs packages/ui",
     "test": "vitest run",
     "typecheck": "pnpm exec tsrs --noEmit",
     "prepublishOnly": "pnpm build && pnpm test"
