@@ -382,7 +382,9 @@ export function ProgressRoot(props: ProgressProps): ReactElement {
           <div
             className="uk-progress__dial-thumb"
             style={{
-              top: (thickness - thumbSize) / 2,
+              // translate(-50%,-50%) 使圆点中心落在 left/top 锚点：
+              // top = thickness/2 让中心正好压在 stroke 中心半径上。
+              top: thickness / 2,
               width: thumbSize,
               height: thumbSize,
             }}

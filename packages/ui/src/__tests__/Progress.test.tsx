@@ -772,8 +772,8 @@ describe("Progress（圆形交互旋钮）", () => {
     ) as HTMLElement | null;
 
     expect(thumb).not.toBeNull();
-    // 旋钮尺寸 = min(24, max(14, 13 * 1.6)) = 20.8
-    expect(Number.parseFloat(thumb!.style.top)).toBeCloseTo((13 - 20.8) / 2, 1);
+    // top = thickness / 2 = 6.5，中心落在 stroke 中心半径上。
+    expect(Number.parseFloat(thumb!.style.top)).toBeCloseTo(13 / 2, 1);
   });
 
   it("adjusts the dial with the keyboard", () => {
