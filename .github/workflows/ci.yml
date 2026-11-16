@@ -29,6 +29,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm -r build
+      # node16/nodenext 消费方冒烟：声明产物必须可解析（issue #83 回归防线）
+      - run: pnpm --filter @ui-kit/consumer-smoke run test:consumer
 
   e2e:
     runs-on: ubuntu-latest

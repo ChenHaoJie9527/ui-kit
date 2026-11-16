@@ -1,0 +1,21 @@
+{
+  "name": "@ui-kit/consumer-smoke",
+  "private": true,
+  "description": "用 node16/nodenext 消费方检查两个包构建产物的类型可解析性（issue #83 回归防线）。",
+  "type": "module",
+  "scripts": {
+    "test:consumer": "node check.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "embla-carousel": "8.6.0",
+    "motion": "^14.4.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "seam-hooks": "workspace:*",
+    "seam-react": "workspace:*",
+    "typescript": "^7.0.2",
+    "valibot": "^1.5.0"
+  }
+}
