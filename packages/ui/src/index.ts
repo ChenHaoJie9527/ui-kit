@@ -50,6 +50,20 @@ export type {
 export { Switch } from "./Switch";
 export type { SwitchProps } from "./Switch";
 
+export {
+  Progress,
+  ProgressDescription,
+  ProgressLabel,
+  ProgressValue,
+} from "./Progress";
+export type {
+  ProgressComponent,
+  ProgressDescriptionProps,
+  ProgressLabelProps,
+  ProgressProps,
+  ProgressValueProps,
+} from "./Progress";
+
 export { Sidebar } from "./Sidebar";
 export type {
   SidebarComponent,
