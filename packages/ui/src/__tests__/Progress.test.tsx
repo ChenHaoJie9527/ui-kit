@@ -755,22 +755,25 @@ describe("Progress（圆形交互旋钮）", () => {
     expect(slider.getAttribute("value")).toBe("50");
   });
 
-  it("positions the dial thumb on the ring edge", () => {
+  it("rotates the dial positioner along the ring edge", () => {
     render(<DialExample defaultValue={25} size={160} />);
 
-    const thumb = document.querySelector(".uk-progress__dial-thumb");
+    const positioner = document.querySelector(".uk-progress__dial-positioner");
 
-    if (!thumb) {
-      throw new Error("dial thumb not found");
+    if (!positioner) {
+      throw new Error("dial positioner not found");
     }
 
-    const style = (thumb as HTMLElement).style;
-    const thickness = 13; // Math.max(6, round(160 * 0.08))
-    const radius = (160 - thickness) / 2;
+    // 25% → 3 点方向 → 顺时针 90°
+    expect(positioner.getAttribute("style")).toContain("rotate(90deg)");
+    // 旋钮位于定位器内的 12 点方向（top 偏移 = (thickness - 旋钮尺寸) / 2）
+    const thumb = positioner.querySelector(
+      ".uk-progress__dial-thumb",
+    ) as HTMLElement | null;
 
-    // 25% → 3 点方向：(center + r, center)
-    expect(Number.parseFloat(style.left)).toBeCloseTo(80 + radius, 1);
-    expect(Number.parseFloat(style.top)).toBeCloseTo(80, 1);
+    expect(thumb).not.toBeNull();
+    // 旋钮尺寸 = min(24, max(14, 13 * 1.6)) = 20.8
+    expect(Number.parseFloat(thumb!.style.top)).toBeCloseTo((13 - 20.8) / 2, 1);
   });
 
   it("adjusts the dial with the keyboard", () => {

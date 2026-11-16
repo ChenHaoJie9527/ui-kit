@@ -220,18 +220,25 @@
     cursor: grabbing;
   }
 
-  /* 旋钮圆点：位于环边缘，跟随角度；悬停 / 焦点 / 拖拽时放大。 */
+  /* 旋钮定位器：绕环心旋转，让点击跳转时沿圆弧移动而不是切直线。
+   * CSS 的 rotate 过渡按最短弧插值，角度跨 0°/360° 也能正确回绕。 */
+  .uk-progress__dial-positioner {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    transform-origin: center;
+    transition: transform var(--uk-duration-base) linear;
+  }
+
   .uk-progress__dial-thumb {
     position: absolute;
+    left: 50%;
     border-radius: 50%;
     background: var(--uk-progress-thumb, var(--uk-primary-solid));
     border: 2px solid var(--uk-surface-raised);
     box-shadow: var(--uk-shadow-sm);
-    pointer-events: none;
     transform: translate(-50%, -50%);
     transition:
-      left var(--uk-duration-base) linear,
-      top var(--uk-duration-base) linear,
       opacity var(--uk-duration-fast) var(--uk-ease-out),
       transform var(--uk-duration-fast) var(--uk-ease-out);
   }
@@ -252,6 +259,9 @@
   .uk-progress[data-interactive="true"]
     .uk-progress__ring[data-dragging="true"]
     .uk-progress__ring-indicator,
+  .uk-progress[data-interactive="true"]
+    .uk-progress__ring[data-dragging="true"]
+    .uk-progress__dial-positioner,
   .uk-progress[data-interactive="true"]
     .uk-progress__ring[data-dragging="true"]
     .uk-progress__dial-thumb {
@@ -322,10 +332,7 @@
 
     /* 旋钮去掉缩放（空间移动），只保留透明度与角度位移。 */
     .uk-progress__dial-thumb {
-      transition:
-        left var(--uk-duration-base) linear,
-        top var(--uk-duration-base) linear,
-        opacity var(--uk-duration-fast) var(--uk-ease-out);
+      transition: opacity var(--uk-duration-fast) var(--uk-ease-out);
     }
 
     .uk-progress[data-interactive="true"]

@@ -341,7 +341,6 @@ export function ProgressRoot(props: ProgressProps): ReactElement {
   const indicatorDashOffset =
     fraction == null ? circumference * 0.75 : circumference * (1 - fraction);
   const thumbFraction = fraction ?? 0;
-  const thumbAngle = ((thumbFraction * 360 - 90) * Math.PI) / 180;
   const thumbSize = Math.min(24, Math.max(14, thickness * 1.6));
 
   const ring = (
@@ -377,14 +376,18 @@ export function ProgressRoot(props: ProgressProps): ReactElement {
       </div>
       {interactive ? (
         <div
-          className="uk-progress__dial-thumb"
-          style={{
-            left: center + radius * Math.cos(thumbAngle),
-            top: center + radius * Math.sin(thumbAngle),
-            width: thumbSize,
-            height: thumbSize,
-          }}
-        />
+          className="uk-progress__dial-positioner"
+          style={{ transform: `rotate(${thumbFraction * 360}deg)` }}
+        >
+          <div
+            className="uk-progress__dial-thumb"
+            style={{
+              top: (thickness - thumbSize) / 2,
+              width: thumbSize,
+              height: thumbSize,
+            }}
+          />
+        </div>
       ) : null}
     </div>
   );
