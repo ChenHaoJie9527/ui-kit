@@ -58,6 +58,55 @@ function DownloadDemo() {
   );
 }
 
+function RingDemo() {
+  return (
+    <div className="flex items-center gap-10">
+      <Progress variant="circle" value={72}>
+        <Progress.Label>存储占用</Progress.Label>
+        <Progress.Value />
+      </Progress>
+      <Progress variant="circle" value={null}>
+        <Progress.Label>正在加载</Progress.Label>
+        <Progress.Value />
+      </Progress>
+    </div>
+  );
+}
+
+function DialDemo() {
+  const [volume, setVolume] = useState(60);
+
+  return (
+    <div className="flex items-center gap-10">
+      <Progress
+        variant="circle"
+        interactive
+        value={volume}
+        onValueChange={setVolume}
+      >
+        <Progress.Label>音量</Progress.Label>
+        <Progress.Value />
+      </Progress>
+      <Readout label="当前值" value={`${volume}%`} />
+    </div>
+  );
+}
+
+function RingSizeDemo() {
+  return (
+    <div className="flex items-center gap-10">
+      <Progress variant="circle" value={35} size={96}>
+        <Progress.Label>小尺寸</Progress.Label>
+        <Progress.Value />
+      </Progress>
+      <Progress variant="circle" value={64} size={200} thickness={16}>
+        <Progress.Label>大尺寸</Progress.Label>
+        <Progress.Value />
+      </Progress>
+    </div>
+  );
+}
+
 function InteractiveDemo() {
   const [progress, setProgress] = useState(45);
 
@@ -151,10 +200,11 @@ export function ProgressPage() {
     <Page
       kind="组件"
       title="Progress"
-      description="进度条。progressbar 语义根组件 + Progress.Label / Progress.Value / Progress.Description 组合式部件；interactive 模式支持点击 / 拖拽 / 键盘调整，填充与圆点线性过渡，不确定进度有独立循环动画。"
+      description="进度条。progressbar 语义根组件 + Progress.Label / Progress.Value / Progress.Description 组合式部件；条形与圆形（圆环 / 旋钮）两种变体，interactive 模式支持点击 / 拖拽 / 键盘调整，填充线性过渡，不确定进度有独立循环动画。"
       tags={[
         "progressbar",
         "slider 交互",
+        "条形 / 圆形",
         "受控",
         "组合式 API",
         "不确定进度",
@@ -246,6 +296,51 @@ function DownloadProgress() {
       </Section>
 
       <Section
+        title="圆形进度"
+        description="variant=circle 渲染 SVG 圆环，从 12 点顺时针填充，数值居中显示在环内；value 为 null 时圆环旋转表示不确定进度。"
+      >
+        <Demo
+          code={`<Progress variant="circle" value={72}>
+  <Progress.Label>存储占用</Progress.Label>
+  <Progress.Value />
+</Progress>
+
+<Progress variant="circle" value={null}>
+  <Progress.Label>正在加载</Progress.Label>
+  <Progress.Value />
+</Progress>`}
+        >
+          <RingDemo />
+        </Demo>
+        <Demo
+          code={`<Progress
+  variant="circle"
+  interactive
+  value={volume}
+  onValueChange={setVolume}
+>
+  <Progress.Label>音量</Progress.Label>
+  <Progress.Value />
+</Progress>`}
+        >
+          <DialDemo />
+        </Demo>
+        <Demo
+          code={`<Progress variant="circle" value={35} size={96}>
+  <Progress.Label>小尺寸</Progress.Label>
+  <Progress.Value />
+</Progress>
+
+<Progress variant="circle" value={64} size={200} thickness={16}>
+  <Progress.Label>大尺寸</Progress.Label>
+  <Progress.Value />
+</Progress>`}
+        >
+          <RingSizeDemo />
+        </Demo>
+      </Section>
+
+      <Section
         title="静态进度"
         description="只传固定 value 即可渲染；Label 与 Value 在标签行左右分布，完成时展示 100%。"
       >
@@ -311,11 +406,28 @@ function DownloadProgress() {
         <PropsTable
           rows={[
             {
+              name: "variant",
+              type: '"line" | "circle"',
+              defaultValue: '"line"',
+              description: "外观变体：条形轨道或圆形圆环。",
+            },
+            {
+              name: "size",
+              type: "number",
+              defaultValue: "120",
+              description: "圆形变体的直径（px）。",
+            },
+            {
+              name: "thickness",
+              type: "number",
+              description: "圆形变体的环粗细（px），默认按直径 8% 计算。",
+            },
+            {
               name: "interactive",
               type: "boolean",
               defaultValue: "false",
               description:
-                "开启交互：切换为原生 slider，支持点击、拖拽与键盘调整。",
+                "开启交互：切换为原生 slider，支持点击、拖拽与键盘调整；圆形变体变为旋钮。",
             },
             {
               name: "value",
@@ -395,13 +507,13 @@ function DownloadProgress() {
       <Section title="可访问性">
         <BulletList
           items={[
-            "只读模式是 role=progressbar 并暴露 aria-valuemin / aria-valuemax / aria-valuenow 与 aria-valuetext（百分比）。",
-            "交互模式切换为原生 input type=range（隐式 slider 语义）：键盘方向键、PageUp / PageDown、Home / End 都能调整，焦点环绘制在轨道上。",
+            "只读模式是 role=progressbar 并暴露 aria-valuemin / aria-valuemax / aria-valuenow 与 aria-valuetext（百分比），条形与圆形一致。",
+            "交互模式切换为原生 input type=range（隐式 slider 语义）：键盘方向键、PageUp / PageDown、Home / End 都能调整，焦点环绘制在轨道 / 圆环上。",
             "Progress.Label 通过 aria-labelledby 与进度条 / 滑块关联，读屏播报任务名称。",
             "Progress.Description 是独立的 role=status 区域（原生 <output>），文案变化时播报且不与数值播报冲突。",
             "不确定进度时省略 aria-valuenow，避免播报不存在的数值；交互模式不支持不确定进度。",
-            "拖拽圆点只在可悬停的精指针设备上 hover 显现，触摸设备常驻；disabled 时轨道变暗并阻止所有交互。",
-            "填充过渡用线性缓动；prefers-reduced-motion 下圆点去掉缩放、不确定进度只保留透明度脉动。",
+            "拖拽圆点 / 旋钮只在可悬停的精指针设备上 hover 显现，触摸设备常驻；disabled 时轨道变暗并阻止所有交互。",
+            "填充过渡用线性缓动；prefers-reduced-motion 下圆点与旋钮去掉缩放、不确定进度只保留透明度脉动。",
           ]}
         />
       </Section>

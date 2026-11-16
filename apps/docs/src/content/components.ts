@@ -66,8 +66,8 @@ const componentDefinitions: Array<
     path: "components/progress",
     name: "Progress",
     summary:
-      "progressbar 语义，Label / Value / Description 组合，interactive 模式支持点击 / 拖拽 / 键盘调整。",
-    tags: ["progressbar", "slider 交互", "受控", "不确定进度"],
+      "条形 / 圆形两种变体，Label / Value / Description 组合，interactive 模式支持点击 / 拖拽 / 键盘调整。",
+    tags: ["progressbar", "slider 交互", "条形 / 圆形", "受控", "不确定进度"],
   },
   {
     path: "components/switch",
