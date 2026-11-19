@@ -5,10 +5,12 @@ import { cx } from "../utils/cx";
 import { TabsContext, type TabsContextValue } from "./tabs-context";
 
 export type TabsOrientation = "horizontal" | "vertical";
+export type TabsVariant = "line" | "card" | "segmented";
 
 interface TabsBaseProps {
   onValueChange?: (value: string) => void;
   orientation?: TabsOrientation;
+  variant?: TabsVariant;
   className?: string;
   children: ReactNode;
 }
@@ -24,6 +26,7 @@ export function TabsRoot({
   defaultValue,
   onValueChange,
   orientation = "horizontal",
+  variant = "line",
   className,
   children,
 }: TabsProps): ReactElement {
@@ -47,7 +50,11 @@ export function TabsRoot({
 
   return (
     <TabsContext.Provider value={context}>
-      <div className={cx("uk-tabs", className)} data-orientation={orientation}>
+      <div
+        className={cx("uk-tabs", className)}
+        data-orientation={orientation}
+        data-variant={variant}
+      >
         {children}
       </div>
     </TabsContext.Provider>

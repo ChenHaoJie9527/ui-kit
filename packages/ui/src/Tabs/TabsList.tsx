@@ -10,18 +10,20 @@ import { cx } from "../utils/cx";
 import { useTabsContext } from "./tabs-context";
 
 export interface TabsListProps extends HTMLAttributes<HTMLDivElement> {
+  /** 位于 tablist 之后的操作区，例如新增页签按钮。 */
+  action?: ReactNode;
   children?: ReactNode;
 }
 
 export const TabsList: ForwardRefExoticComponent<
   TabsListProps & RefAttributes<HTMLDivElement>
 > = forwardRef<HTMLDivElement, TabsListProps>(function TabsList(
-  { className, onKeyDown, ...rest },
+  { action, className, onKeyDown, ...rest },
   ref,
 ) {
   const { orientation } = useTabsContext("Tabs.List");
 
-  return (
+  const list = (
     <div
       {...rest}
       ref={ref}
@@ -88,5 +90,16 @@ export const TabsList: ForwardRefExoticComponent<
         }
       }}
     />
+  );
+
+  if (action == null) {
+    return list;
+  }
+
+  return (
+    <div className="uk-tabs__bar">
+      {list}
+      <div className="uk-tabs__action">{action}</div>
+    </div>
   );
 });

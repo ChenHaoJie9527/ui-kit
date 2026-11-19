@@ -80,6 +80,7 @@ export type {
   TabsOrientation,
   TabsProps,
   TabsTriggerProps,
+  TabsVariant,
 } from "./Tabs";
 
 export { Carousel, useCarousel } from "./Carousel";
