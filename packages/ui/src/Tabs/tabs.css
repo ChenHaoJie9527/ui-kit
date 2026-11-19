@@ -219,6 +219,20 @@
     margin-inline-start: -1px;
   }
 
+  /* The horizontal scroll container clips the outer top border by 1px. */
+  .uk-tabs[data-variant="card"][data-orientation="horizontal"]
+    .uk-tabs__trigger {
+    border-top-color: transparent;
+    box-shadow: inset 0 1px 0 var(--uk-border);
+  }
+
+  .uk-tabs[data-variant="card"][data-orientation="horizontal"]
+    .uk-tabs__action
+    .uk-button[data-icon-only="true"] {
+    border-top-color: transparent;
+    box-shadow: inset 0 1px 0 var(--uk-border);
+  }
+
   @media (hover: hover) and (pointer: fine) {
     .uk-tabs[data-variant="card"] .uk-tabs__trigger:hover:not(:disabled) {
       border-color: var(--uk-border-strong);
@@ -230,6 +244,19 @@
       );
       color: var(--uk-text);
     }
+
+    .uk-tabs[data-variant="card"][data-orientation="horizontal"]
+      .uk-tabs__trigger:hover:not(:disabled) {
+      border-top-color: transparent;
+      box-shadow: inset 0 1px 0 var(--uk-border-strong);
+    }
+
+    .uk-tabs[data-variant="card"][data-orientation="horizontal"]
+      .uk-tabs__action
+      .uk-button[data-icon-only="true"]:hover:not(:disabled) {
+      border-top-color: transparent;
+      box-shadow: inset 0 1px 0 var(--uk-border-strong);
+    }
   }
 
   .uk-tabs[data-variant="card"] .uk-tabs__trigger[data-state="active"] {
@@ -238,6 +265,12 @@
     background: var(--uk-surface-raised);
     color: var(--uk-primary);
     font-weight: 600;
+  }
+
+  .uk-tabs[data-variant="card"][data-orientation="horizontal"]
+    .uk-tabs__trigger[data-state="active"] {
+    border-top-color: transparent;
+    box-shadow: inset 0 1px 0 var(--uk-border);
   }
 
   .uk-tabs[data-variant="card"] .uk-tabs__indicator {
