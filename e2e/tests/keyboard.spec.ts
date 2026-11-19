@@ -19,6 +19,40 @@ test.describe("Keyboard navigation", () => {
     await expect(firstTab).toBeFocused();
   });
 
+  test("Tabs: closing and adding keep selection and focus stable", async ({
+    page,
+  }) => {
+    await page.goto("/#/components/tabs");
+    await page.waitForLoadState("networkidle");
+
+    const section = page
+      .getByRole("heading", { name: "可关闭与新增", exact: true })
+      .locator("xpath=ancestor::section[1]");
+    const tabs = section.getByRole("tab");
+
+    await tabs.first().focus();
+    await tabs.first().locator(".uk-tabs__close").click();
+
+    await expect(tabs).toHaveCount(2);
+    await expect(section.getByRole("tab", { name: "标签 2" })).toBeFocused();
+    await expect(section.getByRole("tab", { name: "标签 2" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    await page.keyboard.press("Delete");
+    await expect(tabs).toHaveCount(1);
+    await expect(section.getByRole("tab", { name: "标签 3" })).toBeFocused();
+
+    await section.getByRole("button", { name: "新增页签" }).click();
+
+    await expect(tabs).toHaveCount(2);
+    await expect(section.getByRole("tab", { name: "标签 4" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
   test("Dialog: Escape closes", async ({ page }) => {
     await page.goto("/#/components/dialog");
     await page.waitForLoadState("networkidle");
